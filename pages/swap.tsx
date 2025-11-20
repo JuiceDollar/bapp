@@ -12,7 +12,7 @@ import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../app.config";
 import AppCard from "@components/AppCard";
-import { StablecoinBridgeABI } from "@deuro/eurocoin";
+import { StablecoinBridgeABI } from "@juicedollar/jusd";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import { TokenInputSelectOutlined } from "@components/Input/TokenInputSelectOutlined";
@@ -27,7 +27,7 @@ enum TokenInteractionSide {
 	OUTPUT = "output",
 }
 
-const STABLECOIN_SYMBOLS = ["EURC", "VEUR", "EURS", "EURR", "EUROP", "EURI", "EURE", "EURA"];
+const STABLECOIN_SYMBOLS = ["SUSD"];
 
 const noTokenMeta = {
 	symbol: "",
@@ -73,8 +73,7 @@ export default function Swap() {
 		(symbol: string) => {
 			switch (symbol) {
 				case TOKEN_SYMBOL:
-					const stablecoinSymbol = getSelectedStablecoinSymbol();
-					const userAllowance = swapStats.dEuro.bridgeAllowance[stablecoinSymbol as keyof typeof swapStats.dEuro.bridgeAllowance];
+					const userAllowance = swapStats.dEuro.bridgeAllowance;
 					return {
 						symbol: TOKEN_SYMBOL,
 						userBal: swapStats.dEuro.userBal,
@@ -87,22 +86,8 @@ export default function Swap() {
 						contractBridgeAddress: "0x0",
 						contractAddress: swapStats.dEuro.contractAddress,
 					};
-				case "EURC":
-					return swapStats.eurc;
-				case "VEUR":
-					return swapStats.veur;
-				case "EURS":
-					return swapStats.eurs;
-				case "EURR":
-					return swapStats.eurr;
-				case "EUROP":
-					return swapStats.europ;
-				case "EURI":
-					return swapStats.euri;
-				case "EURE":
-					return swapStats.eure;
-				case "EURA":
-					return swapStats.eura;
+				case "SUSD":
+					return swapStats.startUSD;
 				default:
 					return noTokenMeta;
 			}
@@ -510,67 +495,11 @@ export default function Swap() {
 				<div className="h-full">
 					<TokenModalRowButton
 						currency="€"
-						symbol={swapStats.eurc.symbol}
-						price={formatCurrency(formatUnits(swapStats.eurc.userBal, Number(swapStats.eurc.decimals)), 2, 2) as string}
-						balance={formatCurrency(formatUnits(swapStats.eurc.userBal, Number(swapStats.eurc.decimals))) as string}
-						name={swapStats.eurc.symbol}
-						onClick={() => handleSelectToken(swapStats.eurc.symbol)}
-					/>
-					<TokenModalRowButton
-						currency="€"
-						symbol={swapStats.veur.symbol}
-						price={formatCurrency(formatUnits(swapStats.veur.userBal, Number(swapStats.veur.decimals)), 2, 2) as string}
-						balance={formatCurrency(formatUnits(swapStats.veur.userBal, Number(swapStats.veur.decimals))) as string}
-						name={swapStats.veur.symbol}
-						onClick={() => handleSelectToken(swapStats.veur.symbol)}
-					/>
-					<TokenModalRowButton
-						currency="€"
-						symbol={swapStats.eurs.symbol}
-						price={formatCurrency(formatUnits(swapStats.eurs.userBal, Number(swapStats.eurs.decimals)), 2, 2) as string}
-						balance={formatCurrency(formatUnits(swapStats.eurs.userBal, Number(swapStats.eurs.decimals))) as string}
-						name={swapStats.eurs.symbol}
-						onClick={() => handleSelectToken(swapStats.eurs.symbol)}
-					/>
-					<TokenModalRowButton
-						currency="€"
-						symbol={swapStats.eurr.symbol}
-						price={formatCurrency(formatUnits(swapStats.eurr.userBal, Number(swapStats.eurr.decimals)), 2, 2) as string}
-						balance={formatCurrency(formatUnits(swapStats.eurr.userBal, Number(swapStats.eurr.decimals))) as string}
-						name={swapStats.eurr.symbol}
-						onClick={() => handleSelectToken(swapStats.eurr.symbol)}
-					/>
-					<TokenModalRowButton
-						currency="€"
-						symbol={swapStats.europ.symbol}
-						price={formatCurrency(formatUnits(swapStats.europ.userBal, Number(swapStats.europ.decimals)), 2, 2) as string}
-						balance={formatCurrency(formatUnits(swapStats.europ.userBal, Number(swapStats.europ.decimals))) as string}
-						name={swapStats.europ.symbol}
-						onClick={() => handleSelectToken(swapStats.europ.symbol)}
-					/>
-					<TokenModalRowButton
-						currency="€"
-						symbol={swapStats.euri.symbol}
-						price={formatCurrency(formatUnits(swapStats.euri.userBal, Number(swapStats.euri.decimals)), 2, 2) as string}
-						balance={formatCurrency(formatUnits(swapStats.euri.userBal, Number(swapStats.euri.decimals))) as string}
-						name={swapStats.euri.symbol}
-						onClick={() => handleSelectToken(swapStats.euri.symbol)}
-					/>
-					<TokenModalRowButton
-						currency="€"
-						symbol={swapStats.eure.symbol}
-						price={formatCurrency(formatUnits(swapStats.eure.userBal, Number(swapStats.eure.decimals)), 2, 2) as string}
-						balance={formatCurrency(formatUnits(swapStats.eure.userBal, Number(swapStats.eure.decimals))) as string}
-						name={swapStats.eure.symbol}
-						onClick={() => handleSelectToken(swapStats.eure.symbol.toUpperCase())}
-					/>
-					<TokenModalRowButton
-						currency="€"
-						symbol={swapStats.eura.symbol}
-						price={formatCurrency(formatUnits(swapStats.eura.userBal, Number(swapStats.eura.decimals)), 2, 2) as string}
-						balance={formatCurrency(formatUnits(swapStats.eura.userBal, Number(swapStats.eura.decimals))) as string}
-						name={swapStats.eura.symbol}
-						onClick={() => handleSelectToken(swapStats.eura.symbol)}
+						symbol={swapStats.startUSD.symbol}
+						price={formatCurrency(formatUnits(swapStats.startUSD.userBal, Number(swapStats.startUSD.decimals)), 2, 2) as string}
+						balance={formatCurrency(formatUnits(swapStats.startUSD.userBal, Number(swapStats.startUSD.decimals))) as string}
+						name={swapStats.startUSD.symbol}
+						onClick={() => handleSelectToken(swapStats.startUSD.symbol)}
 					/>
 				</div>
 			</TokenSelectModal>

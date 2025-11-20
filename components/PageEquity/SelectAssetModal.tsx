@@ -1,5 +1,5 @@
 import { formatUnits } from "viem";
-import { formatCurrency, NATIVE_POOL_SHARE_TOKEN_SYMBOL, POOL_SHARE_TOKEN_SYMBOL, TOKEN_SYMBOL } from "@utils";
+import { formatCurrency, POOL_SHARE_TOKEN_SYMBOL, SAVINGS_VAULT_SYMBOL, TOKEN_SYMBOL } from "@utils";
 import { TokenModalRowButton, TokenSelectModal } from "@components/TokenSelectModal";
 import { TokenBalance } from "../../hooks/useWalletBalances";
 
@@ -34,7 +34,7 @@ export function SelectAssetModal({
     const options = [
         {
             symbol: TOKEN_SYMBOL,
-            name: "Decentralized Euro",
+            name: "JuiceDollar",
             balanceOf: balances.find((balance) => balance.symbol === TOKEN_SYMBOL)?.balanceOf ?? 0n,
         },
         {
@@ -43,9 +43,9 @@ export function SelectAssetModal({
             balanceOf: balances.find((balance) => balance.symbol === POOL_SHARE_TOKEN_SYMBOL)?.balanceOf ?? 0n,
         },
         {
-            symbol: NATIVE_POOL_SHARE_TOKEN_SYMBOL,
-            name: NATIVE_POOL_SHARE_TOKEN_SYMBOL,
-            balanceOf: balances.find((balance) => balance.symbol === NATIVE_POOL_SHARE_TOKEN_SYMBOL)?.balanceOf ?? 0n,
+            symbol: SAVINGS_VAULT_SYMBOL,
+            name: SAVINGS_VAULT_SYMBOL,
+            balanceOf: balances.find((balance) => balance.symbol === SAVINGS_VAULT_SYMBOL)?.balanceOf ?? 0n,
         },
     ]
 

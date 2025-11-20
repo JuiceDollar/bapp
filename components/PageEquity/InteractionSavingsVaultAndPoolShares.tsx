@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from "react";
-import AppBox from "@components/AppBox";
-import DisplayLabel from "@components/DisplayLabel";
 import { usePoolStats } from "@hooks";
-import { formatBigInt, formatCurrency, formatDuration, NATIVE_POOL_SHARE_TOKEN_SYMBOL, shortenAddress, TOKEN_SYMBOL } from "@utils";
-import { useAccount, useChainId, useReadContract } from "wagmi";
-import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { formatBigInt, formatCurrency, formatDuration, POOL_SHARE_TOKEN_SYMBOL, SAVINGS_VAULT_SYMBOL, shortenAddress, TOKEN_SYMBOL } from "@utils";
+import { useAccount, useChainId, useClient, useReadContract } from "wagmi";
+import { multicall, waitForTransactionReceipt, writeContract } from "wagmi/actions";
 import { erc20Abi, formatUnits, zeroAddress } from "viem";
 import Button from "@components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -13,7 +11,7 @@ import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import { toast } from "react-toastify";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../app.config";
-import { ADDRESS, DecentralizedEUROABI, EquityABI, FrontendGatewayABI } from "@deuro/eurocoin";
+import { ADDRESS, JuiceDollarABI, EquityABI, FrontendGatewayABI, SavingsVaultJUSDABI } from "@juicedollar/jusd";
 import { useFrontendCode } from "../../hooks/useFrontendCode";
 import { useTranslation } from "next-i18next";
 import { TokenInputSelectOutlined } from "@components/Input/TokenInputSelectOutlined";
@@ -31,7 +29,7 @@ interface Props {
 	reverseSelection: () => void;
 }
 
-export default function InteractionStablecoinAndNativePS({
+export default function InteractionSavingsVaultAndPoolShares({
 	openSelector,
 	selectedFromToken,
 	selectedToToken,
@@ -45,16 +43,17 @@ export default function InteractionStablecoinAndNativePS({
 	const [isRedeeming, setRedeeming] = useState(false);
 	const { t } = useTranslation();
 	const { frontendCode } = useFrontendCode();
+	const client = useClient();
 	const { address } = useAccount();
 	const chainId = useChainId();
 	const poolStats = usePoolStats();
 	const eurPrice = useSelector((state: RootState) => state.prices.eur?.usd);
 	const account = address || zeroAddress;
-	const direction: boolean = selectedFromToken?.symbol === TOKEN_SYMBOL;
+	const direction: boolean = selectedFromToken?.symbol === SAVINGS_VAULT_SYMBOL;
 
 	const { data: frontendDeuroAllowanceData, refetch: refetchFrontendDeuroAllowance } = useReadContract({
-		address: ADDRESS[chainId].decentralizedEURO,
-		abi: DecentralizedEUROABI,
+		address: ADDRESS[chainId].juiceDollar,
+		abi: JuiceDollarABI,
 		functionName: "allowance",
 		args: [account, ADDRESS[chainId].frontendGateway],
 	});
@@ -78,7 +77,7 @@ export default function InteractionStablecoinAndNativePS({
 			setApproving(true);
 
 			const approveWriteHash = await writeContract(WAGMI_CONFIG, {
-				address: ADDRESS[chainId].decentralizedEURO,
+				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
 				functionName: "approve",
 				args: [ADDRESS[chainId].frontendGateway, amount],
@@ -133,7 +132,7 @@ export default function InteractionStablecoinAndNativePS({
 				},
 				{
 					title: t("common.txs.shares"),
-					value: formatBigInt(result) + " " + NATIVE_POOL_SHARE_TOKEN_SYMBOL,
+					value: formatBigInt(result) + " " + POOL_SHARE_TOKEN_SYMBOL,
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -160,28 +159,39 @@ export default function InteractionStablecoinAndNativePS({
 		}
 	};
 
-	const { data: nativePSResult, isLoading: shareLoading } = useReadContract({
-		address: ADDRESS[chainId].equity,
-		abi: EquityABI,
-		functionName: "calculateShares",
+	const { data: vaultSharesInStablecoin } = useReadContract({
+		address: ADDRESS[chainId].savingsVaultJUSD,
+		abi: SavingsVaultJUSDABI,
+		functionName: "convertToAssets",
 		args: [amount],
 	});
 
-	const { data: deuroResult, isLoading: proceedLoading } = useReadContract({
+	const { data: stablecoinInEquity } = useReadContract({
+		address: ADDRESS[chainId].equity,
+		abi: EquityABI,
+		functionName: "calculateShares",
+		args: [vaultSharesInStablecoin || 0n],
+	});
+
+	const { data: equityInStablecoin } = useReadContract({
 		address: ADDRESS[chainId].equity,
 		abi: EquityABI,
 		functionName: "calculateProceeds",
 		args: [amount],
 	});
 
-	const fromBalance = direction ? poolStats.deuroBalance : poolStats.equityBalance;
-	const result = (direction ? nativePSResult : deuroResult) || 0n;
-	const fromSymbol = direction ? TOKEN_SYMBOL : NATIVE_POOL_SHARE_TOKEN_SYMBOL;
-	const unlocked =
-		poolStats.equityUserVotes > 86_400 * 90 && poolStats.equityUserVotes < 86_400 * 365 * 30 && poolStats.equityUserVotes > 0n;
-	const redeemLeft = 86400n * 90n - (poolStats.equityBalance ? poolStats.equityUserVotes / poolStats.equityBalance / 2n ** 20n : 0n);
+	const { data: stablecoinInVaultSharesResult } = useReadContract({
+		address: ADDRESS[chainId].savingsVaultJUSD,
+		abi: SavingsVaultJUSDABI,
+		functionName: "convertToShares",
+		args: [equityInStablecoin || 0n],
+	});
 
-	const collateralValue = direction ? amount : deuroResult;
+	const fromBalance = direction ? poolStats.deuroBalance : poolStats.equityBalance;
+	const result = (direction ? stablecoinInEquity : stablecoinInVaultSharesResult) || 0n;
+	const fromSymbol = direction ? SAVINGS_VAULT_SYMBOL : POOL_SHARE_TOKEN_SYMBOL;
+	
+	const collateralValue = direction ? amount : stablecoinInVaultSharesResult;
 	const collateralEurValue = formatBigInt(collateralValue);
 	const collateralUsdValue = eurPrice && collateralValue ? formatBigInt(BigInt(Math.floor(eurPrice * 10000)) * collateralValue / 10000n) : formatBigInt(0n);
 
@@ -209,7 +219,7 @@ export default function InteractionStablecoinAndNativePS({
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatBigInt(amount) + " " + NATIVE_POOL_SHARE_TOKEN_SYMBOL,
+					value: formatBigInt(amount) + " " + POOL_SHARE_TOKEN_SYMBOL,
 				},
 				{
 					title: t("common.txs.spender"),
@@ -223,10 +233,10 @@ export default function InteractionStablecoinAndNativePS({
 
 			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: approveWriteHash, confirmations: 1 }), {
 				pending: {
-					render: <TxToast title={t("common.txs.title", { symbol: NATIVE_POOL_SHARE_TOKEN_SYMBOL })} rows={toastContent} />,
+					render: <TxToast title={t("common.txs.title", { symbol: POOL_SHARE_TOKEN_SYMBOL })} rows={toastContent} />,
 				},
 				success: {
-					render: <TxToast title={t("common.txs.success", { symbol: NATIVE_POOL_SHARE_TOKEN_SYMBOL })} rows={toastContent} />,
+					render: <TxToast title={t("common.txs.success", { symbol: POOL_SHARE_TOKEN_SYMBOL })} rows={toastContent} />,
 				},
 			});
 
@@ -240,7 +250,7 @@ export default function InteractionStablecoinAndNativePS({
 	};
 
 	const handleRedeem = async () => {
-		if (!deuroResult) return;
+		if (!stablecoinInVaultSharesResult) return;
 
 		try {
 			setRedeeming(true);
@@ -248,13 +258,13 @@ export default function InteractionStablecoinAndNativePS({
 				address: ADDRESS[chainId].frontendGateway,
 				abi: FrontendGatewayABI,
 				functionName: "redeem",
-				args: [account, amount, deuroResult, frontendCode],
+				args: [account, amount, stablecoinInVaultSharesResult, frontendCode],
 			});
 
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatBigInt(amount) + " " + NATIVE_POOL_SHARE_TOKEN_SYMBOL,
+					value: formatBigInt(amount) + " " + POOL_SHARE_TOKEN_SYMBOL,
 				},
 				{
 					title: t("common.txs.receive"),
@@ -268,12 +278,12 @@ export default function InteractionStablecoinAndNativePS({
 
 			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: redeemWriteHash, confirmations: 1 }), {
 				pending: {
-					render: <TxToast title={t("equity.txs.redeeming", { symbol: NATIVE_POOL_SHARE_TOKEN_SYMBOL })} rows={toastContent} />,
+					render: <TxToast title={t("equity.txs.redeeming", { symbol: POOL_SHARE_TOKEN_SYMBOL })} rows={toastContent} />,
 				},
 				success: {
 					render: (
 						<TxToast
-							title={t("equity.txs.successfully_redeemed", { symbol: NATIVE_POOL_SHARE_TOKEN_SYMBOL })}
+							title={t("equity.txs.successfully_redeemed", { symbol: POOL_SHARE_TOKEN_SYMBOL })}
 							rows={toastContent}
 						/>
 					),
@@ -396,7 +406,7 @@ export default function InteractionStablecoinAndNativePS({
 						) : (
 							<Button
 								isLoading={isRedeeming}
-								disabled={amount == 0n || !!error || !poolStats.equityCanRedeem || !nativePSResult}
+								
 								onClick={() => handleRedeem()}
 							>
 								{t("equity.redeem")}
@@ -415,7 +425,7 @@ export default function InteractionStablecoinAndNativePS({
 				</div>
 				<div className="flex flex-col gap-2 p-4">
 					<div className="text-text-muted2 text-base font-medium leading-tight">{t("equity.can_redeem_after_symbol")}</div>
-					<div className="text-base font-medium leading-tight">{formatDuration(redeemLeft)}</div>
+					<div className="text-base font-medium leading-tight">--</div>
 				</div>
 			</div>
 		</div>
