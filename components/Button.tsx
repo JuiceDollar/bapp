@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default function Button({ size = "md", width, className, onClick, isLoading, children, disabled, error }: Props) {
-	const sizeClass = size == "sm" ? "text-sm px-2 py-1 md:px-3 md:py-1" : "px-3 py-3";
+	const sizeClass = size === "sm" ? "text-sm px-2 py-1 md:px-3 md:py-1" : "px-3 py-3";
 
 	return (
 		<>
@@ -22,7 +22,7 @@ export default function Button({ size = "md", width, className, onClick, isLoadi
 			<button
 				className={`
 					btn
-					${className} ${sizeClass}
+					${sizeClass} ${className}
 				 	${
 						disabled || isLoading
 							? "font-medium cursor-not-allowed bg-button-primary-disabled-bg text-button-primary-disabled-text"

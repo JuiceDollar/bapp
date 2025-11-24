@@ -108,17 +108,10 @@ module.exports = {
 					bgNotEditable: "#F5F6F9",
 				},
 				button: {
-					max: {
-						bg: "#e4f0fb",
-						text: "#092f62",
-						hover: "#CCE4FF",
-						disabledBg: "#E9EBF0",
-						disabledText: "#ADB2C2",
-					},
 					primary: {
 						disabled: {
-							text: "#adb2c1",
-							bg: "#e9ebf0",
+							text: "#C5C5C5",
+							bg: "#ECECEC",
 						},
 						default: {
 							text: "#ffffff",
@@ -126,7 +119,7 @@ module.exports = {
 						},
 						hover: {
 							text: "#ffffff",
-							bg: "#0F80F0",
+							bg: "#F57F00",
 						},
 					},
 					secondary: {
