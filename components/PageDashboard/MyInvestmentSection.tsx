@@ -25,7 +25,7 @@ export const MyInvestmentSection = () => {
 			<div className="self-stretch flex-col justify-start items-start gap-5 inline-flex sm:w-1/2">
 				<div className="flex-col justify-start items-start gap-3 flex">
 					<div>
-						<Image src="/icons/my-investments.svg" width={42} height={42} alt="My Investments" />
+						<Image src="/icons/Icon-Invest.svg" width={42} height={42} alt="My Investments" />
 					</div>
 					<div className="text-text-primary text-2xl sm:text-4xl font-black !leading-none">{t("dashboard.my_investments")}</div>
 				</div>
@@ -43,8 +43,8 @@ export const MyInvestmentSection = () => {
 				/>
 				<ExplanationItem
 					icon="/icons/grow.svg"
-					title={t("dashboard.the_gobernance_token_ecosystem")}
-					description={t("dashboard.the_gobernance_token_ecosystem_description")}
+					title={t("dashboard.benefit_from_the_JUSD_protocol")}
+					description={t("dashboard.benefit_from_the_JUSD_protocol_description")}
 				/>
 			</div>
 		</div>

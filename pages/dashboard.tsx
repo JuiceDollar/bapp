@@ -36,7 +36,7 @@ export default function Dashboard() {
 	return (
 		<>
 			<Head>
-				<title>dEURO - {t("dashboard.title")}</title>
+				<title>JUSD - {t("dashboard.title")}</title>
 			</Head>
 
 			<div className="md:mt-8 flex flex-col gap-6 sm:gap-[3.75rem]">

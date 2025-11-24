@@ -122,7 +122,7 @@ module.exports = {
 						},
 						default: {
 							text: "#ffffff",
-							bg: "#092f62",
+							bg: "#F7911A",
 						},
 						hover: {
 							text: "#ffffff",
@@ -148,7 +148,7 @@ module.exports = {
 							text: "#272B38",
 						},
 						hover: {
-							text: "#0F80F0",
+							text: "#F7911A",
 						},
 						disabled: {
 							text: "#ADB2C2",

@@ -47,7 +47,7 @@ export default function Navbar() {
 					<div className="h-9 justify-start items-center gap-6 inline-flex">
 						<Link className="w-[120px] flex items-center justify-center" href={CONFIG.landing}>
 							<div className="relative">
-								<Image src="/assets/dEuro-Logo.svg" alt="Logo" width={120} height={31} priority />
+								<Image src="/assets/JD-LOGO.svg" alt="Logo" width={120} height={31} priority />
 							</div>
 						</Link>
 

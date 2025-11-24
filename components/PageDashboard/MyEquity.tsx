@@ -76,7 +76,7 @@ export const MyEquity = () => {
 					{/** Headers */}
 					<span></span>
 					<HeaderCell>{t("dashboard.current_investment")}</HeaderCell>
-					<HeaderCell className="text-right">{t("dashboard.symbol_amount", { symbol: "dEURO" })}</HeaderCell>
+					<HeaderCell className="text-right">{t("dashboard.symbol_amount", { symbol: "JUSD" })}</HeaderCell>
 					{isEquityData ? (
 						equityData.map((item) => <EquityRow key={item.symbol} {...item} />)
 					) : (
