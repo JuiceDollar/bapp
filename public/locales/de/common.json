@@ -567,7 +567,7 @@
         "governance_description": "Hier hast du die Möglichkeit, an der Steuerung des JUSD-Protokolls teilzunehmen, indem du neue Positionen, den Basiszinssatz oder andere systemrelevante Parameter überwachst. Aktiviere den Expertenmodus, um Einblicke zu erhalten.",
         "governance_description_2": "Teilnehmer sollten neu vorgeschlagene Positionstypen sorgfältig prüfen und diese ablehnen, wenn sie ihrer Meinung nach ein Risiko für die Stabilität von JUSD darstellen. Es gibt auch ein <0>GitHub-Forum</0> zur Diskussion über zulässige Besicherungen und deren Parameter.",
         "propose": "Vorschlagen",
-        "dEURO_Protocol_Share_Holders_nDEPS_and_DEPS": "JUSD-Protokoll-Aktionäre (JUICE und JUICE)",
+        "JUSD_Protocol_Share_Holders_nDEPS_and_DEPS": "JUSD-Protokoll-Aktionäre (JUICE)",
         "bought_through_bids": "Über Gebote erworben",
         "no_borrowings_yet": "Du hast noch keine Leihen.",
         "no_investments_yet": "Du hast noch keine Investitionen.",

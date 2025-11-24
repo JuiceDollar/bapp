@@ -144,7 +144,7 @@ export default function Dashboard() {
 						</div>
 
 						<div className="flex flex-col gap-4">
-							<SectionTitle className="!mb-1">{t("dashboard.dEURO_Protocol_Share_Holders_nDEPS_and_DEPS")}</SectionTitle>
+							<SectionTitle className="!mb-1">{t("dashboard.JUSD_Protocol_Share_Holders_nDEPS_and_DEPS")}</SectionTitle>
 							<GovernanceVotersTable />
 						</div>
 					</>

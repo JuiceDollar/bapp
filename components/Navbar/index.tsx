@@ -41,9 +41,9 @@ export default function Navbar() {
 	const [isNavBarOpen, setIsNavBarOpen] = useState(false);
 
 	return (
-		<div className="fixed top-0 left-0 right-0 z-20">
+		<div className="fixed top-0 left-0 right-0 z-20 bg-white border-b border-menu-separator bg-menu-back backdrop-blur">
 			<div className="flex justify-center">
-				<header className="flex w-full max-w-[1440px] h-16 px-spacing-10 bg-white border-b border-menu-separator bg-menu-back backdrop-blur justify-between items-center shrink-0">
+				<header className="flex w-full max-w-[1440px] h-16 px-spacing-10 justify-between items-center shrink-0">
 					<div className="h-9 justify-start items-center gap-6 inline-flex">
 						<Link className="w-[120px] flex items-center justify-center" href={CONFIG.landing}>
 							<div className="relative">
@@ -75,7 +75,9 @@ export default function Navbar() {
 						</button>
 					</div>
 				</header>
+			</div>
 
+			<div className="flex justify-center">
 				<aside className="flex 2md:hidden">
 					<div className="flex items-center 2md:block">
 						<label className="absolute z-20 cursor-pointer px-3 py-6 right-0 2md:right-4" htmlFor="ss-mobile-menu">

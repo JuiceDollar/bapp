@@ -566,7 +566,7 @@
         "governance_description": "Vous avez ici l'opportunité de participer à la gouvernance du protocole JUSD en surveillant les nouvelles positions, le taux de base ou d'autres paramètres pertinents pour le système. Activez le mode expert pour obtenir plus d'informations.",
         "governance_description_2": "Les participants doivent examiner attentivement les nouveaux types de positions proposés et les refuser s'ils estiment qu'ils présentent un risque pour la stabilité du JUSD. Il existe également un forum <0>github</0> pour discuter des garanties admissibles et de leurs paramètres.",
         "propose": "Proposer",
-        "dEURO_Protocol_Share_Holders_nDEPS_and_DEPS": "Actionnaires du protocole JUSD (JUICE et JUICE)",
+        "JUSD_Protocol_Share_Holders_nDEPS_and_DEPS": "Actionnaires du protocole JUSD (JUICE)",
         "bought_through_bids": "Acheté via des offres",
         "no_borrowings_yet": "Vous n'avez pas encore d'emprunts.",
         "no_investments_yet": "Vous n'avez pas encore d'investissements.",
