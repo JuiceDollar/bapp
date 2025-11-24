@@ -27,10 +27,19 @@ module.exports = {
 			minHeight: {
 				content: "calc(100vh - 230px)",
 			},
+			spacing: {
+				"spacing-10": "40px",
+			},
 			transitionProperty: {
 				height: "height",
 			},
 			colors: {
+				gray: {
+					"palette-75": "#6d6d6d",
+				},
+				neutral: {
+					"palette-n-78": "#656565",
+				},
 				layout: {
 					primary: "#f5f6f9",
 					secondary: "#092f62",
