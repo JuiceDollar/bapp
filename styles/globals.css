@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+	--gray-palette-75: #6d6d6d;
+	--neutral-palette-n-78: #656565;
+	--Spacing-10: 40px;
+}
+
 @layer components {
 	.btn {
 		@apply inline-flex whitespace-nowrap justify-center items-center gap-3 cursor-pointer rounded-lg select-none ease-in duration-200 border border-transparent px-3 py-2 md:px-3 md:py-3;

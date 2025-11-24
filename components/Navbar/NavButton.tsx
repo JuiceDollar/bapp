@@ -24,7 +24,9 @@ export default function NavButton({ to, name, external }: Props) {
 			href={external ? to : href}
 			target={external ? "_blank" : "_self"}
 		>
-			<span className="text-base font-medium leading-normal whitespace-nowrap">{name}</span>
+			<span className="text-base font-normal leading-[22px] text-[var(--neutral-palette-n-78)] whitespace-nowrap">
+				{name}
+			</span>
 		</Link>
 	);
 }

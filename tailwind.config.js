@@ -9,7 +9,7 @@ module.exports = {
 	],
 	theme: {
 		fontFamily: {
-			sans: ["Avenir", "Helvetica", "ui-sans-serif"],
+			sans: ["Inter", "Helvetica", "ui-sans-serif"],
 		},
 		screens: {
 			xs: "480px",
