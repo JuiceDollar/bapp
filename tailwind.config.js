@@ -181,6 +181,9 @@ module.exports = {
 						hover: "#F0F1F5",
 					},
 				},
+				orangePalette: {
+					"pale-orange": "var(--Orange-palette-Pale-orange, #FDF2E2)",
+				},
 			},
 			boxShadow: {
 				'card': '0px 0px 16px 0px rgba(0,0,0,0.08), 0px 1px 4px 0px rgba(0,0,0,0.03)',
