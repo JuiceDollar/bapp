@@ -19,7 +19,7 @@ export function SliderInputOutlined({ value, onChange, min, max, decimals, isErr
 
 	return (
 		<div className="self-stretch relative pb-1.5">
-			<div className={`self-stretch p-2 rounded-xl border-2 border-transparent relative flex-col justify-center items-start gap-2 flex before:absolute before:inset-0 before:rounded-xl before:border before:pointer-events-none before:transition-colors before:duration-200 ${
+			<div className={`flex w-full max-w-[504px] p-2 rounded-xl border-2 border-transparent relative flex-col justify-center items-start gap-2 before:absolute before:inset-0 before:rounded-xl before:border before:pointer-events-none before:transition-colors before:duration-200 ${
 				disabled 
 					? "opacity-50 cursor-not-allowed before:border-input-border" 
 					: isFocused 

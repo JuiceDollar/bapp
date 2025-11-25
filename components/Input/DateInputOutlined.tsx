@@ -17,7 +17,7 @@ export function DateInputOutlined({ value, maxDate, onChange, rightAdornment, pl
 
 	return (
 		<div
-			className={`w-full p-2 rounded-xl border-2 border-transparent relative flex-row justify-between items-center gap-2 flex before:absolute before:inset-0 before:rounded-xl before:border before:pointer-events-none before:transition-colors before:duration-200 ${
+			className={`flex w-full max-w-[504px] p-2 rounded-xl border-2 border-transparent relative flex-row justify-between items-center gap-2 before:absolute before:inset-0 before:rounded-xl before:border before:pointer-events-none before:transition-colors before:duration-200 ${
 				isFocused ? "before:border-2 before:border-input-borderFocus" : "before:border-input-border hover:before:border-input-borderHover"
 			}`}
 		>

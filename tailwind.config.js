@@ -98,14 +98,14 @@ module.exports = {
 					dividerLight: '#eaebf0',
 				},
 				input: {
-					border: "#adb2c1",
-					placeholder: "#bdc1cd",
-					primary: "#1d2029",
+					border: "#B7B7B7",
+					placeholder: "#C5C5C5",
+					primary: "#131313",
 					label: "#adb2c1",
-					bg: "#f5f6f9",
-					borderFocus: "#3d89f4",
-					borderHover: "#5D647B",
-					bgNotEditable: "#F5F6F9",
+					bg: "#ffffff",
+					borderFocus: "#FFA33B",
+					borderHover: "#6D6D6D",
+					bgNotEditable: "#F6F6F6",
 				},
 				button: {
 					primary: {
