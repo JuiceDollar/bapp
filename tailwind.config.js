@@ -33,7 +33,7 @@ module.exports = {
 			colors: {
 				layout: {
 					primary: "#f5f6f9",
-					secondary: "#092f62",
+					secondary: "#F57F00",
 					footer: "#272B38",
 				},
 				menu: {
@@ -60,7 +60,7 @@ module.exports = {
 				card: {
 					body: {
 						primary: "#ffffff",
-						secondary: "#092f62",
+						secondary: "#F57F00",
 						seperator: "#1e293b",
 					},
 					content: {
@@ -86,47 +86,47 @@ module.exports = {
 					label: "#5c637b",
 					title: "#43495c",
 					disabled: "#5d647b",
-					labelButton: "#065DC1",
+					labelButton: "#F57F00",
 				},
 				borders: {
 					primary: '#e9ebf0',
 					secondary: '#ced0da',
 					tertiary: '#8b91a7',
 					input: '#adb2c1',
-					focus: '#3d89f4',
+					focus: '#F57F00',
 					divider: '#1e293b',
 					dividerLight: '#eaebf0',
 				},
 				input: {
-					border: "#adb2c1",
-					placeholder: "#bdc1cd",
-					primary: "#1d2029",
+					border: "#B7B7B7",
+					placeholder: "#C5C5C5",
+					primary: "#131313",
 					label: "#adb2c1",
-					bg: "#f5f6f9",
-					borderFocus: "#3d89f4",
-					borderHover: "#5D647B",
-					bgNotEditable: "#F5F6F9",
+					bg: "#ffffff",
+					borderFocus: "#FFA33B",
+					borderHover: "#6D6D6D",
+					bgNotEditable: "#F6F6F6",
 				},
 				button: {
 					max: {
-						bg: "#e4f0fb",
-						text: "#092f62",
-						hover: "#CCE4FF",
-						disabledBg: "#E9EBF0",
-						disabledText: "#ADB2C2",
+						bg: "#FDF2E2",
+						text: "#FFA33B",
+						hover: "#FDF2E2",
+						disabledBg: "#ECECEC",
+						disabledText: "#C5C5C5",
 					},
 					primary: {
 						disabled: {
-							text: "#adb2c1",
-							bg: "#e9ebf0",
+							text: "#C5C5C5",
+							bg: "#ECECEC",
 						},
 						default: {
 							text: "#ffffff",
-							bg: "#092f62",
+							bg: "#F7911A",
 						},
 						hover: {
 							text: "#ffffff",
-							bg: "#0F80F0",
+							bg: "#F57F00",
 						},
 					},
 					secondary: {
@@ -148,7 +148,7 @@ module.exports = {
 							text: "#272B38",
 						},
 						hover: {
-							text: "#0F80F0",
+							text: "#F57F00",
 						},
 						disabled: {
 							text: "#ADB2C2",
@@ -156,7 +156,7 @@ module.exports = {
 					},
 					textGroup: {
 						primary: {
-							text: "#065DC1",
+							text: "#F57F00",
 						},
 						secondary: {
 							text: "#8B92A8",
@@ -180,6 +180,9 @@ module.exports = {
 						secondary: "#F0F1F5",
 						hover: "#F0F1F5",
 					},
+				},
+				orangePalette: {
+					"pale-orange": "var(--Orange-palette-Pale-orange, #FDF2E2)",
 				},
 			},
 			boxShadow: {
