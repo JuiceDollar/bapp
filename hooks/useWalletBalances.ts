@@ -68,9 +68,6 @@ const getMappedResponseByAddress = (query: QueryItem[], tokenList: TokenDescript
 export function useWalletERC20Balances(tokenList: TokenDescriptor[] = [], { accountAddress }: Options = {}) {
 	const { address } = useAccount();
 	const account = accountAddress || address;
-	const nativeSymbol = NATIVE_TOKEN.symbol;
-	const nativeName = NATIVE_TOKEN.name;
-	const nativeDecimals = WAGMI_CHAIN.nativeCurrency.decimals;
 
 	// Get native coin balance (uses the chain's native currency)
 	const { data: nativeBalanceData } = useBalance({
@@ -80,8 +77,8 @@ export function useWalletERC20Balances(tokenList: TokenDescriptor[] = [], { acco
 	const chainId = WAGMI_CHAIN.id as number;
 
 	// Filter out the native coin from the token list for ERC20 queries
-	const erc20TokenList = tokenList.filter((token) => token.symbol !== nativeSymbol);
-	const nativeToken = tokenList.find((token) => token.symbol === nativeSymbol);
+	const erc20TokenList = tokenList.filter((token) => token.symbol !== NATIVE_TOKEN.symbol);
+	const nativeToken = tokenList.find((token) => token.symbol === NATIVE_TOKEN.symbol);
 
 	const query = useMemo(
 		() =>
@@ -135,16 +132,16 @@ export function useWalletERC20Balances(tokenList: TokenDescriptor[] = [], { acco
 		if (nativeToken) {
 			erc20Balances[nativeToken.address] = {
 				address: nativeToken.address,
-				symbol: nativeSymbol,
-				name: nativeName,
-				decimals: nativeDecimals,
+				symbol: NATIVE_TOKEN.symbol,
+				name: NATIVE_TOKEN.name,
+				decimals: WAGMI_CHAIN.nativeCurrency.decimals,
 				balanceOf: nativeBalanceData?.value ?? 0n,
 				allowance: {},
 			};
 		}
 
 		return erc20Balances;
-	}, [query, data, isLoading, nativeToken, nativeBalanceData, nativeSymbol, nativeName, nativeDecimals]);
+	}, [query, data, isLoading, nativeToken, nativeBalanceData, NATIVE_TOKEN.symbol, NATIVE_TOKEN.name, WAGMI_CHAIN.nativeCurrency.decimals]);
 
 	return { balances: Object.values(responseMappedByAddress), balancesByAddress: responseMappedByAddress, isLoading, refetchBalances: refetch };
 }
