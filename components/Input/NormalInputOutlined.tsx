@@ -15,11 +15,9 @@ export function NormalInputOutlined({ value, onChange, decimals, showTokenLogo =
 	const [isFocused, setIsFocused] = useState(false);
 
 	return (
-		<div
-			className={`flex w-full max-w-[504px] overflow-hidden p-2 flex-col justify-center items-start gap-2 rounded-xl border-2 border-transparent relative before:absolute before:inset-0 before:rounded-xl before:border before:pointer-events-none before:transition-colors before:duration-200 ${
-				isFocused ? "before:border-2 before:border-input-borderFocus" : "before:border-input-border hover:before:border-input-borderHover"
-			}`}
-		>
+		<div className={`w-full overflow-hidden p-2 rounded-xl border-2 border-transparent relative flex flex-col before:absolute before:inset-0 before:rounded-xl before:border before:pointer-events-none before:transition-colors before:duration-200 ${
+			isFocused ? "before:border-2 before:border-input-borderFocus" : "before:border-input-border hover:before:border-input-borderHover"
+		}`}>
 			<div className="w-full flex-nowrap p-1.5 justify-start items-center gap-1.5 flex overflow-hidden">
 				{showTokenLogo && <TokenLogo currency="deuro" size={6} />}
 				<div className="min-w-0 flex-1 overflow-hidden">

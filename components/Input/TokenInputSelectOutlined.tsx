@@ -62,7 +62,7 @@ export function TokenInputSelectOutlined({
 		<div className="w-full self-stretch">
 			<div className="relative">
 				<div
-					className={`flex w-full max-w-[504px] p-2 rounded-xl relative flex-col justify-center items-start gap-2 before:absolute ${notEditableClasses} ${focusClasses}`}
+					className={`self-stretch p-2 rounded-xl relative flex-col justify-center items-start gap-2 flex before:absolute ${notEditableClasses} ${focusClasses}`}
 				>
 					<div className="self-stretch justify-start items-center gap-3 inline-flex">
 						<div className="grow h-11 px-2 py-3 bg-transparent rounded-lg justify-start items-center flex min-w-0">

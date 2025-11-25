@@ -22,7 +22,7 @@ export default function Button({ size = "md", width, className, onClick, isLoadi
 			<button
 				className={`
 					btn
-					${sizeClass} ${className}
+					${className} ${sizeClass}
 				 	${
 						disabled || isLoading
 							? "font-medium cursor-not-allowed bg-button-primary-disabled-bg text-button-primary-disabled-text"

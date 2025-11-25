@@ -57,7 +57,9 @@ export const CopyLinkButton = ({ text, contentOnCopy }: { text: string; contentO
 			<Button
 				width="w-auto"
 				onClick={copyReferralLink}
-				className="h-11 min-w-[180px] px-4 py-2.5 justify-end gap-2 shrink-0 overflow-hidden"
+				className={`!px-4 !py-2.5 ${
+					isCopied ? "bg-button-primary-default-bg" : "bg-borders-primary"
+				} rounded-lg justify-between items-center inline-flex overflow-hidden`}
 			>
 				<span className="basis-0 text-white text-sm sm:text-base font-extrabold leading-normal">
 					{isCopied ? contentOnCopy : text}
