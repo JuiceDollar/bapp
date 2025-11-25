@@ -74,6 +74,9 @@ export function useWalletERC20Balances(tokenList: TokenDescriptor[] = [], { acco
 	});
 
 	const chainId = WAGMI_CHAIN.id as number;
+	const nativeSymbol = WAGMI_CHAIN.nativeCurrency.symbol;
+	const nativeName = WAGMI_CHAIN.nativeCurrency.name;
+	const nativeDecimals = WAGMI_CHAIN.nativeCurrency.decimals;
 
 	// Filter out the native coin from the token list for ERC20 queries
 	const erc20TokenList = tokenList.filter((token) => token.symbol !== WAGMI_CHAIN.nativeCurrency.symbol);
@@ -131,16 +134,16 @@ export function useWalletERC20Balances(tokenList: TokenDescriptor[] = [], { acco
 		if (nativeToken) {
 			erc20Balances[nativeToken.address] = {
 				address: nativeToken.address,
-				symbol: WAGMI_CHAIN.nativeCurrency.symbol,
-				name: WAGMI_CHAIN.nativeCurrency.name,
-				decimals: WAGMI_CHAIN.nativeCurrency.decimals,
+				symbol: nativeSymbol,
+				name: nativeName,
+				decimals: nativeDecimals,
 				balanceOf: nativeBalanceData?.value ?? 0n,
 				allowance: {},
 			};
 		}
 
 		return erc20Balances;
-	}, [query, data, isLoading, nativeToken, nativeBalanceData, WAGMI_CHAIN.nativeCurrency.symbol, WAGMI_CHAIN.nativeCurrency.name, WAGMI_CHAIN.nativeCurrency.decimals]);
+	}, [query, data, isLoading, nativeToken, nativeBalanceData]);
 
 	return { balances: Object.values(responseMappedByAddress), balancesByAddress: responseMappedByAddress, isLoading, refetchBalances: refetch };
 }
