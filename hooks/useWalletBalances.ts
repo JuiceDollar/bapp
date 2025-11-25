@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Abi, Address, erc20Abi } from "viem";
 import { useAccount, useReadContracts, useBalance } from "wagmi";
-import { NATIVE_TOKEN } from "@utils";
 import { WAGMI_CHAIN } from "../app.config";
 
 
@@ -77,8 +76,8 @@ export function useWalletERC20Balances(tokenList: TokenDescriptor[] = [], { acco
 	const chainId = WAGMI_CHAIN.id as number;
 
 	// Filter out the native coin from the token list for ERC20 queries
-	const erc20TokenList = tokenList.filter((token) => token.symbol !== NATIVE_TOKEN.symbol);
-	const nativeToken = tokenList.find((token) => token.symbol === NATIVE_TOKEN.symbol);
+	const erc20TokenList = tokenList.filter((token) => token.symbol !== WAGMI_CHAIN.nativeCurrency.symbol);
+	const nativeToken = tokenList.find((token) => token.symbol === WAGMI_CHAIN.nativeCurrency.symbol);
 
 	const query = useMemo(
 		() =>
@@ -132,8 +131,8 @@ export function useWalletERC20Balances(tokenList: TokenDescriptor[] = [], { acco
 		if (nativeToken) {
 			erc20Balances[nativeToken.address] = {
 				address: nativeToken.address,
-				symbol: NATIVE_TOKEN.symbol,
-				name: NATIVE_TOKEN.name,
+				symbol: WAGMI_CHAIN.nativeCurrency.symbol,
+				name: WAGMI_CHAIN.nativeCurrency.name,
 				decimals: WAGMI_CHAIN.nativeCurrency.decimals,
 				balanceOf: nativeBalanceData?.value ?? 0n,
 				allowance: {},
@@ -141,7 +140,7 @@ export function useWalletERC20Balances(tokenList: TokenDescriptor[] = [], { acco
 		}
 
 		return erc20Balances;
-	}, [query, data, isLoading, nativeToken, nativeBalanceData, NATIVE_TOKEN.symbol, NATIVE_TOKEN.name, WAGMI_CHAIN.nativeCurrency.decimals]);
+	}, [query, data, isLoading, nativeToken, nativeBalanceData, WAGMI_CHAIN.nativeCurrency.symbol, WAGMI_CHAIN.nativeCurrency.name, WAGMI_CHAIN.nativeCurrency.decimals]);
 
 	return { balances: Object.values(responseMappedByAddress), balancesByAddress: responseMappedByAddress, isLoading, refetchBalances: refetch };
 }

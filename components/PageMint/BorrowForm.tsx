@@ -21,7 +21,6 @@ import {
 	TOKEN_SYMBOL,
 	toTimestamp,
 	WHITELISTED_POSITIONS,
-	NATIVE_TOKEN,
 	NATIVE_WRAPPED_SYMBOLS
 } from "@utils";
 import { TokenBalance, useWalletERC20Balances } from "../../hooks/useWalletBalances";
@@ -30,7 +29,7 @@ import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { useTranslation } from "next-i18next";
 import { ADDRESS, MintingHubGatewayABI, PositionV2ABI, CoinLendingGatewayABI } from "@juicedollar/jusd";
 import { useAccount, useBlock, useChainId } from "wagmi";
-import { WAGMI_CONFIG } from "../../app.config";
+import { WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
 import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
 import { TxToast } from "@components/TxToast";
 import { toast } from "react-toastify";
@@ -122,8 +121,8 @@ export default function PositionCreate({}) {
 			
 			const nativeToken = {
 				...wrappedNativeToken,
-				symbol: NATIVE_TOKEN.symbol,
-				name: NATIVE_TOKEN.name,
+				symbol: WAGMI_CHAIN.nativeCurrency.symbol,
+				name: WAGMI_CHAIN.nativeCurrency.name,
 				address: "0x0000000000000000000000000000000000000000" as Address,
 				isNative: true,
 			};
@@ -148,7 +147,7 @@ export default function PositionCreate({}) {
 				}
 			} else {
 				// If no collateral specified, prefer the native coin (e.g. cBTC) if available, otherwise first token
-				const nativeToken = collateralTokenList.find((b) => b.symbol === NATIVE_TOKEN.symbol);
+				const nativeToken = collateralTokenList.find((b) => b.symbol === WAGMI_CHAIN.nativeCurrency.symbol);
 				if (nativeToken) {
 					handleOnSelectedToken(nativeToken);
 				} else if (collateralTokenList.length > 0) {
@@ -216,9 +215,9 @@ export default function PositionCreate({}) {
 	const maxLiquidationPrice = selectedPosition ? BigInt(selectedPosition.price) : 0n;
 	const isLiquidationPriceTooHigh = selectedPosition ? BigInt(liquidationPrice) > maxLiquidationPrice : false;
 	// For the native coin (e.g. ETH, cBTC), we check its balance directly; others use the ERC20 balance
-	const isNative = selectedCollateral?.symbol === NATIVE_TOKEN.symbol;
+	const isNative = selectedCollateral?.symbol === WAGMI_CHAIN.nativeCurrency.symbol;
 	const collateralUserBalance = isNative
-		? balances.find((b) => b.symbol === NATIVE_TOKEN.symbol)
+		? balances.find((b) => b.symbol === WAGMI_CHAIN.nativeCurrency.symbol)
 		: balances.find((b) => b.address == selectedCollateral?.address);
 
 	// For native coin, we check wrapped-token allowance after wrapping. Initially it's 0.
@@ -245,7 +244,7 @@ export default function PositionCreate({}) {
 		});
 
 		// For the native coin, we need to find the wrapped-native position (e.g. WBTC/WCBTC)
-		const isNativeToken = token.symbol === NATIVE_TOKEN.symbol;
+		const isNativeToken = token.symbol === WAGMI_CHAIN.nativeCurrency.symbol;
 		const selectedPosition = isNativeToken
 			? elegiblePositions.find((p) => NATIVE_WRAPPED_SYMBOLS.includes(p.collateralSymbol.toLowerCase()))
 			: elegiblePositions.find((p) => p.collateral.toLowerCase() == token.address.toLowerCase());
@@ -817,7 +816,7 @@ export default function PositionCreate({}) {
 							>
 								{t("common.receive") + " 0.00 " + TOKEN_SYMBOL}
 							</Button>
-						) : selectedCollateral.symbol === NATIVE_TOKEN.symbol ? (
+						) : selectedCollateral.symbol === WAGMI_CHAIN.nativeCurrency.symbol ? (
 							// Special handling for native coin (e.g. cBTC) - wrap, approve and mint in one click
 							<Button
 								className="!p-4 text-lg font-extrabold leading-none"
