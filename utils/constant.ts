@@ -31,3 +31,9 @@ export const WHITELISTED_POSITIONS: `0x${string}`[] = [
 ];
 
 export const INTERNAL_PROTOCOL_POSITIONS: `0x${string}`[] = [];
+
+export const NATIVE_TOKEN = {
+	symbol: "cBTC",
+	name: "cBTC",
+};
+export const NATIVE_WRAPPED_SYMBOLS = ["wcbtc"];
