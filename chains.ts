@@ -8,7 +8,7 @@ export const testnet = defineChain({
 		default: { http: ['https://rpc.testnet.citrea.xyz'] },
 	},
 	blockExplorers: {
-		default: { name:'Citrea Scanner', url: 'https://dev.testnet.citreascan.com' },
+		default: { name:'Citrea Scanner', url: 'https://testnet.citreascan.com' },
 	},
 });
 
@@ -21,6 +21,6 @@ export const mainnet = defineChain({
 		default: { http: ['https://rpc.testnet.citrea.xyz'] },
 	},
 	blockExplorers: {
-		default: { name: 'Citrea Scanner', url: 'https://dev.testnet.citreascan.com' },
+		default: { name: 'Citrea Scanner', url: 'https://testnet.citreascan.com' },
 	},
 });
