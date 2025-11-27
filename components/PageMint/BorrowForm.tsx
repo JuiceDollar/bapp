@@ -296,18 +296,17 @@ export default function PositionCreate({}) {
 			setIsCloneLoading(true);
 			setIsCloneSuccess(false);
 
-			// Use the CoinLendingGateway 1-click flow with native coin (cBTC)
-			const gatewayAddress = ADDRESS[chainId]?.coinLendingGateway;
-			if (!gatewayAddress || gatewayAddress === zeroAddress) {
-				toast.error("CoinLendingGateway not configured for this network");
-				setIsOpenBorrowingDEUROModal(false);
-				return;
-			}
+		const gatewayAddress = ADDRESS[chainId]?.coinLendingGateway;
+		if (!gatewayAddress || gatewayAddress === zeroAddress) {
+			toast.error("CoinLendingGateway not configured for this network");
+			setIsOpenBorrowingDEUROModal(false);
+			return;
+		}
 
-			const hash = await writeContract(WAGMI_CONFIG, {
-				address: gatewayAddress,
-				abi: CoinLendingGatewayABI,
-				functionName: "lendWithCoin",
+		const hash = await writeContract(WAGMI_CONFIG, {
+			address: gatewayAddress,
+			abi: CoinLendingGatewayABI,
+			functionName: "lendWithCoin",
 				args: [
 					selectedPosition.position as Address,
 					loanDetails.loanAmount,

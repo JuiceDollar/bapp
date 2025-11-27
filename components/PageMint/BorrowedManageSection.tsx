@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import TokenLogo from "@components/TokenLogo";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import Button from "@components/Button";
@@ -16,6 +16,7 @@ import { erc20Abi } from "viem";
 import { useAccount, useChainId } from "wagmi";
 import { useReadContracts } from "wagmi";
 import { getLoanDetailsByCollateralAndStartingLiqPrice, getLoanDetailsByCollateralAndYouGetAmount } from "../../utils/loanCalculations";
+import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
 import { renderErrorTxToast } from "@components/TxToast";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
@@ -111,11 +112,6 @@ export const BorrowedManageSection = () => {
 	const walletBalance = position ? balancesByAddress?.[position.stablecoinAddress as Address]?.balanceOf || 0n : 0n;
 	const allowance = position ? balancesByAddress?.[position.stablecoinAddress as Address]?.allowance?.[position.position] || 0n : 0n;
 
-	const collBalancePosition: number = position ? Math.round((parseInt(position.collateralBalance) / 10 ** position.collateralDecimals) * 100) / 100 : 0;
-	const collTokenPriceMarket = prices[position?.collateral?.toLowerCase() as Address]?.price?.eur || 0;
-	const collTokenPricePosition: number = position ? Math.round((parseInt(position.virtualPrice || position.price) / 10 ** (36 - position.collateralDecimals)) * 100) / 100 : 0;
-	
-	const marketValueCollateral: number = collBalancePosition * collTokenPriceMarket;
 	
 	// Calculate max values for validation (will be 0 if position is undefined)
 	const maxAmountByDepositedCollateral = position 
@@ -166,8 +162,10 @@ export const BorrowedManageSection = () => {
 			</div>
 		);
 	}
-	const positionValueCollateral: number = collBalancePosition * collTokenPricePosition;
-	const collateralizationPercentage: number = Math.round((marketValueCollateral / positionValueCollateral) * 10000) / 100;
+	const cachedPercentage = useRef<number>(0);
+	const calculatedPercentage = position ? calculateCollateralizationPercentage(position, prices) : 0;
+	if (calculatedPercentage > 0) cachedPercentage.current = calculatedPercentage;
+	const collateralizationPercentage = cachedPercentage.current;
 
 	const handleMaxAmount = () => {
 		if (isBorrowMore) {

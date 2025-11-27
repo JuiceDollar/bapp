@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import TokenLogo from "@components/TokenLogo";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import Button from "@components/Button";
@@ -9,12 +9,12 @@ import { useRouter } from "next/router";
 import { RootState, store } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
 import { Address, erc20Abi, formatUnits, zeroAddress } from "viem";
-import { formatCurrency, shortenAddress } from "@utils";
+import { formatCurrency, shortenAddress, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { useChainId, useReadContracts } from "wagmi";
 import { writeContract } from "wagmi/actions";
-import { PositionV2ABI } from "@juicedollar/jusd";
-import { WAGMI_CONFIG } from "../../app.config";
+import { ADDRESS, PositionV2ABI, CoinLendingGatewayABI } from "@juicedollar/jusd";
+import { WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
 import { toast } from "react-toastify";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { renderErrorTxToast } from "@components/TxToast";
@@ -23,8 +23,10 @@ import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { DetailsExpandablePanel } from "@components/PageMint/DetailsExpandablePanel";
 import { SvgIconButton } from "@components/PageMint/PlusMinusButtons";
 import { getLoanDetailsByCollateralAndYouGetAmount } from "../../utils/loanCalculations";
+import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
 import Link from "next/link";
 import { useContractUrl } from "../../hooks/useContractUrl";
+import { useNativeBalance } from "../../hooks/useNativeBalance";
 
 export const CollateralManageSection = () => {
 	const router = useRouter();
@@ -39,6 +41,9 @@ export const CollateralManageSection = () => {
 	const positions = useSelector((state: RootState) => state.positions.list?.list || []);
 	const position = positions.find((p) => p.position == addressQuery);
 	const prices = useSelector((state: RootState) => state.prices.coingecko || {});
+	
+	// Check if position uses native wrapped token (cBTC)
+	const isNativeWrappedPosition = position && NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase());
 	const { balancesByAddress, refetchBalances } = useWalletERC20Balances(
 		position ? [
 			{
@@ -49,6 +54,9 @@ export const CollateralManageSection = () => {
 			},
 		] : []
 	);
+	
+	// Get native balance for native wrapped positions
+	const nativeBalance = useNativeBalance();
 	const url = useContractUrl(position?.position || zeroAddress as Address);
 
 	const { data, refetch: refetchReadContracts } = useReadContracts({
@@ -94,7 +102,11 @@ export const CollateralManageSection = () => {
 	const collateralRequirement = data?.[4]?.result || 0n;
 	const collateralPrice = prices[position?.collateral?.toLowerCase() as Address]?.price?.eur || 0;
 	const collateralValuation = collateralPrice * Number(formatUnits(balanceOf, position?.collateralDecimals || 18));
-	const walletBalance = position ? balancesByAddress[position.collateral as Address]?.balanceOf || 0n : 0n;
+	
+	// Use native balance for native wrapped positions, otherwise use ERC20 balance
+	const walletBalance = position 
+		? (isNativeWrappedPosition ? nativeBalance.balance : balancesByAddress[position.collateral as Address]?.balanceOf || 0n)
+		: 0n;
 	const allowance = position ? balancesByAddress[position.collateral as Address]?.allowance?.[position.position] || 0n : 0n;
 
 	// Calculate maxToRemove for validation (will be 0 if position is undefined)
@@ -144,14 +156,10 @@ export const CollateralManageSection = () => {
 		);
 	}
 	
-	const collBalancePosition: number = Math.round((parseInt(position.collateralBalance) / 10 ** position.collateralDecimals) * 100) / 100;
-	const collTokenPriceMarket = prices[position.collateral.toLowerCase() as Address]?.price?.eur || 0;
-	const collTokenPricePosition: number =
-		Math.round((parseInt(position.virtualPrice || position.price) / 10 ** (36 - position.collateralDecimals)) * 100) / 100;
-
-	const marketValueCollateral: number = collBalancePosition * collTokenPriceMarket;
-	const positionValueCollateral: number = collBalancePosition * collTokenPricePosition;
-	const collateralizationPercentage: number = Math.round((marketValueCollateral / positionValueCollateral) * 10000) / 100;
+	const cachedPercentage = useRef<number>(0);
+	const calculatedPercentage = calculateCollateralizationPercentage(position, prices);
+	if (calculatedPercentage > 0) cachedPercentage.current = calculatedPercentage;
+	const collateralizationPercentage = cachedPercentage.current;
 
 	const handleAddMax = () => {
 		setAmount(walletBalance.toString());
@@ -209,14 +217,35 @@ export const CollateralManageSection = () => {
 		try {
 			setIsTxOnGoing(true);
 
-			const contractAmount = BigInt(amount) + balanceOf;
+			let addHash: `0x${string}`;
 
-			const addHash = await writeContract(WAGMI_CONFIG, {
-				address: position.position,
-				abi: PositionV2ABI,
-				functionName: "adjust",
-				args: [principal, contractAmount, price],
+		// Use addCollateralWithCoin for native wrapped positions
+		if (isNativeWrappedPosition) {
+			const gatewayAddress = ADDRESS[chainId]?.coinLendingGateway;
+			if (!gatewayAddress || gatewayAddress === zeroAddress) {
+				toast.error("CoinLendingGateway not configured for this network");
+				setIsTxOnGoing(false);
+				return;
+			}
+
+			addHash = await writeContract(WAGMI_CONFIG, {
+				address: gatewayAddress,
+				abi: CoinLendingGatewayABI,
+				functionName: "addCollateralWithCoin",
+				args: [position.position as Address],
+				value: BigInt(amount),
 			});
+			} else {
+				// Standard ERC20 flow
+				const contractAmount = BigInt(amount) + balanceOf;
+
+				addHash = await writeContract(WAGMI_CONFIG, {
+					address: position.position,
+					abi: PositionV2ABI,
+					functionName: "adjust",
+					args: [principal, contractAmount, price],
+				});
+			}
 
 			const toastContent = [
 				{
@@ -352,7 +381,7 @@ export const CollateralManageSection = () => {
 				>
 					{t(isAdd ? "mint.add_collateral" : "mint.remove_collateral")}
 				</Button>
-			) : allowance >= BigInt(amount || 0) ? (
+			) : isNativeWrappedPosition || allowance >= BigInt(amount || 0) ? (
 				<Button
 					className="text-lg leading-snug !font-extrabold"
 					onClick={handleAdd}

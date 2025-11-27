@@ -1,7 +1,7 @@
 import { SecondaryLinkButton } from "@components/Button";
 import TokenLogo from "@components/TokenLogo";
 import { useTranslation } from "next-i18next";
-import { Fragment } from "react";
+import { Fragment, useMemo, useRef } from "react";
 import { HeaderCell, NoDataRow } from "./SectionTable";
 import { useAccount } from "wagmi";
 import { RootState } from "../../redux/redux.store";
@@ -10,6 +10,7 @@ import { Address, formatUnits, zeroAddress } from "viem";
 import { formatCurrency, TOKEN_SYMBOL } from "@utils";
 import { useRouter } from "next/router";
 import { getPublicViewAddress } from "../../utils/url";
+import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
 interface BorrowData {
 	position: `0x${string}`;
 	symbol: string;
@@ -144,19 +145,17 @@ export const MyBorrow = () => {
 
 	const ownedPositions = positions.filter((position) => position.owner.toLowerCase() === account.toLowerCase()).filter((position) => !position.closed);
 
-	const borrowData = ownedPositions.map((position) => {
+	const cachedCollateralizations = useRef<Record<string, number>>({});
+
+	const borrowData = useMemo(() => ownedPositions.map((position) => {
 		const { principal, reserveContribution, collateralBalance, collateralDecimals, collateralSymbol } = position;
 		const amountBorrowed = formatCurrency(
 			formatUnits(BigInt(principal) - (BigInt(principal) * BigInt(reserveContribution)) / 1_000_000n, position.stablecoinDecimals)
 		) as string;	
 
-		const collBalancePosition: number = Math.round((parseInt(position.collateralBalance) / 10 ** position.collateralDecimals) * 100) / 100;
-		const collTokenPriceMarket = prices[position.collateral.toLowerCase() as Address]?.price?.eur || 0;
-		const collTokenPricePosition: number = Math.round((parseInt(position.virtualPrice || position.price) / 10 ** (36 - position.collateralDecimals)) * 100) / 100;
-		
-		const marketValueCollateral: number = collBalancePosition * collTokenPriceMarket;
-		const positionValueCollateral: number = collBalancePosition * collTokenPricePosition;
-		const collateralizationPercentage: number = Math.round((marketValueCollateral / positionValueCollateral) * 10000) / 100;
+		const calculatedPercentage = calculateCollateralizationPercentage(position, prices);
+		if (calculatedPercentage > 0) cachedCollateralizations.current[position.position] = calculatedPercentage;
+		const collateralizationPercentage = cachedCollateralizations.current[position.position] || 0;
 
 		return {
 			position: position.position as `0x${string}`,
@@ -167,7 +166,7 @@ export const MyBorrow = () => {
 			amountBorrowed,
 			liquidationPrice: formatCurrency(formatUnits(BigInt(position.virtualPrice || position.price), 36 - collateralDecimals) as string, 2, 2) as string,
 		};
-	});
+	}), [ownedPositions, prices]);
 
 	const totalOwed = ownedPositions.reduce(
 		(acc, curr) => acc + BigInt(curr.principal) - (BigInt(curr.principal) * BigInt(curr.reserveContribution)) / 1_000_000n,
