@@ -370,6 +370,7 @@ export default function PositionCreate({}) {
 							onChange={onAmountCollateralChange}
 							isError={Boolean(collateralError)}
 							errorMessage={collateralError}
+							hideTokenSelector={true}
 							adornamentRow={
 								<div className="self-stretch justify-start items-center inline-flex">
 									<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
