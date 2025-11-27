@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
-import { Address, erc20Abi, formatUnits, TransactionReceipt, Log, decodeEventLog, zeroAddress } from "viem";
+import { Address, formatUnits, zeroAddress } from "viem";
 import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
 import AppCard from "@components/AppCard";
 import Button from "@components/Button";
@@ -10,26 +10,17 @@ import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
 import { DetailsExpandablePanel } from "@components/PageMint/DetailsExpandablePanel";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import { PositionQuery } from "@juicedollar/api";
-import { SelectCollateralModal } from "./SelectCollateralModal";
 import { BorrowingDEUROModal } from "@components/PageMint/BorrowingDEUROModal";
+import { SelectCollateralModal } from "./SelectCollateralModal";
 import { InputTitle } from "@components/Input/InputTitle";
-import {
-	formatBigInt,
-	formatCurrency,
-	shortenAddress,
-	toDate,
-	TOKEN_SYMBOL,
-	toTimestamp,
-	WHITELISTED_POSITIONS,
-	NATIVE_WRAPPED_SYMBOLS
-} from "@utils";
+import { formatBigInt, formatCurrency, shortenAddress, toDate, TOKEN_SYMBOL, toTimestamp, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { TokenBalance, useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { RootState, store } from "../../redux/redux.store";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { useTranslation } from "next-i18next";
-import { ADDRESS, MintingHubGatewayABI, PositionV2ABI, CoinLendingGatewayABI } from "@juicedollar/jusd";
-import { useAccount, useBlock, useChainId } from "wagmi";
-import { WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
+import { ADDRESS, CoinLendingGatewayABI } from "@juicedollar/jusd";
+import { useAccount, useChainId } from "wagmi";
+import { DEURO_API_CLIENT, WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
 import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
 import { TxToast } from "@components/TxToast";
 import { toast } from "react-toastify";
@@ -42,13 +33,12 @@ import {
 } from "../../utils/loanCalculations";
 import { useFrontendCode } from "../../hooks/useFrontendCode";
 import { MaxButton } from "@components/Input/MaxButton";
-import { useRouter } from "next/router";
 import Link from "next/link";
-import { WETH_ABI, getWETHAddress } from "../../utils/wethHelpers";
 
 export default function PositionCreate({}) {
 	const [selectedCollateral, setSelectedCollateral] = useState<TokenBalance | null | undefined>(null);
 	const [selectedPosition, setSelectedPosition] = useState<PositionQuery | null | undefined>(null);
+	const [defaultPosition, setDefaultPosition] = useState<PositionQuery | null>(null);
 	const [expirationDate, setExpirationDate] = useState<Date | undefined | null>(undefined);
 	const [collateralAmount, setCollateralAmount] = useState("0");
 	const [liquidationPrice, setLiquidationPrice] = useState("0");
@@ -56,21 +46,13 @@ export default function PositionCreate({}) {
 	const [isOpenTokenSelector, setIsOpenTokenSelector] = useState(false);
 	const [isOpenBorrowingDEUROModal, setIsOpenBorrowingDEUROModal] = useState(false);
 	const [loanDetails, setLoanDetails] = useState<LoanDetails | undefined>(undefined);
-	const [isApproving, setIsApproving] = useState(false);
 	const [isCloneSuccess, setIsCloneSuccess] = useState(false);
 	const [isCloneLoading, setIsCloneLoading] = useState(false);
 	const [collateralError, setCollateralError] = useState("");
 	const [isMaxedOut, setIsMaxedOut] = useState(false);
 
-	const positions = useSelector((state: RootState) => state.positions.list?.list || []);
-	const challenges = useSelector((state: RootState) => state.challenges.list?.list || []);
-	const challengedPositions = (challenges || []).filter((c) => c.status === "Active").map((c) => c.position);
-
-	const { data: latestBlock } = useBlock();
 	const chainId = useChainId();
 	const { address } = useAccount();
-	const router = useRouter();
-	const { query } = router;
 
 	const getMaxCollateralFromMintLimit = (availableForClones: bigint, liqPrice: bigint) => {
 		if (!availableForClones || liqPrice === 0n) return 0n;
@@ -82,82 +64,55 @@ export default function PositionCreate({}) {
 		return maxFromLimit > 0n && balance > maxFromLimit ? maxFromLimit : balance;
 	};
 
-	const elegiblePositions = useMemo(() => {
-		const blockTimestamp = latestBlock?.timestamp || new Date().getTime() / 1000;
-		return positions
-			.filter((p) => WHITELISTED_POSITIONS.includes(p.position as `0x${string}`))
-			.filter((p) => BigInt(p.availableForClones) > 0n)
-			.filter((p) => !p.closed)
-			.filter((p) => blockTimestamp > toTimestamp(toDate(p.cooldown)))
-			.filter((p) => blockTimestamp < toTimestamp(toDate(p.expiration)))
-			.filter((p) => !challengedPositions.includes(p.position));
-	}, [positions, latestBlock, challengedPositions]);
-
 	const collateralTokenList = useMemo(() => {
-		const uniqueTokens = new Map();
-		elegiblePositions.forEach((p) => {
-			uniqueTokens.set(p.collateral.toLowerCase(), {
-				symbol: p.collateralSymbol,
-				address: p.collateral,
-				name: p.collateralName,
-				allowance: [ADDRESS[chainId].mintingHubGateway],
-				decimals: p.collateralDecimals,
-				position: p.position,
-			});
-		});
+		if (!defaultPosition) return [];
 
-		const tokens = Array.from(uniqueTokens.values()).sort((a, b) => {
-			const posA = WHITELISTED_POSITIONS.findIndex((p) => p.toLowerCase() === a.position.toLowerCase());
-			const posB = WHITELISTED_POSITIONS.findIndex((p) => p.toLowerCase() === b.position.toLowerCase());
-			if (posA === -1 || posB === -1) return 0;
-			return posA - posB;
-		});
-
-		// If a wrapped-native token (e.g. WBTC, WCBTC) exists, prepend the chain's native coin
-		const wrappedNativeToken = tokens.find((t) =>
-			NATIVE_WRAPPED_SYMBOLS.includes(t.symbol.toLowerCase())
-		);
-		if (wrappedNativeToken) {
-			
-			const nativeToken = {
-				...wrappedNativeToken,
+		return [
+			{
 				symbol: WAGMI_CHAIN.nativeCurrency.symbol,
-				name: WAGMI_CHAIN.nativeCurrency.name,
 				address: "0x0000000000000000000000000000000000000000" as Address,
-				isNative: true,
-			};
-			tokens.unshift(nativeToken);
-		}
-
-		return tokens;
-	}, [elegiblePositions, isApproving]);
+				name: WAGMI_CHAIN.nativeCurrency.name,
+				allowance: [ADDRESS[chainId].mintingHubGateway],
+				decimals: defaultPosition.collateralDecimals,
+			},
+		];
+	}, [defaultPosition, chainId]);
 
 	const { balances, balancesByAddress, refetchBalances } = useWalletERC20Balances(collateralTokenList);
+	const collateralSelectorOptions = selectedCollateral ? [selectedCollateral] : [];
 	const { frontendCode } = useFrontendCode();
 	const { t } = useTranslation();
 
 	useEffect(() => {
-		if (collateralTokenList.length > 0 && !selectedCollateral) {
-			if (query?.collateral) {
-				// If collateral is specified in URL, use it
-				const queryCollateral = Array.isArray(query.collateral) ? query.collateral[0] : query.collateral;
-				const collateralToken = collateralTokenList.find((b) => b.symbol.toLowerCase() === queryCollateral?.toLowerCase());
-				if (collateralToken) {
-					handleOnSelectedToken(collateralToken);
-				}
-			} else {
-				// If no collateral specified, prefer the native coin (e.g. cBTC) if available, otherwise first token
-				const nativeToken = collateralTokenList.find((b) => b.symbol === WAGMI_CHAIN.nativeCurrency.symbol);
-				if (nativeToken) {
-					handleOnSelectedToken(nativeToken);
-				} else if (collateralTokenList.length > 0) {
-					handleOnSelectedToken(collateralTokenList[0]);
-				}
-			}
-		}
-	}, [query?.collateral, collateralTokenList.length, selectedCollateral]);
+		const loadDefaultPosition = async () => {
+			try {
+				const response = await DEURO_API_CLIENT.get<PositionQuery>("/positions/default");
+				const position = response.data as PositionQuery;
 
-	// Collateral input validation with minting limit check
+				if (!NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase())) {
+					console.warn("Default position collateral is not a wrapped-native asset:", position.collateralSymbol);
+				}
+
+				setDefaultPosition(position);
+
+				const nativeToken: TokenBalance = {
+					symbol: WAGMI_CHAIN.nativeCurrency.symbol,
+					name: WAGMI_CHAIN.nativeCurrency.name,
+					address: "0x0000000000000000000000000000000000000000" as Address,
+					decimals: position.collateralDecimals,
+					balanceOf: 0n,
+					allowance: {},
+				};
+
+				handleOnSelectedToken(nativeToken, position);
+			} catch (error) {
+				console.error("Error loading default position:", error);
+			}
+		};
+
+		loadDefaultPosition();
+	}, []);
+
 	useEffect(() => {
 		if (!selectedPosition || !selectedCollateral) return;
 
@@ -220,12 +175,6 @@ export default function PositionCreate({}) {
 		? balances.find((b) => b.symbol === WAGMI_CHAIN.nativeCurrency.symbol)
 		: balances.find((b) => b.address == selectedCollateral?.address);
 
-	// For native coin, we check wrapped-token allowance after wrapping. Initially it's 0.
-	const wethAddress = getWETHAddress(chainId);
-	const wethBalance = balances.find((b) => b.address.toLowerCase() === wethAddress?.toLowerCase());
-	const userAllowance = isNative
-		? (wethBalance?.allowance?.[ADDRESS[chainId].mintingHubGateway] || 0n)
-		: (collateralUserBalance?.allowance?.[ADDRESS[chainId].mintingHubGateway] || 0n);
 	const userBalance = collateralUserBalance?.balanceOf || 0n;
 	const selectedBalance = Boolean(selectedCollateral) ? balancesByAddress[selectedCollateral?.address as Address] : null;
 	const usdLiquidationPrice = formatCurrency(
@@ -234,41 +183,30 @@ export default function PositionCreate({}) {
 		2
 	)?.toString();
 
-	const handleOnSelectedToken = (token: TokenBalance) => {
-		if (!token) return;
+	const handleOnSelectedToken = (token: TokenBalance, positionOverride?: PositionQuery) => {
+		const position = positionOverride ?? defaultPosition;
+		if (!token || !position) return;
 		setSelectedCollateral(token);
-		const currentQuery = { ...router.query, collateral: token.symbol };
-		router.replace({
-			pathname: router.pathname,
-			query: currentQuery,
-		});
 
-		// For the native coin, we need to find the wrapped-native position (e.g. WBTC/WCBTC)
-		const isNativeToken = token.symbol === WAGMI_CHAIN.nativeCurrency.symbol;
-		const selectedPosition = isNativeToken
-			? elegiblePositions.find((p) => NATIVE_WRAPPED_SYMBOLS.includes(p.collateralSymbol.toLowerCase()))
-			: elegiblePositions.find((p) => p.collateral.toLowerCase() == token.address.toLowerCase());
-		if (!selectedPosition) return;
-		const liqPrice = BigInt(selectedPosition.price);
+		const liqPrice = BigInt(position.price);
 
-		setSelectedPosition(selectedPosition);
+		setSelectedPosition(position);
 
 		// Calculate max collateral respecting minting limit
 		// For ETH, we use the special zero address balance, for others use normal address
 		const tokenBalance = balancesByAddress[token.address]?.balanceOf || 0n;
-		const maxAmount = getMaxCollateralAmount(tokenBalance, BigInt(selectedPosition.availableForClones), liqPrice);
-		const defaultAmount =
-			maxAmount > BigInt(selectedPosition.minimumCollateral) ? maxAmount.toString() : selectedPosition.minimumCollateral;
+		const maxAmount = getMaxCollateralAmount(tokenBalance, BigInt(position.availableForClones), liqPrice);
+		const defaultAmount = maxAmount > BigInt(position.minimumCollateral) ? maxAmount.toString() : position.minimumCollateral;
 
 		setCollateralAmount(defaultAmount);
-		setExpirationDate(toDate(selectedPosition.expiration));
+		setExpirationDate(toDate(position.expiration));
 		setLiquidationPrice(liqPrice.toString());
 
 		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
-			selectedPosition,
+			position,
 			BigInt(maxAmount),
 			liqPrice,
-			toDate(selectedPosition.expiration)
+			toDate(position.expiration)
 		);
 
 		setLoanDetails(loanDetails);
@@ -279,7 +217,12 @@ export default function PositionCreate({}) {
 		setCollateralAmount(value);
 		if (!selectedPosition) return;
 
-		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(selectedPosition, BigInt(value), BigInt(liquidationPrice), expirationDate || undefined);
+		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
+			selectedPosition,
+			BigInt(value),
+			BigInt(liquidationPrice),
+			expirationDate || undefined
+		);
 		setLoanDetails(loanDetails);
 		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
 	};
@@ -290,7 +233,12 @@ export default function PositionCreate({}) {
 		if (!selectedPosition) return;
 		if (!collateralAmount || collateralAmount === "" || collateralAmount === "0") return;
 
-		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(selectedPosition, BigInt(collateralAmount), BigInt(value), expirationDate || undefined);
+		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
+			selectedPosition,
+			BigInt(collateralAmount),
+			BigInt(value),
+			expirationDate || undefined
+		);
 		setLoanDetails(loanDetails);
 		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
 	};
@@ -300,14 +248,19 @@ export default function PositionCreate({}) {
 
 		if (!selectedPosition) return;
 
-		const loanDetails = getLoanDetailsByCollateralAndYouGetAmount(selectedPosition, BigInt(collateralAmount), BigInt(value), expirationDate || undefined);
+		const loanDetails = getLoanDetailsByCollateralAndYouGetAmount(
+			selectedPosition,
+			BigInt(collateralAmount),
+			BigInt(value),
+			expirationDate || undefined
+		);
 		setLoanDetails(loanDetails);
 		setLiquidationPrice(loanDetails.startingLiquidationPrice.toString());
 	};
 
 	useEffect(() => {
 		if (!selectedPosition || !collateralAmount || !liquidationPrice || !expirationDate) return;
-		
+
 		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
 			selectedPosition,
 			BigInt(collateralAmount),
@@ -324,150 +277,7 @@ export default function PositionCreate({}) {
 		}
 	};
 
-	const handleOnClonePosition = async () => {
-		try {
-			if (!selectedPosition || !loanDetails || !expirationDate) return;
-
-			setIsOpenBorrowingDEUROModal(true);
-			setIsCloneLoading(true);
-			setIsCloneSuccess(false);
-
-			let txHash = null;
-
-			const cloneWriteHash = await writeContract(WAGMI_CONFIG, {
-				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubGatewayABI,
-				functionName: "clone",
-				args: [
-					selectedPosition.position,
-					BigInt(collateralAmount),
-					loanDetails.loanAmount,
-					toTimestamp(expirationDate),
-					frontendCode,
-				],
-			});
-			txHash = cloneWriteHash;
-
-			const toastContent = [
-				{
-					title: t("common.txs.amount"),
-					value: formatBigInt(loanDetails.loanAmount) + ` ${TOKEN_SYMBOL}`,
-				},
-				{
-					title: t("common.txs.collateral"),
-					value:
-						formatBigInt(BigInt(collateralAmount), selectedPosition.collateralDecimals) +
-						" " +
-						selectedPosition.collateralSymbol,
-				},
-				{
-					title: t("common.txs.transaction"),
-					hash: cloneWriteHash,
-				},
-			];
-
-			const receipt: TransactionReceipt = await waitForTransactionReceipt(WAGMI_CONFIG, { hash: cloneWriteHash, confirmations: 1 });
-
-			if (BigInt(liquidationPrice) !== BigInt(selectedPosition?.price)) {
-				const newPositionAddress = parseCloneEventLogs(receipt.logs);
-				const adjustPriceHash = await writeContract(WAGMI_CONFIG, {
-					address: newPositionAddress as Address,
-					abi: PositionV2ABI,
-					functionName: "adjustPrice",
-					args: [(BigInt(liquidationPrice) * 10001n) / 10000n], // added 0.001% to account for interest in the block before signing this
-				});
-				txHash = adjustPriceHash;
-			}
-
-			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: txHash, confirmations: 1 }), {
-				pending: {
-					render: <TxToast title={t("mint.txs.minting", { symbol: TOKEN_SYMBOL })} rows={toastContent} />,
-				},
-				success: {
-					render: <TxToast title={t("mint.txs.minting_success", { symbol: TOKEN_SYMBOL })} rows={toastContent} />,
-				},
-			});
-
-			store.dispatch(fetchPositionsList());
-			setIsCloneSuccess(true);
-			await refetchBalances();
-		} catch (error) {
-			toast.error(renderErrorTxToast(error, t));
-			setIsOpenBorrowingDEUROModal(false);
-		} finally {
-			setIsCloneLoading(false);
-			refetchBalances();
-		}
-	};
-
-	const parseCloneEventLogs = (logs: Log[]) => {
-		try {
-			const cloneEventLog = logs.find((log) => log.address.toLowerCase() === ADDRESS[chainId].mintingHubGateway.toLowerCase());
-
-			if (cloneEventLog) {
-				const decodedLog = decodeEventLog({
-					abi: MintingHubGatewayABI,
-					data: cloneEventLog.data,
-					topics: cloneEventLog.topics,
-				});
-
-				if (decodedLog.eventName === "PositionOpened") {
-					return decodedLog.args.position as Address;
-				}
-			}
-
-			return null;
-		} catch (error) {
-			return null;
-		}
-	};
-
-	const handleApprove = async () => {
-		try {
-			setIsApproving(true);
-
-			const approveWriteHash = await writeContract(WAGMI_CONFIG, {
-				address: selectedCollateral?.address as Address,
-				abi: erc20Abi,
-				functionName: "approve",
-				args: [ADDRESS[chainId].mintingHubGateway, BigInt(collateralAmount)],
-			});
-
-			const toastContent = [
-				{
-					title: t("common.txs.amount"),
-					value:
-						formatCurrency(formatUnits(BigInt(collateralAmount), selectedCollateral?.decimals || 18)) +
-						" " +
-						selectedCollateral?.symbol,
-				},
-				{
-					title: t("common.txs.spender"),
-					value: shortenAddress(ADDRESS[chainId].mintingHubGateway),
-				},
-				{
-					title: t("common.txs.transaction"),
-					hash: approveWriteHash,
-				},
-			];
-
-			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: approveWriteHash, confirmations: 1 }), {
-				pending: {
-					render: <TxToast title={t("common.txs.title", { symbol: TOKEN_SYMBOL })} rows={toastContent} />,
-				},
-				success: {
-					render: <TxToast title={t("common.txs.success", { symbol: TOKEN_SYMBOL })} rows={toastContent} />,
-				},
-			});
-		} catch (error) {
-			toast.error(renderErrorTxToast(error, t));
-		} finally {
-			setIsApproving(false);
-			refetchBalances();
-		}
-	};
-
-	const handleWrapETHAndMint = async () => {
+	const handleMintWithCoin = async () => {
 		try {
 			if (!selectedPosition || !loanDetails || !expirationDate) return;
 
@@ -486,193 +296,51 @@ export default function PositionCreate({}) {
 			setIsCloneLoading(true);
 			setIsCloneSuccess(false);
 
-			// Check if CoinLendingGateway is available on this chain
+			// Use the CoinLendingGateway 1-click flow with native coin (cBTC)
 			const gatewayAddress = ADDRESS[chainId]?.coinLendingGateway;
-			if (gatewayAddress && gatewayAddress !== zeroAddress) {
-				// Use the 1-click solution with CoinLendingGateway
-				const hash = await writeContract(WAGMI_CONFIG, {
-					address: gatewayAddress,
-					abi: CoinLendingGatewayABI,
-					functionName: "lendWithCoin",
-					args: [
-						selectedPosition.position as Address,
-						loanDetails.loanAmount,
-						toTimestamp(expirationDate),
-						frontendCode,
-						BigInt(liquidationPrice)
-					],
-					value: BigInt(collateralAmount)
-				});
-
-				const toastContent = [
-					{
-						title: t("common.txs.amount"),
-						value: formatBigInt(loanDetails.loanAmount) + ` ${TOKEN_SYMBOL}`,
-					},
-					{
-						title: t("common.txs.collateral"),
-						value: formatBigInt(BigInt(collateralAmount), 18) + " ETH",
-					},
-					{
-						title: t("common.txs.transaction"),
-						hash,
-					},
-				];
-
-				const receipt = await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash, confirmations: 1 }), {
-					pending: {
-						render: <TxToast title={t("mint.txs.minting", { symbol: TOKEN_SYMBOL })} rows={toastContent} />,
-					},
-					success: {
-						render: <TxToast title={t("mint.txs.minting_success", { symbol: TOKEN_SYMBOL })} rows={toastContent} />,
-					},
-				});
-
-				// Extract position address from PositionCreatedWithCoin event
-				try {
-					for (const log of receipt.logs) {
-						try {
-							const decodedLog = decodeEventLog({
-								abi: CoinLendingGatewayABI,
-								data: log.data,
-								topics: log.topics,
-							});
-
-							if (decodedLog.eventName === "PositionCreatedWithCoin") {
-								const positionAddress = (decodedLog.args as any).position as Address;
-								console.log("New position created via CoinLendingGateway:", positionAddress);
-								break;
-							}
-						} catch (e) {
-							// Skip logs that don't match our ABI
-							continue;
-						}
-					}
-				} catch (error) {
-					console.warn("Could not extract position address from event logs:", error);
-				}
-			} else {
-				// Fallback to the old 3-transaction approach
-				const wethAddress = getWETHAddress(chainId);
-				if (!wethAddress) {
-					toast.error("WETH not supported on this network");
-					setIsOpenBorrowingDEUROModal(false);
-					return;
-				}
-
-				// Step 1: Wrap ETH to WETH
-				const wrapHash = await writeContract(WAGMI_CONFIG, {
-					address: wethAddress,
-					abi: WETH_ABI,
-					functionName: "deposit",
-					value: BigInt(collateralAmount),
-				});
-
-				const wrapToastContent = [
-					{
-						title: t("common.txs.amount"),
-						value: formatCurrency(formatUnits(BigInt(collateralAmount), 18)) + " ETH → WETH",
-					},
-					{
-						title: t("common.txs.transaction"),
-						hash: wrapHash,
-					},
-				];
-
-				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: wrapHash, confirmations: 1 }), {
-					pending: {
-						render: <TxToast title="Wrapping ETH to WETH" rows={wrapToastContent} />,
-					},
-					success: {
-						render: <TxToast title="Successfully wrapped ETH to WETH" rows={wrapToastContent} />,
-					},
-				});
-
-				// Step 2: Approve WETH for spending
-				const approveHash = await writeContract(WAGMI_CONFIG, {
-					address: wethAddress,
-					abi: erc20Abi,
-					functionName: "approve",
-					args: [ADDRESS[chainId].mintingHubGateway, BigInt(collateralAmount)],
-				});
-
-				const approveToastContent = [
-					{
-						title: t("common.txs.amount"),
-						value: formatCurrency(formatUnits(BigInt(collateralAmount), 18)) + " WETH",
-					},
-					{
-						title: t("common.txs.spender"),
-						value: shortenAddress(ADDRESS[chainId].mintingHubGateway),
-					},
-					{
-						title: t("common.txs.transaction"),
-						hash: approveHash,
-					},
-				];
-
-				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: approveHash, confirmations: 1 }), {
-					pending: {
-						render: <TxToast title={t("common.txs.title", { symbol: "WETH" })} rows={approveToastContent} />,
-					},
-					success: {
-						render: <TxToast title={t("common.txs.success", { symbol: "WETH" })} rows={approveToastContent} />,
-					},
-				});
-
-				// Step 3: Clone position and mint dEURO
-				let txHash = null;
-				const cloneWriteHash = await writeContract(WAGMI_CONFIG, {
-					address: ADDRESS[chainId].mintingHubGateway,
-					abi: MintingHubGatewayABI,
-					functionName: "clone",
-					args: [
-						selectedPosition.position,
-						BigInt(collateralAmount),
-						loanDetails.loanAmount,
-						toTimestamp(expirationDate),
-						frontendCode,
-					],
-				});
-				txHash = cloneWriteHash;
-
-				const toastContent = [
-					{
-						title: t("common.txs.amount"),
-						value: formatBigInt(loanDetails.loanAmount) + ` ${TOKEN_SYMBOL}`,
-					},
-					{
-						title: t("common.txs.collateral"),
-						value: formatBigInt(BigInt(collateralAmount), 18) + " ETH (via WETH)",
-					},
-					{
-						title: t("common.txs.transaction"),
-						hash: cloneWriteHash,
-					},
-				];
-
-				const receipt: TransactionReceipt = await waitForTransactionReceipt(WAGMI_CONFIG, { hash: cloneWriteHash, confirmations: 1 });
-
-				if (BigInt(liquidationPrice) !== BigInt(selectedPosition?.price)) {
-					const newPositionAddress = parseCloneEventLogs(receipt.logs);
-					const adjustPriceHash = await writeContract(WAGMI_CONFIG, {
-						address: newPositionAddress as Address,
-						abi: PositionV2ABI,
-						functionName: "adjustPrice",
-						args: [(BigInt(liquidationPrice) * 10001n) / 10000n],
-					});
-					txHash = adjustPriceHash;
-				}
-
-				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: txHash, confirmations: 1 }), {
-					pending: {
-						render: <TxToast title={t("mint.txs.minting", { symbol: TOKEN_SYMBOL })} rows={toastContent} />,
-					},
-					success: {
-						render: <TxToast title={t("mint.txs.minting_success", { symbol: TOKEN_SYMBOL })} rows={toastContent} />,
-					},
-				});
+			if (!gatewayAddress || gatewayAddress === zeroAddress) {
+				toast.error("CoinLendingGateway not configured for this network");
+				setIsOpenBorrowingDEUROModal(false);
+				return;
 			}
+
+			const hash = await writeContract(WAGMI_CONFIG, {
+				address: gatewayAddress,
+				abi: CoinLendingGatewayABI,
+				functionName: "lendWithCoin",
+				args: [
+					selectedPosition.position as Address,
+					loanDetails.loanAmount,
+					toTimestamp(expirationDate),
+					frontendCode,
+					BigInt(liquidationPrice),
+				],
+				value: BigInt(collateralAmount),
+			});
+
+			const toastContent = [
+				{
+					title: t("common.txs.amount"),
+					value: formatBigInt(loanDetails.loanAmount) + ` ${TOKEN_SYMBOL}`,
+				},
+				{
+					title: t("common.txs.collateral"),
+					value: formatBigInt(BigInt(collateralAmount), 18) + " cBTC",
+				},
+				{
+					title: t("common.txs.transaction"),
+					hash,
+				},
+			];
+
+			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash, confirmations: 1 }), {
+				pending: {
+					render: <TxToast title={t("mint.txs.minting", { symbol: TOKEN_SYMBOL })} rows={toastContent} />,
+				},
+				success: {
+					render: <TxToast title={t("mint.txs.minting_success", { symbol: TOKEN_SYMBOL })} rows={toastContent} />,
+				},
+			});
 
 			store.dispatch(fetchPositionsList());
 			setIsCloneSuccess(true);
@@ -740,25 +408,29 @@ export default function PositionCreate({}) {
 								</div>
 							}
 						/>
-						{isMaxedOut && selectedPosition && (
-							<div className="self-stretch mt-1 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md">
-								<div className="text-yellow-800 text-sm font-medium">
-									⚠️ {t("mint.error.position_unavailable_limit_exhausted", {
-										available: formatCurrency(formatUnits(BigInt(selectedPosition.availableForClones), 18), 2, 2),
-										symbol: TOKEN_SYMBOL,
-										minCollateral: formatBigInt(BigInt(selectedPosition.minimumCollateral), selectedPosition.collateralDecimals),
-										collateralSymbol: selectedPosition.collateralSymbol
-									})}
-								</div>
-							</div>
-						)}
 						<SelectCollateralModal
 							title={t("mint.token_select_modal_title")}
 							isOpen={isOpenTokenSelector}
 							setIsOpen={setIsOpenTokenSelector}
-							options={balances}
+							options={collateralSelectorOptions}
 							onTokenSelect={handleOnSelectedToken}
 						/>
+						{isMaxedOut && selectedPosition && (
+							<div className="self-stretch mt-1 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md">
+								<div className="text-yellow-800 text-sm font-medium">
+									⚠️{" "}
+									{t("mint.error.position_unavailable_limit_exhausted", {
+										available: formatCurrency(formatUnits(BigInt(selectedPosition.availableForClones), 18), 2, 2),
+										symbol: TOKEN_SYMBOL,
+										minCollateral: formatBigInt(
+											BigInt(selectedPosition.minimumCollateral),
+											selectedPosition.collateralDecimals
+										),
+										collateralSymbol: selectedPosition.collateralSymbol,
+									})}
+								</div>
+							</div>
+						)}
 					</div>
 					<div className="self-stretch flex-col justify-start items-center gap-1 flex">
 						<InputTitle icon={faCircleQuestion}>{t("mint.select_liquidation_price")}</InputTitle>
@@ -809,56 +481,30 @@ export default function PositionCreate({}) {
 					</div>
 					<GuardToAllowedChainBtn label={t("mint.symbol_borrow", { symbol: TOKEN_SYMBOL })}>
 						{!selectedCollateral ? (
-							<Button
-								className="!p-4 text-lg font-extrabold leading-none"
-								onClick={handleOnClonePosition}
-								disabled={!selectedPosition || !selectedCollateral || isLiquidationPriceTooHigh || isMaxedOut}
-							>
+							<Button className="!p-4 text-lg font-extrabold leading-none" disabled>
 								{t("common.receive") + " 0.00 " + TOKEN_SYMBOL}
 							</Button>
-						) : selectedCollateral.symbol === WAGMI_CHAIN.nativeCurrency.symbol ? (
-							// Special handling for native coin (e.g. cBTC) - wrap, approve and mint in one click
-							<Button
-								className="!p-4 text-lg font-extrabold leading-none"
-								onClick={handleWrapETHAndMint}
-								disabled={
-									!selectedPosition ||
-									!selectedCollateral ||
-									isLiquidationPriceTooHigh ||
-									!!collateralError ||
-									isMaxedOut ||
-									userBalance < BigInt(collateralAmount)
-								}
-							>
-								{isLiquidationPriceTooHigh
-									? t("mint.your_liquidation_price_is_too_high")
-									: t("common.receive") + " " + formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2) + " " + TOKEN_SYMBOL}
-							</Button>
-						) : userAllowance >= BigInt(collateralAmount) ? (
-							<Button
-								className="!p-4 text-lg font-extrabold leading-none"
-								onClick={handleOnClonePosition}
-								disabled={
-									!selectedPosition ||
-									!selectedCollateral ||
-									isLiquidationPriceTooHigh ||
-									!!collateralError ||
-									isMaxedOut ||
-									userBalance < BigInt(collateralAmount)
-								}
-							>
-								{isLiquidationPriceTooHigh
-									? t("mint.your_liquidation_price_is_too_high")
-									: t("common.receive") + " " + formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2)}
-							</Button>
 						) : (
+							// Native coin (cBTC) flow via CoinLendingGateway
 							<Button
 								className="!p-4 text-lg font-extrabold leading-none"
-								onClick={handleApprove}
-								isLoading={isApproving}
-								disabled={!!collateralError || isMaxedOut}
+								onClick={handleMintWithCoin}
+								disabled={
+									!selectedPosition ||
+									!selectedCollateral ||
+									isLiquidationPriceTooHigh ||
+									!!collateralError ||
+									isMaxedOut ||
+									userBalance < BigInt(collateralAmount)
+								}
 							>
-								{t("common.approve")}
+								{isLiquidationPriceTooHigh
+									? t("mint.your_liquidation_price_is_too_high")
+									: t("common.receive") +
+									  " " +
+									  formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2) +
+									  " " +
+									  TOKEN_SYMBOL}
 							</Button>
 						)}
 					</GuardToAllowedChainBtn>
