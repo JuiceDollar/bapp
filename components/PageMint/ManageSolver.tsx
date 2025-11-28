@@ -112,6 +112,11 @@ export const ManageSolver = () => {
     return <div className="flex justify-center items-center h-64"><span className="text-text-muted2">Loading...</span></div>;
   }
 
+  const getDisplayDecimals = (unit: string) => {
+    const stablecoins = ['JUSD'];
+    return stablecoins.includes(unit.toUpperCase()) ? 2 : 8;
+  };
+
   const handleReset = () => {
     setStep('SELECT_TARGET');
     setSelectedTarget(null);
@@ -238,7 +243,7 @@ export const ManageSolver = () => {
                     {t("mint.current_amount")}:
                   </span>
                   <span className="font-extrabold text-text-title">
-                    {formatCurrency(formatUnits(currentValue, decimals), 0, 8)} {unit}
+                    {formatCurrency(formatUnits(currentValue, decimals), 0, getDisplayDecimals(unit))} {unit}
                   </span>
                 </div>
               }
@@ -250,15 +255,15 @@ export const ManageSolver = () => {
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-text-muted2">{t("mint.current_value")}</span>
-            <span className="font-medium text-text-title">{formatCurrency(formatUnits(currentValue, decimals), 0, 8)} {unit}</span>
+            <span className="font-medium text-text-title">{formatCurrency(formatUnits(currentValue, decimals), 0, getDisplayDecimals(unit))} {unit}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-text-muted2">{t("mint.change")}</span>
-            <span className="font-medium text-text-title">{isIncrease ? '+' : '-'}{formatCurrency(formatUnits(delta, decimals), 0, 8)} {unit}</span>
+            <span className="font-medium text-text-title">{isIncrease ? '+' : '-'}{formatCurrency(formatUnits(delta, decimals), 0, getDisplayDecimals(unit))} {unit}</span>
           </div>
           <div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
             <span className="font-bold text-text-title">{t("mint.new_value")}</span>
-            <span className="font-bold text-text-title">{formatCurrency(formatUnits(calculatedNewValue, decimals), 0, 8)} {unit}</span>
+            <span className="font-bold text-text-title">{formatCurrency(formatUnits(calculatedNewValue, decimals), 0, getDisplayDecimals(unit))} {unit}</span>
           </div>
         </div>
 
@@ -317,7 +322,7 @@ export const ManageSolver = () => {
   if (step === 'PREVIEW' && outcome) {
     const formatValue = (value: bigint, target: Target) => {
       const { decimals, unit } = getValueInfo(target);
-      return `${formatCurrency(formatUnits(value, decimals), 0, 8)} ${unit}`;
+      return `${formatCurrency(formatUnits(value, decimals), 0, getDisplayDecimals(unit))} ${unit}`;
     };
 
     const formatDelta = (delta: bigint, target: Target) => {
