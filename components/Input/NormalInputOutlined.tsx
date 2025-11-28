@@ -19,7 +19,7 @@ export function NormalInputOutlined({ value, onChange, decimals, showTokenLogo =
 			isFocused ? "before:border-2 before:border-input-borderFocus" : "before:border-input-border hover:before:border-input-borderHover"
 		}`}>
 			<div className="w-full flex-nowrap p-1.5 justify-start items-center gap-1.5 flex overflow-hidden">
-				{showTokenLogo && <TokenLogo currency="deuro" size={6} />}
+				{showTokenLogo && <TokenLogo currency={unit || "deuro"} size={6} />}
 				<div className="min-w-0 flex-1 overflow-hidden">
 					<BigNumberInput
 						className={`p-0 w-full text-input-primary placeholder:text-input-placeholder text-2xl font-medium leading-tight ${
