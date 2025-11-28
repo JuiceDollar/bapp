@@ -3,8 +3,8 @@ import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/redux.store";
-import { Address, formatUnits } from "viem";
-import { formatCurrency, normalizeTokenSymbol } from "@utils";
+import { Address, formatUnits, zeroAddress } from "viem";
+import { formatCurrency, normalizeTokenSymbol, shortenAddress } from "@utils";
 import { useReadContracts, useChainId } from "wagmi";
 import { PositionV2ABI } from "@juicedollar/jusd";
 import { erc20Abi } from "viem";
@@ -14,6 +14,13 @@ import { Target, Strategy, solveManage, getStrategiesForTarget, SolverPosition, 
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
 import { ExpirationManageSection } from "./ExpirationManageSection";
+import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
+import { RemoveCircleOutlineIcon } from "@components/SvgComponents/remove_circle_outline";
+import { SvgIconButton } from "./PlusMinusButtons";
+import { DetailsExpandablePanel } from "@components/PageMint/DetailsExpandablePanel";
+import { getLoanDetailsByCollateralAndStartingLiqPrice } from "../../utils/loanCalculations";
+import Link from "next/link";
+import { useContractUrl } from "../../hooks/useContractUrl";
 
 type Step = 'SELECT_TARGET' | 'ENTER_VALUE' | 'CHOOSE_STRATEGY' | 'PREVIEW';
 
@@ -28,6 +35,8 @@ export const ManageSolver = () => {
 
   const [step, setStep] = useState<Step>('SELECT_TARGET');
   const [selectedTarget, setSelectedTarget] = useState<Target | null>(null);
+  const [deltaAmount, setDeltaAmount] = useState<string>("");
+  const [isIncrease, setIsIncrease] = useState(true);
   const [newValue, setNewValue] = useState<string>("");
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
   const [outcome, setOutcome] = useState<SolverOutcome | null>(null);
@@ -53,6 +62,19 @@ export const ManageSolver = () => {
 
   const priceDecimals = 36 - (position?.collateralDecimals || 18);
 
+  const prices = useSelector((state: RootState) => state.prices.coingecko || {});
+  const url = useContractUrl(position?.position || zeroAddress as Address);
+  const collateralPrice = prices[position?.collateral?.toLowerCase() as Address]?.price?.eur || 0;
+
+  const loanDetails = useMemo(() => {
+    if (!position || !collateralBalance || !liqPrice) return undefined;
+    return getLoanDetailsByCollateralAndStartingLiqPrice(
+      position,
+      collateralBalance,
+      liqPrice
+    );
+  }, [position, collateralBalance, liqPrice]);
+
   const getValueInfo = (target: Target) => {
     const info = {
       COLLATERAL: { value: collateralBalance, decimals: position?.collateralDecimals || 18, unit: normalizeTokenSymbol(position?.collateralSymbol || '') },
@@ -65,6 +87,8 @@ export const ManageSolver = () => {
 
   // Reset on target change
   useEffect(() => {
+    setDeltaAmount("");
+    setIsIncrease(true);
     setNewValue("");
     setSelectedStrategy(null);
     setOutcome(null);
@@ -96,6 +120,27 @@ export const ManageSolver = () => {
     setOutcome(null);
   };
 
+  const positionDetailsPanel = position && loanDetails && (
+    <DetailsExpandablePanel
+      loanDetails={loanDetails}
+      collateralPriceDeuro={collateralPrice}
+      collateralDecimals={position.collateralDecimals}
+      startingLiquidationPrice={liqPrice}
+      extraRows={
+        <div className="py-1.5 flex justify-between">
+          <span className="text-base leading-tight">{t("common.position")}</span>
+          <Link
+            className="underline text-right text-sm font-extrabold leading-none tracking-tight"
+            href={url}
+            target="_blank"
+          >
+            {shortenAddress(position.position)}
+          </Link>
+        </div>
+      }
+    />
+  );
+
   // Step 1: Select what to adjust
   if (step === 'SELECT_TARGET') {
     const targets = [
@@ -126,6 +171,9 @@ export const ManageSolver = () => {
             </button>
           ))}
         </div>
+
+        {/* Position Details */}
+        {positionDetailsPanel}
       </div>
     );
   }
@@ -143,37 +191,90 @@ export const ManageSolver = () => {
     );
   }
 
-  // Step 2: Enter new value
+  // Step 2: Enter delta amount (how much to add/remove)
   if (step === 'ENTER_VALUE') {
     const { value: currentValue, decimals, unit } = getValueInfo(selectedTarget!);
+    const delta = BigInt(deltaAmount || 0);
+    const calculatedNewValue = isIncrease ? currentValue + delta : currentValue - delta;
 
     return (
       <div className="flex flex-col gap-y-6">
         <button onClick={handleReset} className="text-left text-primary hover:text-primary-hover text-sm font-medium">
           ← {t("common.back")}
         </button>
-        <div>
-          <div className="text-lg font-bold mb-3">{t("mint.enter_new_value")}</div>
+        
+        <div className="flex flex-col gap-y-3">
+          <div className="flex flex-row justify-between items-center">
+            <div className="text-lg font-bold">{t("mint.enter_change_amount")}</div>
+            <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center">
+              <SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
+                {t("common.add")}
+              </SvgIconButton>
+              <SvgIconButton isSelected={!isIncrease} onClick={() => setIsIncrease(false)} SvgComponent={RemoveCircleOutlineIcon}>
+                {t("common.remove")}
+              </SvgIconButton>
+            </div>
+          </div>
+
           {selectedTarget === 'LIQ_PRICE' ? (
             <SliderInputOutlined
-              value={newValue}
-              onChange={setNewValue}
-              min={liqPrice / 2n}
-              max={liqPrice * 2n}
+              value={deltaAmount}
+              onChange={setDeltaAmount}
+              min={0n}
+              max={liqPrice}
               decimals={priceDecimals}
               isError={false}
             />
           ) : (
-            <NormalInputOutlined value={newValue} onChange={setNewValue} decimals={decimals} unit={unit} isError={false} />
+            <NormalInputOutlined 
+              value={deltaAmount} 
+              onChange={setDeltaAmount} 
+              decimals={decimals} 
+              unit={unit} 
+              isError={false}
+              adornamentRow={
+                <div className="pl-2 text-xs leading-[1rem] flex flex-row gap-x-2">
+                  <span className="font-medium text-text-muted3">
+                    {t("mint.current_amount")}:
+                  </span>
+                  <span className="font-extrabold text-text-title">
+                    {formatCurrency(formatUnits(currentValue, decimals), 0, 8)} {unit}
+                  </span>
+                </div>
+              }
+            />
           )}
         </div>
+
+        {/* Details showing calculated new value */}
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-text-muted2">{t("mint.current_value")}</span>
+            <span className="font-medium text-text-title">{formatCurrency(formatUnits(currentValue, decimals), 0, 8)} {unit}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-text-muted2">{t("mint.change")}</span>
+            <span className="font-medium text-text-title">{isIncrease ? '+' : '-'}{formatCurrency(formatUnits(delta, decimals), 0, 8)} {unit}</span>
+          </div>
+          <div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
+            <span className="font-bold text-text-title">{t("mint.new_value")}</span>
+            <span className="font-bold text-text-title">{formatCurrency(formatUnits(calculatedNewValue, decimals), 0, 8)} {unit}</span>
+          </div>
+        </div>
+
         <Button
-          onClick={() => setStep('CHOOSE_STRATEGY')}
-          disabled={!newValue || BigInt(newValue || 0) === currentValue}
+          onClick={() => {
+            setNewValue(calculatedNewValue.toString());
+            setStep('CHOOSE_STRATEGY');
+          }}
+          disabled={!deltaAmount || delta === 0n}
           className="text-lg leading-snug !font-extrabold"
         >
           {t("common.next")}
         </Button>
+
+        {/* Position Details */}
+        {positionDetailsPanel}
       </div>
     );
   }
@@ -205,6 +306,9 @@ export const ManageSolver = () => {
             </button>
           ))}
         </div>
+
+        {/* Position Details */}
+        {positionDetailsPanel}
       </div>
     );
   }
@@ -213,7 +317,7 @@ export const ManageSolver = () => {
   if (step === 'PREVIEW' && outcome) {
     const formatValue = (value: bigint, target: Target) => {
       const { decimals, unit } = getValueInfo(target);
-      return `${formatCurrency(formatUnits(value, decimals))} ${unit}`;
+      return `${formatCurrency(formatUnits(value, decimals), 0, 8)} ${unit}`;
     };
 
     const formatDelta = (delta: bigint, target: Target) => {
@@ -271,6 +375,8 @@ export const ManageSolver = () => {
             <Button className="text-lg leading-snug !font-extrabold" onClick={() => console.log('Execute:', outcome)}>
               {t("mint.confirm_execute")}
             </Button>
+            {/* Position Details */}
+            {positionDetailsPanel}
           </>
         )}
 
