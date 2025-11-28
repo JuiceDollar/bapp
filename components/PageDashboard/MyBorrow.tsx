@@ -6,8 +6,8 @@ import { HeaderCell, NoDataRow } from "./SectionTable";
 import { useAccount } from "wagmi";
 import { RootState } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
-import { Address, formatUnits, zeroAddress } from "viem";
-import { formatCurrency, TOKEN_SYMBOL } from "@utils";
+import { formatUnits, zeroAddress } from "viem";
+import { formatCurrency, TOKEN_SYMBOL, normalizeTokenSymbol } from "@utils";
 import { useRouter } from "next/router";
 import { getPublicViewAddress } from "../../utils/url";
 import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
@@ -159,7 +159,7 @@ export const MyBorrow = () => {
 
 		return {
 			position: position.position as `0x${string}`,
-			symbol: collateralSymbol,
+			symbol: normalizeTokenSymbol(collateralSymbol),
 			collateralAmount: formatCurrency(formatUnits(BigInt(collateralBalance), collateralDecimals) as string, 0, 5),
 			collateralization: collateralizationPercentage.toString(),
 			loanDueIn: formatCurrency(Math.round((position.expiration * 1000 - Date.now()) / 1000 / 60 / 60 / 24)) as string,

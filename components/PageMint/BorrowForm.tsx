@@ -13,7 +13,7 @@ import { PositionQuery } from "@juicedollar/api";
 import { BorrowingDEUROModal } from "@components/PageMint/BorrowingDEUROModal";
 import { SelectCollateralModal } from "./SelectCollateralModal";
 import { InputTitle } from "@components/Input/InputTitle";
-import { formatBigInt, formatCurrency, shortenAddress, toDate, TOKEN_SYMBOL, toTimestamp, NATIVE_WRAPPED_SYMBOLS } from "@utils";
+import { formatBigInt, formatCurrency, shortenAddress, toDate, TOKEN_SYMBOL, toTimestamp, NATIVE_WRAPPED_SYMBOLS, normalizeTokenSymbol } from "@utils";
 import { TokenBalance, useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { RootState, store } from "../../redux/redux.store";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
@@ -133,18 +133,18 @@ export default function PositionCreate({}) {
 		} else if (BigInt(collateralAmount) < BigInt(selectedPosition.minimumCollateral)) {
 			const minColl = formatBigInt(BigInt(selectedPosition?.minimumCollateral || 0n), selectedPosition?.collateralDecimals || 0);
 			const notTheMinimum = `${t("mint.error.must_be_at_least_the_minimum_amount")} (${minColl} ${
-				selectedPosition?.collateralSymbol
+				normalizeTokenSymbol(selectedPosition?.collateralSymbol || '')
 			})`;
 			setCollateralError(notTheMinimum);
 		} else if (BigInt(collateralAmount) > BigInt(balanceInWallet?.balanceOf || 0n)) {
-			const notEnoughBalance = t("common.error.insufficient_balance", { symbol: selectedPosition?.collateralSymbol });
+			const notEnoughBalance = t("common.error.insufficient_balance", { symbol: normalizeTokenSymbol(selectedPosition?.collateralSymbol || '') });
 			setCollateralError(notEnoughBalance);
 		} else if (maxFromLimit > 0n && BigInt(collateralAmount) > maxFromLimit) {
 			const maxColl = formatBigInt(maxFromLimit, selectedPosition?.collateralDecimals || 0);
 			const availableToMint = formatBigInt(BigInt(selectedPosition.availableForClones), 18);
 			const limitExceeded = t("mint.error.global_minting_limit_exceeded", {
 				maxCollateral: maxColl,
-				collateralSymbol: selectedPosition?.collateralSymbol,
+				collateralSymbol: normalizeTokenSymbol(selectedPosition?.collateralSymbol || ''),
 				maxMint: availableToMint,
 				mintSymbol: TOKEN_SYMBOL,
 			});
@@ -421,13 +421,13 @@ export default function PositionCreate({}) {
 									⚠️{" "}
 									{t("mint.error.position_unavailable_limit_exhausted", {
 										available: formatCurrency(formatUnits(BigInt(selectedPosition.availableForClones), 18), 2, 2),
-										symbol: TOKEN_SYMBOL,
-										minCollateral: formatBigInt(
-											BigInt(selectedPosition.minimumCollateral),
-											selectedPosition.collateralDecimals
-										),
-										collateralSymbol: selectedPosition.collateralSymbol,
-									})}
+									symbol: TOKEN_SYMBOL,
+									minCollateral: formatBigInt(
+										BigInt(selectedPosition.minimumCollateral),
+										selectedPosition.collateralDecimals
+									),
+									collateralSymbol: normalizeTokenSymbol(selectedPosition.collateralSymbol),
+								})}
 								</div>
 							</div>
 						)}
@@ -518,7 +518,7 @@ export default function PositionCreate({}) {
 						)}
 						expiration={expirationDate}
 						formmatedCollateral={`${formatUnits(BigInt(collateralAmount), selectedPosition?.collateralDecimals || 0)} ${
-							selectedPosition?.collateralSymbol
+							normalizeTokenSymbol(selectedPosition?.collateralSymbol || '')
 						}`}
 						collateralPriceDeuro={collateralEurValue || "0"}
 						isSuccess={isCloneSuccess}

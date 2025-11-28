@@ -9,7 +9,7 @@ import { useRouter } from "next/router";
 import { RootState, store } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
 import { Address, erc20Abi, formatUnits, zeroAddress } from "viem";
-import { formatCurrency, shortenAddress, NATIVE_WRAPPED_SYMBOLS } from "@utils";
+import { formatCurrency, shortenAddress, NATIVE_WRAPPED_SYMBOLS, normalizeTokenSymbol } from "@utils";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { useChainId, useReadContracts } from "wagmi";
 import { writeContract } from "wagmi/actions";
@@ -126,7 +126,7 @@ export const CollateralManageSection = () => {
 		if (!amount) {
 			setError(null);
 		} else if (BigInt(amount) > walletBalance) {
-			setError(t("common.error.insufficient_balance", { symbol: position.collateralSymbol }));
+			setError(t("common.error.insufficient_balance", { symbol: normalizeTokenSymbol(position.collateralSymbol) }));
 		} else {
 			setError(null);
 		}
@@ -147,6 +147,12 @@ export const CollateralManageSection = () => {
 		}
 	}, [isAdd, amount, balanceOf, maxToRemove, position, t]);
 
+	// Calculate collateralization percentage
+	const cachedPercentage = useRef<number>(0);
+	const calculatedPercentage = position ? calculateCollateralizationPercentage(position, prices) : 0;
+	if (calculatedPercentage > 0) cachedPercentage.current = calculatedPercentage;
+	const collateralizationPercentage = cachedPercentage.current;
+
 	// Show loading if position not found
 	if (!position) {
 		return (
@@ -155,11 +161,6 @@ export const CollateralManageSection = () => {
 			</div>
 		);
 	}
-	
-	const cachedPercentage = useRef<number>(0);
-	const calculatedPercentage = calculateCollateralizationPercentage(position, prices);
-	if (calculatedPercentage > 0) cachedPercentage.current = calculatedPercentage;
-	const collateralizationPercentage = cachedPercentage.current;
 
 	const handleAddMax = () => {
 		setAmount(walletBalance.toString());
@@ -183,7 +184,7 @@ export const CollateralManageSection = () => {
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) + " " + position.collateralSymbol,
+					value: formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) + " " + normalizeTokenSymbol(position.collateralSymbol),
 				},
 				{
 					title: t("common.txs.spender"),
@@ -197,10 +198,10 @@ export const CollateralManageSection = () => {
 
 			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: approveWriteHash, confirmations: 1 }), {
 				pending: {
-					render: <TxToast title={`${t("common.txs.title", { symbol: position.collateralSymbol })}`} rows={toastContent} />,
+					render: <TxToast title={`${t("common.txs.title", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}`} rows={toastContent} />,
 				},
 				success: {
-					render: <TxToast title={`${t("common.txs.success", { symbol: position.collateralSymbol })}`} rows={toastContent} />,
+					render: <TxToast title={`${t("common.txs.success", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}`} rows={toastContent} />,
 				},
 			});
 			await refetchBalances();
@@ -250,7 +251,7 @@ export const CollateralManageSection = () => {
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) + ` ${position.collateralSymbol}`,
+					value: formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) + ` ${normalizeTokenSymbol(position.collateralSymbol)}`,
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -291,7 +292,7 @@ export const CollateralManageSection = () => {
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) + ` ${position.collateralSymbol}`,
+					value: formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) + ` ${normalizeTokenSymbol(position.collateralSymbol)}`,
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -325,11 +326,11 @@ export const CollateralManageSection = () => {
 			<div className="flex flex-col gap-y-3">
 				<div className="flex flex-row justify-between items-center">
 					<div className="pl-3 flex flex-row gap-x-2 items-center">
-						<TokenLogo currency={position.collateralSymbol} />
+						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} />
 						<div className="flex flex-col">
 							<span className="text-base font-extrabold leading-tight">
 								<span className="">{formatCurrency(formatUnits(balanceOf, position.collateralDecimals), 0, 5)}</span>{" "}
-								{position.collateralSymbol}
+								{normalizeTokenSymbol(position.collateralSymbol)}
 							</span>
 							<span className="text-xs font-medium text-text-muted2 leading-[1rem]">
 								{formatCurrency(collateralValuation)} dEURO
@@ -351,17 +352,17 @@ export const CollateralManageSection = () => {
 						value={amount}
 						onChange={setAmount}
 						decimals={position.collateralDecimals}
-						unit={position.collateralSymbol}
+						unit={normalizeTokenSymbol(position.collateralSymbol)}
 						isError={Boolean(error)}
 						adornamentRow={
 							<div className="pl-2 text-xs leading-[1rem] flex flex-row gap-x-2">
 								<span className="font-medium text-text-muted3">
 									{t(isAdd ? "mint.available_to_add" : "mint.available_to_remove")}:
 								</span>
-								<button className="text-text-labelButton font-extrabold" onClick={isAdd ? handleAddMax : handleRemoveMax}>
-									{formatUnits(isAdd ? walletBalance : maxToRemove, position.collateralDecimals)}{" "}
-									{position.collateralSymbol}
-								</button>
+							<button className="text-text-labelButton font-extrabold" onClick={isAdd ? handleAddMax : handleRemoveMax}>
+								{formatUnits(isAdd ? walletBalance : maxToRemove, position.collateralDecimals)}{" "}
+								{normalizeTokenSymbol(position.collateralSymbol)}
+							</button>
 							</div>
 						}
 					/>

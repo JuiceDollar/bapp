@@ -154,6 +154,11 @@ export const BorrowedManageSection = () => {
 		}
 	}, [isBorrowMore, amount, debt, walletBalance, position, t]);
 	
+	const cachedPercentage = useRef<number>(0);
+	const calculatedPercentage = position ? calculateCollateralizationPercentage(position, prices) : 0;
+	if (calculatedPercentage > 0) cachedPercentage.current = calculatedPercentage;
+	const collateralizationPercentage = cachedPercentage.current;
+	
 	// Show loading or redirect if position not found
 	if (!position) {
 		return (
@@ -162,10 +167,6 @@ export const BorrowedManageSection = () => {
 			</div>
 		);
 	}
-	const cachedPercentage = useRef<number>(0);
-	const calculatedPercentage = position ? calculateCollateralizationPercentage(position, prices) : 0;
-	if (calculatedPercentage > 0) cachedPercentage.current = calculatedPercentage;
-	const collateralizationPercentage = cachedPercentage.current;
 
 	const handleMaxAmount = () => {
 		if (isBorrowMore) {
