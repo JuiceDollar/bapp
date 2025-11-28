@@ -56,8 +56,8 @@ export const ManageSolver = () => {
   const getValueInfo = (target: Target) => {
     const info = {
       COLLATERAL: { value: collateralBalance, decimals: position?.collateralDecimals || 18, unit: normalizeTokenSymbol(position?.collateralSymbol || '') },
-      LIQ_PRICE: { value: liqPrice, decimals: priceDecimals, unit: 'EUR' },
-      LOAN: { value: currentDebt, decimals: 18, unit: position?.stablecoinSymbol || '' },
+      LIQ_PRICE: { value: liqPrice, decimals: priceDecimals, unit: position?.stablecoinSymbol || 'JUSD' },
+      LOAN: { value: currentDebt, decimals: 18, unit: position?.stablecoinSymbol || 'JUSD' },
       EXPIRATION: { value: 0n, decimals: 0, unit: '' },
     };
     return info[target];
