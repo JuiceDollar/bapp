@@ -27,6 +27,7 @@ import { calculateCollateralizationPercentage } from "../../utils/collateralizat
 import Link from "next/link";
 import { useContractUrl } from "../../hooks/useContractUrl";
 import { useNativeBalance } from "../../hooks/useNativeBalance";
+import { ErrorDisplay } from "@components/ErrorDisplay";
 
 export const CollateralManageSection = () => {
 	const router = useRouter();
@@ -366,7 +367,7 @@ export const CollateralManageSection = () => {
 							</div>
 						}
 					/>
-					{error && <div className="ml-1 text-text-warning text-sm">{error}</div>}
+					<ErrorDisplay error={error} />
 				</div>
 				<div className="w-full mt-1.5 px-4 py-2 rounded-xl bg-[#FDF2E2] flex flex-row justify-between items-center text-base font-extrabold text-[#272B38]">
 					<span>{t("mint.collateralization")}</span>

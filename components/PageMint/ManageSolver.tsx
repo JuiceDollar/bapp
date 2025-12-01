@@ -2,12 +2,16 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
-import { RootState } from "../../redux/redux.store";
-import { Address, formatUnits, zeroAddress } from "viem";
-import { formatCurrency, normalizeTokenSymbol, shortenAddress } from "@utils";
-import { useReadContracts, useChainId } from "wagmi";
-import { PositionV2ABI } from "@juicedollar/jusd";
-import { erc20Abi } from "viem";
+import { RootState, store } from "../../redux/redux.store";
+import { Address, formatUnits, zeroAddress, erc20Abi } from "viem";
+import { formatCurrency, normalizeTokenSymbol, shortenAddress, getDisplayDecimals, formatPositionValue, formatPositionDelta, NATIVE_WRAPPED_SYMBOLS, formatDate } from "@utils";
+import { useReadContracts, useChainId, useAccount } from "wagmi";
+import { ADDRESS, PositionV2ABI, CoinLendingGatewayABI } from "@juicedollar/jusd";
+import { writeContract, waitForTransactionReceipt } from "wagmi/actions";
+import { WAGMI_CONFIG } from "../../app.config";
+import { toast } from "react-toastify";
+import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import Button from "@components/Button";
 import { SectionTitle } from "@components/SectionTitle";
 import { Target, Strategy, solveManage, getStrategiesForTarget, SolverPosition, SolverOutcome } from "../../utils/positionSolver";
@@ -21,6 +25,15 @@ import { DetailsExpandablePanel } from "@components/PageMint/DetailsExpandablePa
 import { getLoanDetailsByCollateralAndStartingLiqPrice } from "../../utils/loanCalculations";
 import Link from "next/link";
 import { useContractUrl } from "../../hooks/useContractUrl";
+import AppBox from "@components/AppBox";
+import DisplayLabel from "@components/DisplayLabel";
+import DisplayAmount from "@components/DisplayAmount";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
+import { MaxButton } from "@components/Input/MaxButton";
+import { usePositionMaxAmounts } from "../../hooks/usePositionMaxAmounts";
+import { ErrorDisplay } from "@components/ErrorDisplay";
+import { ManageButtons } from "@components/ManageButtons";
 
 type Step = 'SELECT_TARGET' | 'ENTER_VALUE' | 'CHOOSE_STRATEGY' | 'PREVIEW';
 
@@ -29,9 +42,12 @@ export const ManageSolver = () => {
   const router = useRouter();
   const chainId = useChainId();
   const { address: addressQuery } = router.query;
+  const { address: userAddress } = useAccount();
 
   const positions = useSelector((state: RootState) => state.positions.list?.list || []);
   const position = positions.find((p) => p.position == addressQuery);
+
+  const { walletBalance } = usePositionMaxAmounts(position);
 
   const [step, setStep] = useState<Step>('SELECT_TARGET');
   const [selectedTarget, setSelectedTarget] = useState<Target | null>(null);
@@ -40,9 +56,10 @@ export const ManageSolver = () => {
   const [newValue, setNewValue] = useState<string>("");
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
   const [outcome, setOutcome] = useState<SolverOutcome | null>(null);
+  const [deltaAmountError, setDeltaAmountError] = useState<string | null>(null);
+  const [isTxOnGoing, setIsTxOnGoing] = useState(false);
 
-  // Fetch current position data
-  const { data } = useReadContracts({
+  const { data, refetch: refetchReadContracts } = useReadContracts({
     contracts: position ? [
       { chainId, address: position.position, abi: PositionV2ABI, functionName: "principal" },
       { chainId, address: position.position, abi: PositionV2ABI, functionName: "price" },
@@ -51,6 +68,7 @@ export const ManageSolver = () => {
     ] : [],
   });
 
+  const principal = data?.[0]?.result || 0n;
   const liqPrice = data?.[1]?.result || 1n;
   const collateralBalance = data?.[2]?.result || 0n;
   const currentDebt = data?.[3]?.result || 0n;
@@ -85,7 +103,6 @@ export const ManageSolver = () => {
     return info[target];
   };
 
-  // Reset on target change
   useEffect(() => {
     setDeltaAmount("");
     setIsIncrease(true);
@@ -94,7 +111,6 @@ export const ManageSolver = () => {
     setOutcome(null);
   }, [selectedTarget]);
 
-  // Calculate outcome
   useEffect(() => {
     if (!currentPosition || !selectedTarget || !newValue || !selectedStrategy) {
       setOutcome(null);
@@ -108,13 +124,73 @@ export const ManageSolver = () => {
     }
   }, [currentPosition, selectedTarget, newValue, selectedStrategy]);
 
+  useEffect(() => {
+    if (step !== 'ENTER_VALUE' || !selectedTarget || !deltaAmount) {
+      setDeltaAmountError(null);
+      return;
+    }
+
+    const delta = BigInt(deltaAmount || 0);
+
+    if (!isIncrease && selectedTarget === 'COLLATERAL' && delta > collateralBalance) {
+      setDeltaAmountError(t("mint.error.amount_greater_than_position_balance"));
+    } else {
+      setDeltaAmountError(null);
+    }
+  }, [step, deltaAmount, isIncrease, selectedTarget, collateralBalance, t]);
+
   if (!position || !currentPosition) {
     return <div className="flex justify-center items-center h-64"><span className="text-text-muted2">Loading...</span></div>;
   }
 
-  const getDisplayDecimals = (unit: string) => {
-    const stablecoins = ['JUSD'];
-    return stablecoins.includes(unit.toUpperCase()) ? 2 : 8;
+  const formatValue = (value: bigint, target: Target) => {
+    const { decimals, unit } = getValueInfo(target);
+    return formatPositionValue(value, decimals, unit);
+  };
+
+  const formatDelta = (delta: bigint, target: Target) => {
+    const { decimals, unit } = getValueInfo(target);
+    return formatPositionDelta(delta, decimals, unit);
+  };
+
+  const getPreviewItems = (outcome: SolverOutcome) => [
+    { label: t("mint.collateral"), value: outcome.next.collateral, delta: outcome.deltaCollateral, target: 'COLLATERAL' as Target },
+    { label: t("mint.liquidation_price"), value: outcome.next.liqPrice, delta: outcome.deltaLiqPrice, target: 'LIQ_PRICE' as Target },
+    { label: t("mint.loan_amount"), value: outcome.next.debt, delta: outcome.deltaDebt, target: 'LOAN' as Target },
+  ];
+
+  const renderPreviewItems = (items: ReturnType<typeof getPreviewItems>) => (
+    <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-600 space-y-3">
+      {items.map((item, idx) => (
+        <div key={idx} className="flex justify-between items-center">
+          <span className="text-sm font-medium text-text-muted2">{item.label}</span>
+          <div className="text-right">
+            <div className="text-base font-bold text-text-title">{formatValue(item.value, item.target)}</div>
+            <div className="text-xs text-text-muted3">{formatDelta(item.delta, item.target)}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const getActionLabel = (action: string) => {
+    const labels = {
+      'DEPOSIT': t("mint.deposit_collateral"),
+      'WITHDRAW': t("mint.withdraw_collateral"),
+      'BORROW': t("mint.borrow_more"),
+      'REPAY': t("mint.repay_loan"),
+    };
+    return labels[action as keyof typeof labels] || '';
+  };
+
+  const getActionValue = (action: string, outcome: SolverOutcome) => {
+    const values = {
+      'DEPOSIT': formatValue(outcome.deltaCollateral, 'COLLATERAL'),
+      'WITHDRAW': formatValue(-outcome.deltaCollateral, 'COLLATERAL'),
+      'BORROW': formatValue(outcome.deltaDebt, 'LOAN'),
+      'REPAY': formatValue(-outcome.deltaDebt, 'LOAN'),
+    };
+    return values[action as keyof typeof values] || '';
   };
 
   const handleReset = () => {
@@ -125,65 +201,258 @@ export const ManageSolver = () => {
     setOutcome(null);
   };
 
-  const positionDetailsPanel = position && loanDetails && (
-    <DetailsExpandablePanel
-      loanDetails={loanDetails}
-      collateralPriceDeuro={collateralPrice}
-      collateralDecimals={position.collateralDecimals}
-      startingLiquidationPrice={liqPrice}
-      extraRows={
-        <div className="py-1.5 flex justify-between">
-          <span className="text-base leading-tight">{t("common.position")}</span>
-          <Link
-            className="underline text-right text-sm font-extrabold leading-none tracking-tight"
-            href={url}
-            target="_blank"
-          >
-            {shortenAddress(position.position)}
-          </Link>
-        </div>
-      }
-    />
-  );
+  const isNativeWrappedPosition = position && NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase());
 
-  // Step 1: Select what to adjust
+  const handleExecute = async () => {
+    if (!outcome || !outcome.isValid || !position) return;
+
+    try {
+      setIsTxOnGoing(true);
+
+      for (const action of outcome.txPlan) {
+        if (action === 'DEPOSIT') {
+          if (isNativeWrappedPosition) {
+            const gatewayAddress = ADDRESS[chainId]?.coinLendingGateway;
+            if (!gatewayAddress || gatewayAddress === zeroAddress) {
+              toast.error("CoinLendingGateway not configured for this network");
+              setIsTxOnGoing(false);
+              return;
+            }
+
+            const depositAmount = outcome.deltaCollateral;
+            const depositHash = await writeContract(WAGMI_CONFIG, {
+              address: gatewayAddress,
+              abi: CoinLendingGatewayABI,
+              functionName: "addCollateralWithCoin" as any,
+              args: [position.position as Address],
+              value: depositAmount,
+            } as any);
+
+            const toastContent = [
+              {
+                title: t("common.txs.amount"),
+                value: formatPositionValue(depositAmount, position.collateralDecimals, normalizeTokenSymbol(position.collateralSymbol)),
+              },
+              {
+                title: t("common.txs.transaction"),
+                hash: depositHash,
+              },
+            ];
+
+            await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: depositHash, confirmations: 1 }), {
+              pending: {
+                render: <TxToast title={t("mint.txs.adding_collateral")} rows={toastContent} />,
+              },
+              success: {
+                render: <TxToast title={t("mint.txs.adding_collateral_success")} rows={toastContent} />,
+              },
+            });
+          } else {
+            const adjustHash = await writeContract(WAGMI_CONFIG, {
+              address: position.position,
+              abi: PositionV2ABI,
+              functionName: "adjust",
+              args: [principal, outcome.next.collateral, outcome.next.liqPrice],
+            });
+
+            const toastContent = [
+              {
+                title: t("common.txs.amount"),
+                value: formatPositionValue(outcome.deltaCollateral, position.collateralDecimals, normalizeTokenSymbol(position.collateralSymbol)),
+              },
+              {
+                title: t("common.txs.transaction"),
+                hash: adjustHash,
+              },
+            ];
+
+            await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: adjustHash, confirmations: 1 }), {
+              pending: {
+                render: <TxToast title={t("mint.txs.adding_collateral")} rows={toastContent} />,
+              },
+              success: {
+                render: <TxToast title={t("mint.txs.adding_collateral_success")} rows={toastContent} />,
+              },
+            });
+          }
+        } else if (action === 'WITHDRAW') {
+          const withdrawHash = await writeContract(WAGMI_CONFIG, {
+            address: position.position,
+            abi: PositionV2ABI,
+            functionName: "adjust",
+            args: [principal, outcome.next.collateral, outcome.next.liqPrice],
+          });
+
+          const toastContent = [
+            {
+              title: t("common.txs.amount"),
+              value: formatPositionValue(-outcome.deltaCollateral, position.collateralDecimals, normalizeTokenSymbol(position.collateralSymbol)),
+            },
+            {
+              title: t("common.txs.transaction"),
+              hash: withdrawHash,
+            },
+          ];
+
+          await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
+            pending: {
+              render: <TxToast title={t("mint.txs.removing_collateral")} rows={toastContent} />,
+            },
+            success: {
+              render: <TxToast title={t("mint.txs.removing_collateral_success")} rows={toastContent} />,
+            },
+          });
+        } else if (action === 'BORROW') {
+          const borrowHash = await writeContract(WAGMI_CONFIG, {
+            address: position.position,
+            abi: PositionV2ABI,
+            functionName: "mint",
+            args: [userAddress as Address, outcome.deltaDebt],
+          });
+
+          const toastContent = [
+            {
+              title: t("common.txs.amount"),
+              value: formatPositionValue(outcome.deltaDebt, 18, position.stablecoinSymbol),
+            },
+            {
+              title: t("common.txs.transaction"),
+              hash: borrowHash,
+            },
+          ];
+
+          await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: borrowHash, confirmations: 1 }), {
+            pending: {
+              render: <TxToast title={t("mint.txs.minting", { symbol: position.stablecoinSymbol })} rows={toastContent} />,
+            },
+            success: {
+              render: <TxToast title={t("mint.txs.minting_success", { symbol: position.stablecoinSymbol })} rows={toastContent} />,
+            },
+          });
+        } else if (action === 'REPAY') {
+          const repayAmount = -outcome.deltaDebt;
+          const repayHash = await writeContract(WAGMI_CONFIG, {
+            address: position.position,
+            abi: PositionV2ABI,
+            functionName: "repay",
+            args: [repayAmount],
+          });
+
+          const toastContent = [
+            {
+              title: t("common.txs.amount"),
+              value: formatPositionValue(repayAmount, 18, position.stablecoinSymbol),
+            },
+            {
+              title: t("common.txs.transaction"),
+              hash: repayHash,
+            },
+          ];
+
+          await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: repayHash, confirmations: 1 }), {
+            pending: {
+              render: <TxToast title={t("mint.txs.pay_back", { symbol: position.stablecoinSymbol })} rows={toastContent} />,
+            },
+            success: {
+              render: <TxToast title={t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol })} rows={toastContent} />,
+            },
+          });
+        }
+      }
+
+      await refetchReadContracts();
+      store.dispatch(fetchPositionsList());
+      handleReset();
+    } catch (error) {
+      toast.error(renderErrorTxToast(error));
+    } finally {
+      setIsTxOnGoing(false);
+    }
+  };
   if (step === 'SELECT_TARGET') {
     const targets = [
-      { id: 'COLLATERAL' as const, label: t("mint.collateral"), desc: t("mint.adjust_collateral_description") },
-      { id: 'LIQ_PRICE' as const, label: t("mint.liquidation_price"), desc: t("mint.adjust_liq_price_description") },
-      { id: 'LOAN' as const, label: t("mint.loan_amount"), desc: t("mint.adjust_loan_amount_description") },
-      { id: 'EXPIRATION' as const, label: t("mint.expiration"), desc: t("mint.adjust_expiration_description") },
+      { id: 'COLLATERAL' as const, label: t("mint.collateral"), desc: t("mint.adjust_collateral_description"), value: collateralBalance, decimals: position.collateralDecimals, currency: normalizeTokenSymbol(position.collateralSymbol), address: position.collateral },
+      { id: 'LIQ_PRICE' as const, label: t("mint.liquidation_price"), desc: t("mint.adjust_liq_price_description"), value: liqPrice, decimals: priceDecimals, currency: position.stablecoinSymbol, address: ADDRESS[chainId].juiceDollar },
+      { id: 'LOAN' as const, label: t("mint.loan_amount"), desc: t("mint.adjust_loan_amount_description"), value: currentDebt, decimals: 18, currency: position.stablecoinSymbol, address: ADDRESS[chainId].juiceDollar },
+      { id: 'EXPIRATION' as const, label: t("mint.expiration"), desc: t("mint.adjust_expiration_description"), value: null, decimals: 0, currency: '', address: undefined },
     ];
 
+    const handleConfirm = () => {
+      if (!selectedTarget) return;
+      setStep(selectedTarget === 'EXPIRATION' ? 'PREVIEW' : 'ENTER_VALUE');
+    };
+
+    // Get dynamic button text based on selection
+    const getButtonText = () => {
+      if (!selectedTarget) return t("mint.adjust_position");
+
+      switch (selectedTarget) {
+        case 'COLLATERAL':
+          return `${t("mint.adjust")} ${t("mint.collateral")}`;
+        case 'LIQ_PRICE':
+          return `${t("mint.adjust")} ${t("mint.liquidation_price")}`;
+        case 'LOAN':
+          return `${t("mint.adjust")} ${t("mint.loan_amount")}`;
+        case 'EXPIRATION':
+          return `${t("mint.adjust")} ${t("mint.expiration")}`;
+        default:
+          return t("mint.adjust_position");
+      }
+    };
+
     return (
-      <div className="flex flex-col gap-y-6">
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-text-title">{t("mint.what_would_you_like_to_adjust")}</h3>
-          <p className="text-sm text-text-muted2 mt-2">{t("mint.select_parameter_to_modify")}</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="flex flex-col gap-y-4">
+        <Link href={url} target="_blank">
+          <div className="text-lg font-bold underline text-center">
+            {t("monitoring.position")} {shortenAddress(position.position)}
+            <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-3 ml-2" />
+          </div>
+        </Link>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {targets.map((target) => (
             <button
               key={target.id}
-              onClick={() => {
-                setSelectedTarget(target.id);
-                setStep(target.id === 'EXPIRATION' ? 'PREVIEW' : 'ENTER_VALUE');
-              }}
-              className="p-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-primary hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all flex flex-col items-center gap-y-3 text-center"
+              onClick={() => setSelectedTarget(target.id)}
+              className="text-left hover:opacity-80 transition-opacity"
             >
-              <span className="text-lg font-bold text-text-title">{target.label}</span>
-              <span className="text-sm text-text-muted2">{target.desc}</span>
+              <AppBox className={`h-full transition-all ${selectedTarget === target.id
+                ? 'ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10'
+                : 'hover:ring-2 hover:ring-orange-300'
+                }`}>
+                <DisplayLabel label={target.label} />
+                {target.value !== null ? (
+                  <DisplayAmount
+                    amount={target.value}
+                    currency={target.currency}
+                    digits={target.decimals}
+                    address={target.address}
+                    className="mt-2"
+                  />
+                ) : (
+                  <div className="mt-2">
+                    <b>{formatDate(position.expiration)}</b>
+                  </div>
+                )}
+              </AppBox>
             </button>
           ))}
         </div>
 
-        {/* Position Details */}
-        {positionDetailsPanel}
+        <div className="text-center">
+          <p className="text-sm text-text-muted2">{t("mint.select_parameter_to_modify")}</p>
+        </div>
+
+        <Button
+          onClick={handleConfirm}
+          disabled={!selectedTarget}
+          className="text-lg leading-snug !font-extrabold"
+        >
+          {getButtonText()}
+        </Button>
       </div>
     );
   }
-
-  // Expiration - use existing component
   if (selectedTarget === 'EXPIRATION' && step === 'PREVIEW') {
     return (
       <div className="flex flex-col gap-y-4">
@@ -196,21 +465,41 @@ export const ManageSolver = () => {
     );
   }
 
-  // Step 2: Enter delta amount (how much to add/remove)
   if (step === 'ENTER_VALUE') {
     const { value: currentValue, decimals, unit } = getValueInfo(selectedTarget!);
     const delta = BigInt(deltaAmount || 0);
     const calculatedNewValue = isIncrease ? currentValue + delta : currentValue - delta;
 
+    const getAdjustTitle = () => {
+      switch (selectedTarget) {
+        case 'COLLATERAL':
+          return `${t("mint.adjust")} ${t("mint.collateral")}`;
+        case 'LIQ_PRICE':
+          return `${t("mint.adjust")} ${t("mint.liquidation_price")}`;
+        case 'LOAN':
+          return `${t("mint.adjust")} ${t("mint.loan_amount")}`;
+        default:
+          return t("mint.enter_change_amount");
+      }
+    };
+
+    const handleMaxClick = () => {
+      const maxAmounts = {
+        COLLATERAL: isIncrease ? walletBalance : currentValue,
+        LOAN: currentValue,
+        LIQ_PRICE: currentValue,
+        EXPIRATION: 0n,
+      };
+
+      const maxAmount = maxAmounts[selectedTarget as keyof typeof maxAmounts] || 0n;
+      setDeltaAmount(maxAmount.toString());
+    };
+
     return (
       <div className="flex flex-col gap-y-6">
-        <button onClick={handleReset} className="text-left text-primary hover:text-primary-hover text-sm font-medium">
-          ← {t("common.back")}
-        </button>
-        
         <div className="flex flex-col gap-y-3">
           <div className="flex flex-row justify-between items-center">
-            <div className="text-lg font-bold">{t("mint.enter_change_amount")}</div>
+            <div className="text-lg font-bold">{getAdjustTitle()}</div>
             <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center">
               <SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
                 {t("common.add")}
@@ -228,30 +517,43 @@ export const ManageSolver = () => {
               min={0n}
               max={liqPrice}
               decimals={priceDecimals}
-              isError={false}
+              isError={Boolean(deltaAmountError)}
             />
           ) : (
-            <NormalInputOutlined 
-              value={deltaAmount} 
-              onChange={setDeltaAmount} 
-              decimals={decimals} 
-              unit={unit} 
-              isError={false}
+            <NormalInputOutlined
+              value={deltaAmount}
+              onChange={setDeltaAmount}
+              decimals={decimals}
+              unit={unit}
+              isError={Boolean(deltaAmountError)}
               adornamentRow={
-                <div className="pl-2 text-xs leading-[1rem] flex flex-row gap-x-2">
-                  <span className="font-medium text-text-muted3">
-                    {t("mint.current_amount")}:
-                  </span>
-                  <span className="font-extrabold text-text-title">
-                    {formatCurrency(formatUnits(currentValue, decimals), 0, getDisplayDecimals(unit))} {unit}
-                  </span>
+                <div className="self-stretch justify-start items-center inline-flex">
+                  <div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
+                  </div>
+                  <div className="h-7 justify-end items-center gap-2.5 flex">
+                    <div className="text-input-label text-xs font-medium leading-none">
+                      {formatUnits(
+                        isIncrease && selectedTarget === 'COLLATERAL' ? walletBalance : currentValue,
+                        decimals
+                      )}{" "}
+                      {unit}
+                    </div>
+                    <MaxButton
+                      disabled={
+                        (isIncrease && selectedTarget === 'COLLATERAL' && walletBalance === 0n) ||
+                        (!isIncrease && currentValue === 0n)
+                      }
+                      onClick={handleMaxClick}
+                    />
+                  </div>
                 </div>
               }
             />
           )}
+          <ErrorDisplay error={deltaAmountError} />
         </div>
 
-        {/* Details showing calculated new value */}
+
         <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-text-muted2">{t("mint.current_value")}</span>
@@ -262,81 +564,82 @@ export const ManageSolver = () => {
             <span className="font-medium text-text-title">{isIncrease ? '+' : '-'}{formatCurrency(formatUnits(delta, decimals), 0, getDisplayDecimals(unit))} {unit}</span>
           </div>
           <div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
-            <span className="font-bold text-text-title">{t("mint.new_value")}</span>
+            <span className="font-bold text-text-title">{t("mint.new_collateral")}</span>
             <span className="font-bold text-text-title">{formatCurrency(formatUnits(calculatedNewValue, decimals), 0, getDisplayDecimals(unit))} {unit}</span>
           </div>
         </div>
 
-        <Button
-          onClick={() => {
+        <ManageButtons
+          onBack={handleReset}
+          onAction={() => {
             setNewValue(calculatedNewValue.toString());
             setStep('CHOOSE_STRATEGY');
           }}
-          disabled={!deltaAmount || delta === 0n}
-          className="text-lg leading-snug !font-extrabold"
-        >
-          {t("common.next")}
-        </Button>
-
-        {/* Position Details */}
-        {positionDetailsPanel}
-      </div>
+          actionLabel={isIncrease ? t("common.add") : t("common.remove")}
+          disabled={!deltaAmount || delta === 0n || Boolean(deltaAmountError)}
+        />
+      </div >
     );
   }
-
-  // Step 3: Choose strategy
   if (step === 'CHOOSE_STRATEGY') {
     const { value: currentValue } = getValueInfo(selectedTarget!);
     const strategies = getStrategiesForTarget(selectedTarget!, BigInt(newValue) > currentValue);
 
+    const getStrategyOutcome = (strategy: Strategy) => {
+      if (!currentPosition || !selectedTarget || !newValue) return null;
+      try {
+        const value = selectedTarget === 'EXPIRATION' ? Number(newValue) : BigInt(newValue);
+        return solveManage(currentPosition, selectedTarget, strategy, value);
+      } catch (error) {
+        return null;
+      }
+    };
+
     return (
       <div className="flex flex-col gap-y-6">
-        <button onClick={() => setStep('ENTER_VALUE')} className="text-left text-primary hover:text-primary-hover text-sm font-medium">
-          ← {t("common.back")}
-        </button>
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-text-title">{t("mint.how_to_achieve_this")}</h3>
-          <p className="text-sm text-text-muted2 mt-2">{t("mint.choose_what_stays_constant")}</p>
-        </div>
         <div className="flex flex-col gap-4">
-          {strategies.map((strat) => (
-            <button
-              key={strat.strategy}
-              onClick={() => { setSelectedStrategy(strat.strategy); setStep('PREVIEW'); }}
-              className="p-6 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:border-primary hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-all text-left"
-            >
-              <div className="text-lg font-bold text-text-title mb-2">{strat.label}</div>
-              <div className="text-sm text-text-muted2 mb-2">{strat.description}</div>
-              <div className="text-sm font-semibold text-primary">→ {strat.consequence}</div>
-            </button>
-          ))}
+          {strategies.map((strat) => {
+            const strategyOutcome = getStrategyOutcome(strat.strategy);
+            const isSelected = selectedStrategy === strat.strategy;
+
+            return (
+              <button
+                key={strat.strategy}
+                onClick={() => setSelectedStrategy(strat.strategy)}
+                className="text-left hover:opacity-80 transition-opacity"
+              >
+                <AppBox className={`h-full transition-all ${isSelected
+                  ? 'ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10'
+                  : 'hover:ring-2 hover:ring-orange-300'
+                  }`}>
+                  <div className="text-lg font-bold text-text-title mb-2">{strat.label}</div>
+                  <div className="text-sm text-text-muted2 mb-2">{strat.description}</div>
+                  <div className="text-sm font-semibold text-primary mb-4">{strat.consequence}</div>
+
+                  {isSelected && strategyOutcome?.isValid && renderPreviewItems(getPreviewItems(strategyOutcome))}
+                </AppBox>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Position Details */}
-        {positionDetailsPanel}
+        <div className="text-center">
+          <p className="text-sm text-text-muted2">{t("mint.choose_what_stays_constant")}</p>
+        </div>
+
+        <ManageButtons
+          onBack={() => setStep('ENTER_VALUE')}
+          onAction={() => setStep('PREVIEW')}
+          actionLabel={t("mint.preview_changes")}
+          disabled={!selectedStrategy}
+        />
       </div>
     );
   }
 
-  // Step 4: Preview
   if (step === 'PREVIEW' && outcome) {
-    const formatValue = (value: bigint, target: Target) => {
-      const { decimals, unit } = getValueInfo(target);
-      return `${formatCurrency(formatUnits(value, decimals), 0, getDisplayDecimals(unit))} ${unit}`;
-    };
-
-    const formatDelta = (delta: bigint, target: Target) => {
-      if (delta === 0n) return "No change";
-      return (delta > 0n ? "+" : "") + formatValue(delta, target);
-    };
-
     return (
       <div className="flex flex-col gap-y-6">
-        <button onClick={() => setStep('CHOOSE_STRATEGY')} className="text-left text-primary hover:text-primary-hover text-sm font-medium">
-          ← {t("common.back")}
-        </button>
-        <SectionTitle className="!mb-0 !text-lg">{t("mint.preview_changes")}</SectionTitle>
-
         {!outcome.isValid && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
             <div className="text-sm text-red-800 dark:text-red-200">{outcome.errorMessage || t("mint.calculation_error")}</div>
@@ -346,11 +649,7 @@ export const ManageSolver = () => {
         {outcome.isValid && (
           <>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
-              {[
-                { label: t("mint.collateral"), value: outcome.next.collateral, delta: outcome.deltaCollateral, target: 'COLLATERAL' as Target },
-                { label: t("mint.liquidation_price"), value: outcome.next.liqPrice, delta: outcome.deltaLiqPrice, target: 'LIQ_PRICE' as Target },
-                { label: t("mint.loan_amount"), value: outcome.next.debt, delta: outcome.deltaDebt, target: 'LOAN' as Target },
-              ].map((item, idx) => (
+              {getPreviewItems(outcome).map((item, idx) => (
                 <div key={idx} className="flex justify-between items-center">
                   <span className="text-sm font-medium text-text-muted2">{item.label}</span>
                   <div className="text-right">
@@ -361,27 +660,26 @@ export const ManageSolver = () => {
               ))}
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t("mint.required_actions")}:</div>
-              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                {outcome.txPlan.map((action, idx) => (
-                  <li key={idx}>
-                    {action === 'DEPOSIT' && `${t("mint.deposit_collateral")}: ${formatValue(outcome.deltaCollateral, 'COLLATERAL')}`}
-                    {action === 'WITHDRAW' && `${t("mint.withdraw_collateral")}: ${formatValue(-outcome.deltaCollateral, 'COLLATERAL')}`}
-                    {action === 'BORROW' && `${t("mint.borrow_more")}: ${formatValue(outcome.deltaDebt, 'LOAN')}`}
-                    {action === 'REPAY' && `${t("mint.repay_loan")}: ${formatValue(-outcome.deltaDebt, 'LOAN')}`}
-                  </li>
-                ))}
-              </ul>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
+              <div className="text-sm font-medium text-text-title">{t("mint.required_actions")}:</div>
+              {outcome.txPlan.map((action, idx) => (
+                <div key={idx} className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-text-muted2">{getActionLabel(action)}</span>
+                  <div className="text-right">
+                    <div className="text-base font-bold text-text-title">{getActionValue(action, outcome)}</div>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="text-center text-sm text-text-muted2">{t("mint.execute_transaction_note")}</div>
 
-            <Button className="text-lg leading-snug !font-extrabold" onClick={() => console.log('Execute:', outcome)}>
-              {t("mint.confirm_execute")}
-            </Button>
-            {/* Position Details */}
-            {positionDetailsPanel}
+            <ManageButtons
+              onBack={() => setStep('CHOOSE_STRATEGY')}
+              onAction={handleExecute}
+              actionLabel={t("mint.confirm_execute")}
+              isLoading={isTxOnGoing}
+            />
           </>
         )}
 
