@@ -517,6 +517,7 @@ export const ManageSolver = () => {
               max={liqPrice}
               decimals={priceDecimals}
               isError={Boolean(deltaAmountError)}
+              hideTrailingZeros
             />
           ) : (
             <NormalInputOutlined
