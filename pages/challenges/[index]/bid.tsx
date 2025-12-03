@@ -129,7 +129,7 @@ export default function ChallengePlaceBid() {
 		setAmount(valueBigInt);
 
 		const expectedAmount = expectedDEURO(valueBigInt);
-		
+
 		if (expectedAmount > userBalance) {
 			setError(t("challenges.error.not_enough_deuro", { symbol: TOKEN_SYMBOL }));
 		} else if (valueBigInt > remainingSize) {
@@ -217,7 +217,7 @@ export default function ChallengePlaceBid() {
 			});
 			setNavigating(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); 
+			toast.error(renderErrorTxToast(error));
 		} finally {
 			setBidding(false);
 		}
@@ -232,7 +232,9 @@ export default function ChallengePlaceBid() {
 			<div className="md:mt-8">
 				<section className="mx-auto max-w-2xl sm:px-8">
 					<div className="bg-card-body-primary shadow-card rounded-xl p-4 flex flex-col gap-y-4">
-						<div className="text-lg font-bold text-center mt-3">{t("challenges.buy_collateral", { symbol: position.collateralSymbol })}</div>
+						<div className="text-lg font-bold text-center mt-3">
+							{t("challenges.buy_collateral", { symbol: position.collateralSymbol })}
+						</div>
 
 						<div className="">
 							<TokenInput
@@ -247,10 +249,14 @@ export default function ChallengePlaceBid() {
 								balanceLabel={t("common.available_label")}
 							/>
 							<div className="flex flex-col">
-								<span>{t("common.your_balance")} {formatCurrency(formatUnits(userBalance, 18), 2, 2)} {TOKEN_SYMBOL}</span>
+								<span>
+									{t("common.your_balance")} {formatCurrency(formatUnits(userBalance, 18), 2, 2)} {TOKEN_SYMBOL}
+								</span>
 							</div>
 							<div className="flex flex-col">
-								<span>{t("common.estimated_cost")} {formatCurrency(formatUnits(expectedDEURO(), 18), 2, 2)} {TOKEN_SYMBOL}</span>
+								<span>
+									{t("common.estimated_cost")} {formatCurrency(formatUnits(expectedDEURO(), 18), 2, 2)} {TOKEN_SYMBOL}
+								</span>
 							</div>
 						</div>
 
@@ -311,11 +317,7 @@ export default function ChallengePlaceBid() {
 						<div className="mx-auto mt-4 w-72 max-w-full flex-col">
 							<GuardToAllowedChainBtn label={userAllowance < expectedDEURO() ? t("common.approve") : t("common.buy")}>
 								{userAllowance < expectedDEURO() ? (
-									<Button
-										disabled={amount == 0n || error != ""}
-										isLoading={isApproving}
-										onClick={() => handleApprove()}
-									>
+									<Button disabled={amount == 0n || error != ""} isLoading={isApproving} onClick={() => handleApprove()}>
 										{t("common.approve")}
 									</Button>
 								) : (

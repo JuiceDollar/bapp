@@ -8,7 +8,7 @@ import { TOKEN_SYMBOL } from "@utils";
 
 export default function Equity() {
 	const { t } = useTranslation();
-	
+
 	return (
 		<>
 			<Head>

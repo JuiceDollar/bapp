@@ -107,7 +107,8 @@ export default function PositionAdjust() {
 	const paidOutAmount = () => {
 		if (amount > BigInt(position.principal)) {
 			return (
-				((amount - BigInt(position.principal)) * (1_000_000n - BigInt(position.reserveContribution) - BigInt(feePercent))) / 1_000_000n
+				((amount - BigInt(position.principal)) * (1_000_000n - BigInt(position.reserveContribution) - BigInt(feePercent))) /
+				1_000_000n
 			);
 		} else {
 			return amount - BigInt(position.principal) - returnFromReserve();
@@ -151,11 +152,17 @@ export default function PositionAdjust() {
 		if (isCooldown) {
 			return position.cooldown > 1e30 ? t("my_positions.is_closed") : t("my_positions.is_in_cooldown");
 		} else if (amount - BigInt(position.principal) > maxTotalLimit) {
-			return `${t("my_positions.position_limited", { amount: formatCurrency(formatUnits(maxTotalLimit, 18), 2, 2), symbol: TOKEN_SYMBOL })}`;
+			return `${t("my_positions.position_limited", {
+				amount: formatCurrency(formatUnits(maxTotalLimit, 18), 2, 2),
+				symbol: TOKEN_SYMBOL,
+			})}`;
 		} else if (-paidOutAmount() > userFrankBalance) {
 			return `${t("common.error.insufficient_balance", { symbol: TOKEN_SYMBOL })}`;
 		} else if (liqPrice * collateralAmount < amount * 10n ** 18n) {
-			return `${t("my_positions.can_mint_at_most", { amount: formatUnits((collateralAmount * liqPrice) / 10n ** 36n, 0), symbol: TOKEN_SYMBOL })}`;
+			return `${t("my_positions.can_mint_at_most", {
+				amount: formatUnits((collateralAmount * liqPrice) / 10n ** 36n, 0),
+				symbol: TOKEN_SYMBOL,
+			})}`;
 		} else if (BigInt(position.price) * collateralAmount < amount * 10n ** 18n) {
 			return `${t("my_positions.only_after_cooldown")}`;
 		} else {
@@ -268,9 +275,7 @@ export default function PositionAdjust() {
 			<div className="md:mt-8">
 				<section className="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<div className="bg-card-body-primary shadow-card rounded-xl p-4 flex flex-col gap-y-4">
-						<div className="text-lg font-bold text-center">
-							{t("my_positions.adjustment")}
-						</div>
+						<div className="text-lg font-bold text-center">{t("my_positions.adjustment")}</div>
 						<div className="space-y-8">
 							<TokenInput
 								label={t("common.amount")}
@@ -335,9 +340,7 @@ export default function PositionAdjust() {
 					</div>
 					<div>
 						<div className="bg-card-body-primary shadow-card rounded-xl p-4 flex flex-col">
-							<div className="text-lg font-bold text-center mt-3">
-								{t("my_positions.outcome")}
-							</div>
+							<div className="text-lg font-bold text-center mt-3">{t("my_positions.outcome")}</div>
 							<div className="flex-1 mt-4">
 								<div className="flex">
 									<div className="flex-1"></div>
@@ -358,7 +361,9 @@ export default function PositionAdjust() {
 
 								<div className="mt-2 flex">
 									<div className="flex-1">
-										{amount >= BigInt(position.principal) ? t("my_positions.sent_to_your_wallet") : t("my_positions.to_be_added_from_your_wallet")}
+										{amount >= BigInt(position.principal)
+											? t("my_positions.sent_to_your_wallet")
+											: t("my_positions.to_be_added_from_your_wallet")}
 									</div>
 									<div className="text-right">
 										{/* <span className="text-xs mr-3">{formatCurrency(0)}%</span> */}
@@ -368,7 +373,9 @@ export default function PositionAdjust() {
 
 								<div className="mt-2 flex">
 									<div className="flex-1">
-										{amount >= BigInt(position.principal) ? t("my_positions.added_to_reserve_on_your_behalf") : t("my_positions.returned_from_reserve")}
+										{amount >= BigInt(position.principal)
+											? t("my_positions.added_to_reserve_on_your_behalf")
+											: t("my_positions.returned_from_reserve")}
 									</div>
 									<div className="text-right">
 										{/* <span className="text-xs mr-3">{formatCurrency(0)}%</span> */}
@@ -394,7 +401,9 @@ export default function PositionAdjust() {
 									</div>
 									<div className="text-right">
 										{/* <span className="text-xs mr-3">100%</span> */}
-										<span>{formatCurrency(formatUnits(amount, 18))} {TOKEN_SYMBOL}</span>
+										<span>
+											{formatCurrency(formatUnits(amount, 18))} {TOKEN_SYMBOL}
+										</span>
 									</div>
 								</div>
 							</div>
@@ -405,7 +414,6 @@ export default function PositionAdjust() {
 		</>
 	);
 }
-
 
 export async function getServerSideProps({ locale }: { locale: string }) {
 	return {
