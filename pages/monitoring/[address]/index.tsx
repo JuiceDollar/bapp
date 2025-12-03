@@ -67,7 +67,9 @@ export default function PositionDetail() {
 	return (
 		<>
 			<Head>
-				<title>{TOKEN_SYMBOL} - {t("monitoring.position_overview")}</title>
+				<title>
+					{TOKEN_SYMBOL} - {t("monitoring.position_overview")}
+				</title>
 			</Head>
 			<div className="md:mt-8">
 				<section className="grid grid-cols-1 md:grid-cols-2 gap-4">

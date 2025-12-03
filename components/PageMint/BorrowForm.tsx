@@ -27,15 +27,7 @@ type ApiPositionDefault = {
 import { SelectCollateralModal } from "./SelectCollateralModal";
 import { BorrowingDEUROModal } from "@components/PageMint/BorrowingDEUROModal";
 import { InputTitle } from "@components/Input/InputTitle";
-import {
-	formatBigInt,
-	formatCurrency,
-	shortenAddress,
-	toDate,
-	TOKEN_SYMBOL,
-	toTimestamp,
-	NATIVE_WRAPPED_SYMBOLS,
-} from "@utils";
+import { formatBigInt, formatCurrency, shortenAddress, toDate, TOKEN_SYMBOL, toTimestamp, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { TokenBalance, useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { RootState, store } from "../../redux/redux.store";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";

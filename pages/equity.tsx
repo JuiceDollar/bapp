@@ -12,7 +12,9 @@ export default function Equity() {
 	return (
 		<>
 			<Head>
-				<title>{TOKEN_SYMBOL} - {t("equity.title")}</title>
+				<title>
+					{TOKEN_SYMBOL} - {t("equity.title")}
+				</title>
 			</Head>
 
 			<div className="md:mt-8">

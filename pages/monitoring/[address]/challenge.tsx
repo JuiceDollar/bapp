@@ -192,7 +192,9 @@ export default function PositionChallenge() {
 	return (
 		<>
 			<Head>
-				<title>{TOKEN_SYMBOL} - {t("monitoring.challenge_title")}</title>
+				<title>
+					{TOKEN_SYMBOL} - {t("monitoring.challenge_title")}
+				</title>
 			</Head>
 
 			{/* <div>

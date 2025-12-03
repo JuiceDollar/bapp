@@ -28,7 +28,9 @@ export default function Positions() {
 	return (
 		<>
 			<Head>
-				<title>{TOKEN_SYMBOL} - {t("my_positions.positions")}</title>
+				<title>
+					{TOKEN_SYMBOL} - {t("my_positions.positions")}
+				</title>
 			</Head>
 
 			{/* Section Positions */}
