@@ -822,10 +822,10 @@
     ts-node "^10.9.1"
     typescript "^5.2.2"
 
-"@juicedollar/jusd@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@juicedollar/jusd/-/jusd-1.0.2.tgz#a6b02599c8c990f30c24096ba989f5cfb90cff4d"
-  integrity sha512-QMVoedo6z1Ow6nDu6M5IFFKg9yHEkTAVyY4Y6d54os59cChJlDDrhKjolo5XGO2gb1F7J2rhW6cFV+ARceU1dQ==
+"@juicedollar/jusd@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@juicedollar/jusd/-/jusd-1.0.3.tgz#e7d4b81d6b63766afabdc4efb5add331f1407b6a"
+  integrity sha512-/DWGdW27yfz5S680t7Ag+RGBeFPVD6F1lAB8e2SB5CjZwev/v70I2OJDhxx4pyBp/FGLy2bx5yyCsP8zeWgFpg==
   dependencies:
     "@openzeppelin/contracts" "^5.1.0"
     hardhat-abi-exporter "^2.10.0"
