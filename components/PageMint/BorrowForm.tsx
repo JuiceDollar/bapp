@@ -42,7 +42,7 @@ import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { useTranslation } from "next-i18next";
 import { ADDRESS, MintingHubGatewayABI, PositionV2ABI, CoinLendingGatewayABI } from "@juicedollar/jusd";
 import { useAccount, useBlock, useChainId } from "wagmi";
-import { WAGMI_CONFIG, WAGMI_CHAIN, DEURO_API_CLIENT } from "../../app.config";
+import { WAGMI_CONFIG, WAGMI_CHAIN, API_CLIENT } from "../../app.config";
 import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
 import { TxToast } from "@components/TxToast";
 import { toast } from "react-toastify";
@@ -84,7 +84,7 @@ export default function PositionCreate({}) {
 	useEffect(() => {
 		const fetchDefaultPosition = async () => {
 			try {
-				const response = await DEURO_API_CLIENT.get("/positions/default");
+				const response = await API_CLIENT.get("/positions/default");
 				setDefaultPosition(response.data as ApiPositionDefault);
 			} catch (error) {
 				console.error("Failed to fetch default position:", error);

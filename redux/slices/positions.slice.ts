@@ -1,7 +1,7 @@
 import { PositionQuery, ApiPositionsListing, ApiPositionsOwners, ApiPositionsMapping } from "@juicedollar/api";
 import { createSlice, Dispatch } from "@reduxjs/toolkit";
 import { uniqueValues } from "@utils";
-import { DEURO_API_CLIENT } from "../../app.config";
+import { API_CLIENT } from "../../app.config";
 import {
 	PositionsState,
 	DispatchBoolean,
@@ -126,19 +126,19 @@ export const fetchPositionsList =
 		try {
 			// ---------------------------------------------------------------
 			// Query raw data from backend api;
-			const response1 = await DEURO_API_CLIENT.get("/positions/list");
+			const response1 = await API_CLIENT.get("/positions/list");
 			const listArray = response1.data.list as PositionQuery[];
 			dispatch(slice.actions.setList({ ...response1.data, list: listArray }));
 
-			const responseMapping = await DEURO_API_CLIENT.get("/positions/mapping");
+			const responseMapping = await API_CLIENT.get("/positions/mapping");
 			const positionsMapping = responseMapping.data as ApiPositionsMapping;
 			dispatch(slice.actions.setListMapping(positionsMapping));
 
-			const response2 = await DEURO_API_CLIENT.get("/positions/owners");
+			const response2 = await API_CLIENT.get("/positions/owners");
 			const positionsByOwners = response2.data as ApiPositionsOwners;
 			dispatch(slice.actions.setOwnersPositions(positionsByOwners));
 
-			const response3 = await DEURO_API_CLIENT.get("/positions/requests");
+			const response3 = await API_CLIENT.get("/positions/requests");
 			const positionsRequests = response3.data as ApiPositionsMapping;
 			dispatch(slice.actions.setRequestsList(positionsRequests));
 
