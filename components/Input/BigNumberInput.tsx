@@ -31,6 +31,7 @@ export function BigNumberInput({
 	disabled,
 	onFocus,
 	onBlur,
+	hideTrailingZeros,
 }: BigNumberInputProps) {
 	const inputRef = React.useRef<any>(null);
 

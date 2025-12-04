@@ -25,6 +25,7 @@ export function SliderInputOutlined({
 	errorMessage,
 	usdPrice,
 	disabled,
+	hideTrailingZeros,
 }: SliderInputOutlinedProps) {
 	const [isFocused, setIsFocused] = useState(false);
 

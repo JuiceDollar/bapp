@@ -6,7 +6,8 @@ import { RootState, store } from "../../redux/redux.store";
 import { Address, formatUnits, zeroAddress, erc20Abi } from "viem";
 import { formatCurrency, normalizeTokenSymbol, shortenAddress, getDisplayDecimals, formatPositionValue, formatPositionDelta, NATIVE_WRAPPED_SYMBOLS, formatDate, roundToWholeUnits } from "@utils";
 import { useReadContracts, useChainId, useAccount } from "wagmi";
-import { ADDRESS, PositionV2ABI, CoinLendingGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, PositionV2ABI } from "@juicedollar/jusd";
+import { CoinLendingGatewayABI } from "../../utils/coinLendingGateway";
 import { writeContract, waitForTransactionReceipt } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
@@ -212,9 +213,9 @@ export const ManageSolver = () => {
       for (const action of outcome.txPlan) {
         if (action === 'DEPOSIT') {
           if (isNativeWrappedPosition) {
-            const gatewayAddress = ADDRESS[chainId]?.coinLendingGateway;
+            const gatewayAddress = ADDRESS[chainId]?.mintingHubGateway;
             if (!gatewayAddress || gatewayAddress === zeroAddress) {
-              toast.error("CoinLendingGateway not configured for this network");
+              toast.error("MintingHubGateway not configured for this network");
               setIsTxOnGoing(false);
               return;
             }
@@ -252,7 +253,7 @@ export const ManageSolver = () => {
               address: position.position,
               abi: PositionV2ABI,
               functionName: "adjust",
-              args: [principal, outcome.next.collateral, outcome.next.liqPrice],
+              args: [principal, outcome.next.collateral, outcome.next.liqPrice, false],
             });
 
             const toastContent = [
@@ -280,7 +281,7 @@ export const ManageSolver = () => {
             address: position.position,
             abi: PositionV2ABI,
             functionName: "adjust",
-            args: [principal, outcome.next.collateral, outcome.next.liqPrice],
+            args: [principal, outcome.next.collateral, outcome.next.liqPrice, false],
           });
 
           const toastContent = [

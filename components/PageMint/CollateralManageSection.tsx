@@ -9,11 +9,12 @@ import { useRouter } from "next/router";
 import { RootState, store } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
 import { Address, erc20Abi, formatUnits, zeroAddress } from "viem";
-import { formatCurrency, shortenAddress, NATIVE_WRAPPED_SYMBOLS, normalizeTokenSymbol } from "@utils";
+import { formatCurrency, shortenAddress, NATIVE_WRAPPED_SYMBOLS, normalizeTokenSymbol, TOKEN_SYMBOL } from "@utils";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { useChainId, useReadContracts } from "wagmi";
 import { writeContract } from "wagmi/actions";
-import { ADDRESS, PositionV2ABI, CoinLendingGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, PositionV2ABI } from "@juicedollar/jusd";
+import { WETH_ABI } from "../../utils/wethHelpers";
 import { WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
 import { toast } from "react-toastify";
 import { waitForTransactionReceipt } from "wagmi/actions";
@@ -222,32 +223,42 @@ export const CollateralManageSection = () => {
 			setIsTxOnGoing(true);
 
 			let addHash: `0x${string}`;
+			const contractAmount = BigInt(amount) + balanceOf;
 
-		// Use addCollateralWithCoin for native wrapped positions
-		if (isNativeWrappedPosition) {
-			const gatewayAddress = ADDRESS[chainId]?.coinLendingGateway;
-			if (!gatewayAddress || gatewayAddress === zeroAddress) {
-				toast.error("CoinLendingGateway not configured for this network");
-				setIsTxOnGoing(false);
-				return;
-			}
+			// For native wrapped positions (cBTC -> WcBTC), wrap first then adjust
+			if (isNativeWrappedPosition) {
+				// Step 1: Wrap native cBTC to WcBTC
+				const wrapHash = await writeContract(WAGMI_CONFIG, {
+					address: position.collateral as Address,
+					abi: WETH_ABI,
+					functionName: "deposit",
+					value: BigInt(amount),
+				});
+				await waitForTransactionReceipt(WAGMI_CONFIG, { hash: wrapHash, confirmations: 1 });
 
-			addHash = await writeContract(WAGMI_CONFIG, {
-				address: gatewayAddress,
-				abi: CoinLendingGatewayABI,
-				functionName: "addCollateralWithCoin",
-				args: [position.position as Address],
-				value: BigInt(amount),
-			});
-			} else {
-				// Standard ERC20 flow
-				const contractAmount = BigInt(amount) + balanceOf;
+				// Step 2: Approve WcBTC for the position
+				const approveHash = await writeContract(WAGMI_CONFIG, {
+					address: position.collateral as Address,
+					abi: erc20Abi,
+					functionName: "approve",
+					args: [position.position as Address, BigInt(amount)],
+				});
+				await waitForTransactionReceipt(WAGMI_CONFIG, { hash: approveHash, confirmations: 1 });
 
+				// Step 3: Call adjust on the position
 				addHash = await writeContract(WAGMI_CONFIG, {
 					address: position.position,
 					abi: PositionV2ABI,
 					functionName: "adjust",
-					args: [principal, contractAmount, price],
+					args: [principal, contractAmount, price, false],
+				});
+			} else {
+				// Standard ERC20 flow
+				addHash = await writeContract(WAGMI_CONFIG, {
+					address: position.position,
+					abi: PositionV2ABI,
+					functionName: "adjust",
+					args: [principal, contractAmount, price, false],
 				});
 			}
 

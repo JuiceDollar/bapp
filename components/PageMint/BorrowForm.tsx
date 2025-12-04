@@ -18,7 +18,7 @@ import { TokenBalance, useWalletERC20Balances } from "../../hooks/useWalletBalan
 import { RootState, store } from "../../redux/redux.store";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { useTranslation } from "next-i18next";
-import { ADDRESS, CoinLendingGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, MintingHubGatewayABI } from "@juicedollar/jusd";
 import { useAccount, useChainId } from "wagmi";
 import { API_CLIENT, WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
 import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
@@ -295,23 +295,24 @@ export default function PositionCreate({ }) {
 			setIsCloneLoading(true);
 			setIsCloneSuccess(false);
 
-			const gatewayAddress = ADDRESS[chainId]?.coinLendingGateway;
+			const gatewayAddress = ADDRESS[chainId]?.mintingHubGateway;
 			if (!gatewayAddress || gatewayAddress === zeroAddress) {
-				toast.error("CoinLendingGateway not configured for this network");
+				toast.error("MintingHubGateway not configured for this network");
 				setIsOpenBorrowingDEUROModal(false);
 				return;
 			}
 
 			const hash = await writeContract(WAGMI_CONFIG, {
 				address: gatewayAddress,
-				abi: CoinLendingGatewayABI,
-				functionName: "lendWithCoin",
+				abi: MintingHubGatewayABI,
+				functionName: "clone",
 				args: [
+					address as Address,
 					selectedPosition.position as Address,
+					BigInt(collateralAmount),
 					loanDetails.loanAmount,
 					toTimestamp(expirationDate),
-					frontendCode,
-					BigInt(liquidationPrice),
+					BigInt(liquidationPrice),                
 				],
 				value: BigInt(collateralAmount),
 			});
