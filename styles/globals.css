@@ -184,16 +184,16 @@ button[data-testid="component-big-button"] {
 
 /* Override toast success icon color to orange */
 .Toastify__toast--success .Toastify__toast-icon svg {
-	fill: #F7911A;
-	color: #F7911A;
+	fill: #f7911a;
+	color: #f7911a;
 }
 
 .Toastify__toast--success .Toastify__toast-icon svg path {
-	fill: #F7911A;
-	stroke: #F7911A;
+	fill: #f7911a;
+	stroke: #f7911a;
 }
 
 /* Progress bar orange */
 .Toastify__progress-bar--success {
-	background: #F7911A !important;
+	background: #f7911a !important;
 }
