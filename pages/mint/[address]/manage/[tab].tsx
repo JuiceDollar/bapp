@@ -12,7 +12,9 @@ export default function PositionManage() {
 	return (
 		<>
 			<Head>
-				<title>{TOKEN_SYMBOL} - {t("my_positions.manage_position")}</title>
+				<title>
+					{TOKEN_SYMBOL} - {t("my_positions.manage_position")}
+				</title>
 			</Head>
 			<div className="md:mt-8 flex justify-center">
 				<AppCard className="max-w-lg w-full p-6 flex flex-col gap-y-6">

@@ -157,30 +157,37 @@ export const MyBorrow = () => {
 
 	const cachedCollateralizations = useRef<Record<string, number>>({});
 
-	const borrowData = useMemo(() => ownedPositions.map((position) => {
-		const { principal, reserveContribution, collateralBalance, collateralDecimals, collateralSymbol } = position;
-		const amountBorrowed = formatCurrency(
-			formatUnits(BigInt(principal) - (BigInt(principal) * BigInt(reserveContribution)) / 1_000_000n, position.stablecoinDecimals)
-		) as string;
+	const borrowData = useMemo(
+		() =>
+			ownedPositions.map((position) => {
+				const { principal, reserveContribution, collateralBalance, collateralDecimals, collateralSymbol } = position;
+				const amountBorrowed = formatCurrency(
+					formatUnits(
+						BigInt(principal) - (BigInt(principal) * BigInt(reserveContribution)) / 1_000_000n,
+						position.stablecoinDecimals
+					)
+				) as string;
 
-		const calculatedPercentage = calculateCollateralizationPercentage(position, prices);
-		if (calculatedPercentage > 0) cachedCollateralizations.current[position.position] = calculatedPercentage;
-		const collateralizationPercentage = cachedCollateralizations.current[position.position] || 0;
+				const calculatedPercentage = calculateCollateralizationPercentage(position, prices);
+				if (calculatedPercentage > 0) cachedCollateralizations.current[position.position] = calculatedPercentage;
+				const collateralizationPercentage = cachedCollateralizations.current[position.position] || 0;
 
-		return {
-			position: position.position as `0x${string}`,
-			symbol: normalizeTokenSymbol(collateralSymbol),
-			collateralAmount: formatCurrency(formatUnits(BigInt(collateralBalance), collateralDecimals) as string, 0, 5),
-			collateralization: collateralizationPercentage.toString(),
-			loanDueIn: formatCurrency(Math.round((position.expiration * 1000 - Date.now()) / 1000 / 60 / 60 / 24)) as string,
-			amountBorrowed,
-			liquidationPrice: formatCurrency(
-				formatUnits(BigInt(position.virtualPrice || position.price), 36 - collateralDecimals) as string,
-				2,
-				2
-			) as string,
-		};
-	}), [ownedPositions, prices]);
+				return {
+					position: position.position as `0x${string}`,
+					symbol: normalizeTokenSymbol(collateralSymbol),
+					collateralAmount: formatCurrency(formatUnits(BigInt(collateralBalance), collateralDecimals) as string, 0, 5),
+					collateralization: collateralizationPercentage.toString(),
+					loanDueIn: formatCurrency(Math.round((position.expiration * 1000 - Date.now()) / 1000 / 60 / 60 / 24)) as string,
+					amountBorrowed,
+					liquidationPrice: formatCurrency(
+						formatUnits(BigInt(position.virtualPrice || position.price), 36 - collateralDecimals) as string,
+						2,
+						2
+					) as string,
+				};
+			}),
+		[ownedPositions, prices]
+	);
 
 	const totalOwed = ownedPositions.reduce(
 		(acc, curr) => acc + BigInt(curr.principal) - (BigInt(curr.principal) * BigInt(curr.reserveContribution)) / 1_000_000n,

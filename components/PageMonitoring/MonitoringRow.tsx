@@ -77,9 +77,9 @@ export default function MonitoringRow({ headers, position, tab }: Props) {
 					<span className="mr-3 cursor-pointer" onClick={openExplorer}>
 						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} />
 					</span>
-					<span className={`col-span-2 text-md font-extrabold text-text-primary`}>{`${formatCurrency(collateralizationPercentage)} ${
-						normalizeTokenSymbol(position.collateralSymbol)
-					}`}</span>
+					<span className={`col-span-2 text-md font-extrabold text-text-primary`}>{`${formatCurrency(
+						collateralizationPercentage
+					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</span>
 				</div>
 
 				{/* mobile view */}
@@ -87,9 +87,9 @@ export default function MonitoringRow({ headers, position, tab }: Props) {
 					<div className="mr-4 cursor-pointer" onClick={openExplorer}>
 						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} />
 					</div>
-					<div className={`col-span-2 text-md text-text-primary font-semibold`}>{`${formatCurrency(collateralizationPercentage)} ${
-						normalizeTokenSymbol(position.collateralSymbol)
-					}`}</div>
+					<div className={`col-span-2 text-md text-text-primary font-semibold`}>{`${formatCurrency(
+						collateralizationPercentage
+					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</div>
 				</div>
 			</div>
 

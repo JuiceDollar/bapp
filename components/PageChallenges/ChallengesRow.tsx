@@ -89,9 +89,9 @@ export default function ChallengesRow({ headers, challenge, tab }: Props) {
 					<span className="mr-3 cursor-pointer" onClick={openExplorer}>
 						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} />
 					</span>
-					<span className={`col-span-2 text-md font-extrabold text-text-primary`}>{`${formatCurrency(challengeRemainingSize)} ${
-						normalizeTokenSymbol(position.collateralSymbol)
-					}`}</span>
+					<span className={`col-span-2 text-md font-extrabold text-text-primary`}>{`${formatCurrency(
+						challengeRemainingSize
+					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</span>
 				</div>
 
 				{/* mobile view */}
@@ -99,9 +99,9 @@ export default function ChallengesRow({ headers, challenge, tab }: Props) {
 					<div className="mr-3 cursor-pointer" onClick={openExplorer}>
 						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} />
 					</div>
-					<div className={`col-span-2 text-md text-text-primary font-semibold`}>{`${formatCurrency(challengeRemainingSize)} ${
-						normalizeTokenSymbol(position.collateralSymbol)
-					}`}</div>
+					<div className={`col-span-2 text-md text-text-primary font-semibold`}>{`${formatCurrency(
+						challengeRemainingSize
+					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</div>
 				</div>
 			</div>
 
