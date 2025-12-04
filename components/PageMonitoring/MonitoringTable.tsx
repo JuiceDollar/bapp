@@ -93,7 +93,14 @@ function sortPositions(
 		// sort for coll.
 		list.sort((a, b) => {
 			const calc = function (p: PositionQuery) {
-				return calculateCollateralizationPercentage(p, prices);
+				const collBalancePosition: number = Math.round((parseInt(p.collateralBalance) / 10 ** p.collateralDecimals) * 100) / 100;
+				const collTokenPriceMarket = prices[p.collateral.toLowerCase() as Address]?.price?.eur || 0;
+				const collTokenPricePosition: number =
+					Math.round((parseInt(p.virtualPrice || p.price) / 10 ** (36 - p.collateralDecimals)) * 100) / 100;
+				const marketValueCollateral: number = collBalancePosition * collTokenPriceMarket;
+				const positionValueCollateral: number = collBalancePosition * collTokenPricePosition;
+				const collateralizationPercentage: number = Math.round((marketValueCollateral / positionValueCollateral) * 10000) / 100;
+				return collateralizationPercentage;
 			};
 			return calc(b) - calc(a);
 		});

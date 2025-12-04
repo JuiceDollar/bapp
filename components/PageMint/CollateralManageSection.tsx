@@ -46,14 +46,16 @@ export const CollateralManageSection = () => {
 	// Check if position uses native wrapped token (cBTC)
 	const isNativeWrappedPosition = position && NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase());
 	const { balancesByAddress, refetchBalances } = useWalletERC20Balances(
-		position ? [
-			{
-				symbol: position.collateralSymbol,
-				address: position.collateral,
-				name: position.collateralName,
-				allowance: [position.position],
-			},
-		] : []
+		position
+			? [
+					{
+						symbol: position.collateralSymbol,
+						address: position.collateral,
+						name: position.collateralName,
+						allowance: [position.position],
+					},
+			  ]
+			: []
 	);
 	
 	// Get native balance for native wrapped positions
@@ -61,39 +63,41 @@ export const CollateralManageSection = () => {
 	const url = useContractUrl(position?.position || zeroAddress as Address);
 
 	const { data, refetch: refetchReadContracts } = useReadContracts({
-		contracts: position ? [
-			{
-				chainId,
-				address: position.position,
-				abi: PositionV2ABI,
-				functionName: "principal",
-			},
-			{
-				chainId,
-				address: position.position,
-				abi: PositionV2ABI,
-				functionName: "price",
-			},
-			{
-				chainId,
-				abi: erc20Abi,
-				address: position.collateral as Address,
-				functionName: "balanceOf",
-				args: [position.position],
-			},
-			{
-				chainId,
-				abi: PositionV2ABI,
-				address: position.position,
-				functionName: "getDebt",
-			},
-			{
-				chainId,
-				abi: PositionV2ABI,
-				address: position.position,
-				functionName: "getCollateralRequirement",
-			},
-		] : [],
+		contracts: position
+			? [
+					{
+						chainId,
+						address: position.position,
+						abi: PositionV2ABI,
+						functionName: "principal",
+					},
+					{
+						chainId,
+						address: position.position,
+						abi: PositionV2ABI,
+						functionName: "price",
+					},
+					{
+						chainId,
+						abi: erc20Abi,
+						address: position.collateral as Address,
+						functionName: "balanceOf",
+						args: [position.position],
+					},
+					{
+						chainId,
+						abi: PositionV2ABI,
+						address: position.position,
+						functionName: "getDebt",
+					},
+					{
+						chainId,
+						abi: PositionV2ABI,
+						address: position.position,
+						functionName: "getCollateralRequirement",
+					},
+			  ]
+			: [],
 	});
 
 	const principal = data?.[0]?.result || 0n;
@@ -113,9 +117,7 @@ export const CollateralManageSection = () => {
 	// Calculate maxToRemove for validation (will be 0 if position is undefined)
 	const debtBasedRequirement = (collateralRequirement * 10n ** 18n) / price;
 	const minimumCollateralBigInt = BigInt(position?.minimumCollateral || 0);
-	const requiredCollateral = debtBasedRequirement > minimumCollateralBigInt
-		? debtBasedRequirement
-		: minimumCollateralBigInt;
+	const requiredCollateral = debtBasedRequirement > minimumCollateralBigInt ? debtBasedRequirement : minimumCollateralBigInt;
 
 	const maxToRemoveThreshold = position ? balanceOf - requiredCollateral : 0n;
 	const maxToRemove = debt > 0n ? (maxToRemoveThreshold > 0n ? maxToRemoveThreshold : 0n) : balanceOf;
@@ -287,7 +289,7 @@ export const CollateralManageSection = () => {
 				address: position.position,
 				abi: PositionV2ABI,
 				functionName: "adjust",
-				args: [principal, contractAmount, price],
+				args: [principal, contractAmount, price, false],
 			});
 
 			const toastContent = [
@@ -334,7 +336,7 @@ export const CollateralManageSection = () => {
 								{normalizeTokenSymbol(position.collateralSymbol)}
 							</span>
 							<span className="text-xs font-medium text-text-muted2 leading-[1rem]">
-								{formatCurrency(collateralValuation)} dEURO
+								{formatCurrency(collateralValuation)} {TOKEN_SYMBOL}
 							</span>
 						</div>
 					</div>

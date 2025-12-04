@@ -97,12 +97,18 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 							</div>
 
 							<div className="w-full flex flex-row justify-between items-center">
-								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">{t("dashboard.liquidation_price")}</div>
-								<div className="font-medium text-base leading-tight">{item.liquidationPrice} {TOKEN_SYMBOL}</div>
+								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
+									{t("dashboard.liquidation_price")}
+								</div>
+								<div className="font-medium text-base leading-tight">
+									{item.liquidationPrice} {TOKEN_SYMBOL}
+								</div>
 							</div>
 
 							<div className="w-full flex flex-row justify-between items-center">
-								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">{t("dashboard.collateralization")}</div>
+								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
+									{t("dashboard.collateralization")}
+								</div>
 								<div className="font-medium text-base leading-tight">{item.collateralization} %</div>
 							</div>
 
@@ -114,7 +120,9 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 							</div>
 
 							<div className="w-full flex flex-row justify-between items-center">
-								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">{t("dashboard.amount_borrowed")}</div>
+								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
+									{t("dashboard.amount_borrowed")}
+								</div>
 								<div className="font-extrabold text-base leading-tight">
 									{item.amountBorrowed} {TOKEN_SYMBOL}
 								</div>
@@ -143,7 +151,9 @@ export const MyBorrow = () => {
 	const overwrite = getPublicViewAddress(router);
 	const account = overwrite || address || zeroAddress;
 
-	const ownedPositions = positions.filter((position) => position.owner.toLowerCase() === account.toLowerCase()).filter((position) => !position.closed);
+	const ownedPositions = positions
+		.filter((position) => position.owner.toLowerCase() === account.toLowerCase())
+		.filter((position) => !position.closed);
 
 	const cachedCollateralizations = useRef<Record<string, number>>({});
 
@@ -151,7 +161,7 @@ export const MyBorrow = () => {
 		const { principal, reserveContribution, collateralBalance, collateralDecimals, collateralSymbol } = position;
 		const amountBorrowed = formatCurrency(
 			formatUnits(BigInt(principal) - (BigInt(principal) * BigInt(reserveContribution)) / 1_000_000n, position.stablecoinDecimals)
-		) as string;	
+		) as string;
 
 		const calculatedPercentage = calculateCollateralizationPercentage(position, prices);
 		if (calculatedPercentage > 0) cachedCollateralizations.current[position.position] = calculatedPercentage;
@@ -164,7 +174,11 @@ export const MyBorrow = () => {
 			collateralization: collateralizationPercentage.toString(),
 			loanDueIn: formatCurrency(Math.round((position.expiration * 1000 - Date.now()) / 1000 / 60 / 60 / 24)) as string,
 			amountBorrowed,
-			liquidationPrice: formatCurrency(formatUnits(BigInt(position.virtualPrice || position.price), 36 - collateralDecimals) as string, 2, 2) as string,
+			liquidationPrice: formatCurrency(
+				formatUnits(BigInt(position.virtualPrice || position.price), 36 - collateralDecimals) as string,
+				2,
+				2
+			) as string,
 		};
 	}), [ownedPositions, prices]);
 

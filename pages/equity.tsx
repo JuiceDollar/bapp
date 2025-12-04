@@ -4,14 +4,17 @@ import EquityNativePoolShareDetailsCard from "@components/PageEquity/EquityNativ
 import EquityInteractionCard from "@components/PageEquity/EquityInteractionCard";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
+import { TOKEN_SYMBOL } from "@utils";
 
 export default function Equity() {
 	const { t } = useTranslation();
-	
+
 	return (
 		<>
 			<Head>
-				<title>dEURO - {t("equity.title")}</title>
+				<title>
+					{TOKEN_SYMBOL} - {t("equity.title")}
+				</title>
 			</Head>
 
 			<div className="md:mt-8">

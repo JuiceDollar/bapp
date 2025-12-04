@@ -68,18 +68,20 @@ export function TokenInputSelectOutlined({
 				>
 					<div className="self-stretch justify-start items-center gap-3 inline-flex">
 						<div className="grow h-11 px-2 py-3 bg-transparent rounded-lg justify-start items-center flex min-w-0">
-						<BigNumberInput
-							className={`w-full pl-0 ${
-								notEditable ? "placeholder:text-text-muted2" : "placeholder:text-input-placeholder"
-							} text-2xl font-medium leading-tight bg-transparent ${isError ? "!text-text-warning" : "!text-input-primary"}`}
-							placeholder="0"
-							value={value}
-							onChange={onChange}
-							decimals={selectedToken?.decimals || 18}
-							disabled={disabled || notEditable}
-							onFocus={handleOnFocus}
-							onBlur={handleOnBlur}
-						/>
+							<BigNumberInput
+								className={`w-full pl-0 ${
+									notEditable ? "placeholder:text-text-muted2" : "placeholder:text-input-placeholder"
+								} text-2xl font-medium leading-tight bg-transparent ${
+									isError ? "!text-text-warning" : "!text-input-primary"
+								}`}
+								placeholder="0"
+								value={value}
+								onChange={onChange}
+								decimals={selectedToken?.decimals || 18}
+								disabled={disabled || notEditable}
+								onFocus={handleOnFocus}
+								onBlur={handleOnBlur}
+							/>
 						</div>
 						{!hideTokenSelector && (
 							<button
