@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useSelector } from "react-redux";
 import { RootState, store } from "../../redux/redux.store";
 import { Address, formatUnits, zeroAddress, erc20Abi } from "viem";
-import { formatCurrency, normalizeTokenSymbol, shortenAddress, getDisplayDecimals, formatPositionValue, formatPositionDelta, NATIVE_WRAPPED_SYMBOLS, formatDate } from "@utils";
+import { formatCurrency, normalizeTokenSymbol, shortenAddress, getDisplayDecimals, formatPositionValue, formatPositionDelta, NATIVE_WRAPPED_SYMBOLS, formatDate, roundToWholeUnits } from "@utils";
 import { useReadContracts, useChainId, useAccount } from "wagmi";
 import { ADDRESS, PositionV2ABI, CoinLendingGatewayABI } from "@juicedollar/jusd";
 import { writeContract, waitForTransactionReceipt } from "wagmi/actions";
@@ -95,10 +95,10 @@ export const ManageSolver = () => {
 
   const getValueInfo = (target: Target) => {
     const info = {
-      COLLATERAL: { value: collateralBalance, decimals: position?.collateralDecimals || 18, unit: normalizeTokenSymbol(position?.collateralSymbol || '') },
-      LIQ_PRICE: { value: liqPrice, decimals: priceDecimals, unit: position?.stablecoinSymbol || 'JUSD' },
-      LOAN: { value: currentDebt, decimals: 18, unit: position?.stablecoinSymbol || 'JUSD' },
-      EXPIRATION: { value: 0n, decimals: 0, unit: '' },
+      COLLATERAL: { value: collateralBalance, decimals: position?.collateralDecimals || 18, unit: normalizeTokenSymbol(position?.collateralSymbol || ''), displayDecimals: position?.collateralDecimals || 18 },
+      LIQ_PRICE: { value: liqPrice, decimals: priceDecimals, unit: position?.stablecoinSymbol || 'JUSD', displayDecimals: 0 },
+      LOAN: { value: currentDebt, decimals: 18, unit: position?.stablecoinSymbol || 'JUSD', displayDecimals: 18 },
+      EXPIRATION: { value: 0n, decimals: 0, unit: '', displayDecimals: 0 },
     };
     return info[target];
   };
@@ -371,10 +371,10 @@ export const ManageSolver = () => {
   };
   if (step === 'SELECT_TARGET') {
     const targets = [
-      { id: 'COLLATERAL' as const, label: t("mint.collateral"), desc: t("mint.adjust_collateral_description"), value: collateralBalance, decimals: position.collateralDecimals, currency: normalizeTokenSymbol(position.collateralSymbol), address: position.collateral },
-      { id: 'LIQ_PRICE' as const, label: t("mint.liquidation_price"), desc: t("mint.adjust_liq_price_description"), value: liqPrice, decimals: priceDecimals, currency: position.stablecoinSymbol, address: ADDRESS[chainId].juiceDollar },
-      { id: 'LOAN' as const, label: t("mint.loan_amount"), desc: t("mint.adjust_loan_amount_description"), value: currentDebt, decimals: 18, currency: position.stablecoinSymbol, address: ADDRESS[chainId].juiceDollar },
-      { id: 'EXPIRATION' as const, label: t("mint.expiration"), desc: t("mint.adjust_expiration_description"), value: null, decimals: 0, currency: '', address: undefined },
+      { id: 'COLLATERAL' as const, label: t("mint.collateral"), desc: t("mint.adjust_collateral_description"), value: collateralBalance, decimals: position.collateralDecimals, currency: normalizeTokenSymbol(position.collateralSymbol) },
+      { id: 'LIQ_PRICE' as const, label: t("mint.liquidation_price"), desc: t("mint.adjust_liq_price_description"), value: liqPrice, decimals: priceDecimals, currency: position.stablecoinSymbol },
+      { id: 'LOAN' as const, label: t("mint.loan_amount"), desc: t("mint.adjust_loan_amount_description"), value: currentDebt, decimals: 18, currency: position.stablecoinSymbol },
+      { id: 'EXPIRATION' as const, label: t("mint.expiration"), desc: t("mint.adjust_expiration_description"), value: null, decimals: 0, currency: '' },
     ];
 
     const handleConfirm = () => {
@@ -426,7 +426,6 @@ export const ManageSolver = () => {
                     amount={target.value}
                     currency={target.currency}
                     digits={target.decimals}
-                    address={target.address}
                     className="mt-2"
                   />
                 ) : (
@@ -513,11 +512,12 @@ export const ManageSolver = () => {
           {selectedTarget === 'LIQ_PRICE' ? (
             <SliderInputOutlined
               value={deltaAmount}
-              onChange={setDeltaAmount}
+              onChange={(val) => setDeltaAmount(roundToWholeUnits(val, priceDecimals))}
               min={0n}
               max={liqPrice}
               decimals={priceDecimals}
               isError={Boolean(deltaAmountError)}
+              hideTrailingZeros
             />
           ) : (
             <NormalInputOutlined

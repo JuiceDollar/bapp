@@ -15,6 +15,7 @@ export type BigNumberInputProps = {
 	disabled?: boolean;
 	onFocus?: () => void;
 	onBlur?: () => void;
+	hideTrailingZeros?: boolean;
 };
 
 export function BigNumberInput({
@@ -49,7 +50,11 @@ export function BigNumberInput({
 			}
 
 			if (!parseInputValue || !parseInputValue.eq(value)) {
-				setInputvalue(formatUnits(value, decimals));
+				let formatted = formatUnits(value, decimals);
+				if (hideTrailingZeros) {
+					formatted = formatted.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+				}
+				setInputvalue(formatted);
 			}
 		}
 	}, [value, decimals, inputValue]);
