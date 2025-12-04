@@ -117,7 +117,6 @@ export const BorrowedManageSection = () => {
 	const walletBalance = position ? balancesByAddress?.[position.stablecoinAddress as Address]?.balanceOf || 0n : 0n;
 	const allowance = position ? balancesByAddress?.[position.stablecoinAddress as Address]?.allowance?.[position.position] || 0n : 0n;
 
-	
 	// Calculate max values for validation (will be 0 if position is undefined)
 	const maxAmountByDepositedCollateral = position
 		? getLoanDetailsByCollateralAndStartingLiqPrice(position, balanceOf, price).amountToSendToWallet
@@ -161,12 +160,12 @@ export const BorrowedManageSection = () => {
 			setError(null);
 		}
 	}, [isBorrowMore, amount, debt, walletBalance, position, t]);
-	
+
 	const cachedPercentage = useRef<number>(0);
 	const calculatedPercentage = position ? calculateCollateralizationPercentage(position, prices) : 0;
 	if (calculatedPercentage > 0) cachedPercentage.current = calculatedPercentage;
 	const collateralizationPercentage = cachedPercentage.current;
-	
+
 	// Show loading or redirect if position not found
 	if (!position) {
 		return (
@@ -282,7 +281,7 @@ export const BorrowedManageSection = () => {
 					address: position.position,
 					abi: PositionV2ABI,
 					functionName: "adjust",
-					args: [BigInt(0), BigInt(0), BigInt(position.price)],
+					args: [BigInt(0), BigInt(0), BigInt(position.price), false],
 				});
 			} else {
 				const userInputAmount = BigInt(amount);

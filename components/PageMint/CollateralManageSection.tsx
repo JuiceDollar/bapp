@@ -43,7 +43,7 @@ export const CollateralManageSection = () => {
 	const positions = useSelector((state: RootState) => state.positions.list?.list || []);
 	const position = positions.find((p) => p.position == addressQuery);
 	const prices = useSelector((state: RootState) => state.prices.coingecko || {});
-	
+
 	// Check if position uses native wrapped token (cBTC)
 	const isNativeWrappedPosition = position && NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase());
 	const { balancesByAddress, refetchBalances } = useWalletERC20Balances(
@@ -58,10 +58,10 @@ export const CollateralManageSection = () => {
 			  ]
 			: []
 	);
-	
+
 	// Get native balance for native wrapped positions
 	const nativeBalance = useNativeBalance();
-	const url = useContractUrl(position?.position || zeroAddress as Address);
+	const url = useContractUrl(position?.position || (zeroAddress as Address));
 
 	const { data, refetch: refetchReadContracts } = useReadContracts({
 		contracts: position
@@ -108,10 +108,12 @@ export const CollateralManageSection = () => {
 	const collateralRequirement = data?.[4]?.result || 0n;
 	const collateralPrice = prices[position?.collateral?.toLowerCase() as Address]?.price?.eur || 0;
 	const collateralValuation = collateralPrice * Number(formatUnits(balanceOf, position?.collateralDecimals || 18));
-	
+
 	// Use native balance for native wrapped positions, otherwise use ERC20 balance
-	const walletBalance = position 
-		? (isNativeWrappedPosition ? nativeBalance.balance : balancesByAddress[position.collateral as Address]?.balanceOf || 0n)
+	const walletBalance = position
+		? isNativeWrappedPosition
+			? nativeBalance.balance
+			: balancesByAddress[position.collateral as Address]?.balanceOf || 0n
 		: 0n;
 	const allowance = position ? balancesByAddress[position.collateral as Address]?.allowance?.[position.position] || 0n : 0n;
 
@@ -188,7 +190,10 @@ export const CollateralManageSection = () => {
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) + " " + normalizeTokenSymbol(position.collateralSymbol),
+					value:
+						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) +
+						" " +
+						normalizeTokenSymbol(position.collateralSymbol),
 				},
 				{
 					title: t("common.txs.spender"),
@@ -202,10 +207,20 @@ export const CollateralManageSection = () => {
 
 			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: approveWriteHash, confirmations: 1 }), {
 				pending: {
-					render: <TxToast title={`${t("common.txs.title", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}`} rows={toastContent} />,
+					render: (
+						<TxToast
+							title={`${t("common.txs.title", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}`}
+							rows={toastContent}
+						/>
+					),
 				},
 				success: {
-					render: <TxToast title={`${t("common.txs.success", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}`} rows={toastContent} />,
+					render: (
+						<TxToast
+							title={`${t("common.txs.success", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}`}
+							rows={toastContent}
+						/>
+					),
 				},
 			});
 			await refetchBalances();
@@ -265,7 +280,9 @@ export const CollateralManageSection = () => {
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) + ` ${normalizeTokenSymbol(position.collateralSymbol)}`,
+					value:
+						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) +
+						` ${normalizeTokenSymbol(position.collateralSymbol)}`,
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -306,7 +323,9 @@ export const CollateralManageSection = () => {
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) + ` ${normalizeTokenSymbol(position.collateralSymbol)}`,
+					value:
+						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) +
+						` ${normalizeTokenSymbol(position.collateralSymbol)}`,
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -373,10 +392,10 @@ export const CollateralManageSection = () => {
 								<span className="font-medium text-text-muted3">
 									{t(isAdd ? "mint.available_to_add" : "mint.available_to_remove")}:
 								</span>
-							<button className="text-text-labelButton font-extrabold" onClick={isAdd ? handleAddMax : handleRemoveMax}>
-								{formatUnits(isAdd ? walletBalance : maxToRemove, position.collateralDecimals)}{" "}
-								{normalizeTokenSymbol(position.collateralSymbol)}
-							</button>
+								<button className="text-text-labelButton font-extrabold" onClick={isAdd ? handleAddMax : handleRemoveMax}>
+									{formatUnits(isAdd ? walletBalance : maxToRemove, position.collateralDecimals)}{" "}
+									{normalizeTokenSymbol(position.collateralSymbol)}
+								</button>
 							</div>
 						}
 					/>

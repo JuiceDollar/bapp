@@ -177,10 +177,20 @@ export const ExpirationManageSection = () => {
 
 			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: approvingHash, confirmations: 1 }), {
 				pending: {
-					render: <TxToast title={t("common.txs.title", { symbol: normalizeTokenSymbol(position.collateralSymbol) })} rows={toastContent} />,
+					render: (
+						<TxToast
+							title={t("common.txs.title", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}
+							rows={toastContent}
+						/>
+					),
 				},
 				success: {
-					render: <TxToast title={t("common.txs.success", { symbol: normalizeTokenSymbol(position.collateralSymbol) })} rows={toastContent} />,
+					render: (
+						<TxToast
+							title={t("common.txs.success", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}
+							rows={toastContent}
+						/>
+					),
 				},
 			});
 

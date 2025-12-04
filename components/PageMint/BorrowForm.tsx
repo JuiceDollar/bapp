@@ -13,7 +13,16 @@ import { PositionQuery } from "@juicedollar/api";
 import { BorrowingDEUROModal } from "@components/PageMint/BorrowingDEUROModal";
 import { SelectCollateralModal } from "./SelectCollateralModal";
 import { InputTitle } from "@components/Input/InputTitle";
-import { formatBigInt, formatCurrency, shortenAddress, toDate, TOKEN_SYMBOL, toTimestamp, NATIVE_WRAPPED_SYMBOLS, normalizeTokenSymbol } from "@utils";
+import {
+	formatBigInt,
+	formatCurrency,
+	shortenAddress,
+	toDate,
+	TOKEN_SYMBOL,
+	toTimestamp,
+	NATIVE_WRAPPED_SYMBOLS,
+	normalizeTokenSymbol,
+} from "@utils";
 import { TokenBalance, useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { RootState, store } from "../../redux/redux.store";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
@@ -35,7 +44,7 @@ import { useFrontendCode } from "../../hooks/useFrontendCode";
 import { MaxButton } from "@components/Input/MaxButton";
 import Link from "next/link";
 
-export default function PositionCreate({ }) {
+export default function PositionCreate({}) {
 	const [selectedCollateral, setSelectedCollateral] = useState<TokenBalance | null | undefined>(null);
 	const [selectedPosition, setSelectedPosition] = useState<PositionQuery | null | undefined>(null);
 	const [expirationDate, setExpirationDate] = useState<Date | undefined | null>(undefined);
@@ -132,18 +141,21 @@ export default function PositionCreate({ }) {
 			return;
 		} else if (BigInt(collateralAmount) < BigInt(selectedPosition.minimumCollateral)) {
 			const minColl = formatBigInt(BigInt(selectedPosition?.minimumCollateral || 0n), selectedPosition?.collateralDecimals || 0);
-			const notTheMinimum = `${t("mint.error.must_be_at_least_the_minimum_amount")} (${minColl} ${normalizeTokenSymbol(selectedPosition?.collateralSymbol || '')
-				})`;
+			const notTheMinimum = `${t("mint.error.must_be_at_least_the_minimum_amount")} (${minColl} ${normalizeTokenSymbol(
+				selectedPosition?.collateralSymbol || ""
+			)})`;
 			setCollateralError(notTheMinimum);
 		} else if (BigInt(collateralAmount) > BigInt(balanceInWallet?.balanceOf || 0n)) {
-			const notEnoughBalance = t("common.error.insufficient_balance", { symbol: normalizeTokenSymbol(selectedPosition?.collateralSymbol || '') });
+			const notEnoughBalance = t("common.error.insufficient_balance", {
+				symbol: normalizeTokenSymbol(selectedPosition?.collateralSymbol || ""),
+			});
 			setCollateralError(notEnoughBalance);
 		} else if (maxFromLimit > 0n && BigInt(collateralAmount) > maxFromLimit) {
 			const maxColl = formatBigInt(maxFromLimit, selectedPosition?.collateralDecimals || 0);
 			const availableToMint = formatBigInt(BigInt(selectedPosition.availableForClones), 18);
 			const limitExceeded = t("mint.error.global_minting_limit_exceeded", {
 				maxCollateral: maxColl,
-				collateralSymbol: normalizeTokenSymbol(selectedPosition?.collateralSymbol || ''),
+				collateralSymbol: normalizeTokenSymbol(selectedPosition?.collateralSymbol || ""),
 				maxMint: availableToMint,
 				mintSymbol: TOKEN_SYMBOL,
 			});
@@ -158,10 +170,10 @@ export default function PositionCreate({ }) {
 	const collateralPriceUsd = prices[selectedPosition?.collateral.toLowerCase() as Address]?.price?.usd || 0;
 	const collateralEurValue = selectedPosition
 		? formatCurrency(
-			collateralPriceDeuro * parseFloat(formatUnits(BigInt(collateralAmount), selectedPosition.collateralDecimals)),
-			2,
-			2
-		)
+				collateralPriceDeuro * parseFloat(formatUnits(BigInt(collateralAmount), selectedPosition.collateralDecimals)),
+				2,
+				2
+		  )
 		: 0;
 	const collateralUsdValue = selectedPosition
 		? formatCurrency(collateralPriceUsd * parseFloat(formatUnits(BigInt(collateralAmount), selectedPosition.collateralDecimals)), 2, 2)
@@ -312,7 +324,7 @@ export default function PositionCreate({ }) {
 					BigInt(collateralAmount),
 					loanDetails.loanAmount,
 					toTimestamp(expirationDate),
-					BigInt(liquidationPrice),                
+					BigInt(liquidationPrice),
 				],
 				value: BigInt(collateralAmount),
 			});
@@ -501,10 +513,10 @@ export default function PositionCreate({ }) {
 								{isLiquidationPriceTooHigh
 									? t("mint.your_liquidation_price_is_too_high")
 									: t("common.receive") +
-									" " +
-									formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2) +
-									" " +
-									TOKEN_SYMBOL}
+									  " " +
+									  formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2) +
+									  " " +
+									  TOKEN_SYMBOL}
 							</Button>
 						)}
 					</GuardToAllowedChainBtn>
@@ -517,8 +529,10 @@ export default function PositionCreate({ }) {
 							2
 						)}
 						expiration={expirationDate}
-						formmatedCollateral={`${formatUnits(BigInt(collateralAmount), selectedPosition?.collateralDecimals || 0)} ${normalizeTokenSymbol(selectedPosition?.collateralSymbol || '')
-							}`}
+						formmatedCollateral={`${formatUnits(
+							BigInt(collateralAmount),
+							selectedPosition?.collateralDecimals || 0
+						)} ${normalizeTokenSymbol(selectedPosition?.collateralSymbol || "")}`}
 						collateralPriceDeuro={collateralEurValue || "0"}
 						isSuccess={isCloneSuccess}
 						isLoading={isCloneLoading}
