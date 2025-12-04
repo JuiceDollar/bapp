@@ -7,7 +7,6 @@ import { Address, formatUnits, zeroAddress, erc20Abi } from "viem";
 import { formatCurrency, normalizeTokenSymbol, shortenAddress, getDisplayDecimals, formatPositionValue, formatPositionDelta, NATIVE_WRAPPED_SYMBOLS, formatDate, roundToWholeUnits } from "@utils";
 import { useReadContracts, useChainId, useAccount } from "wagmi";
 import { ADDRESS, PositionV2ABI } from "@juicedollar/jusd";
-import { CoinLendingGatewayABI } from "../../utils/coinLendingGateway";
 import { writeContract, waitForTransactionReceipt } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
@@ -212,70 +211,35 @@ export const ManageSolver = () => {
 
       for (const action of outcome.txPlan) {
         if (action === 'DEPOSIT') {
-          if (isNativeWrappedPosition) {
-            const gatewayAddress = ADDRESS[chainId]?.mintingHubGateway;
-            if (!gatewayAddress || gatewayAddress === zeroAddress) {
-              toast.error("MintingHubGateway not configured for this network");
-              setIsTxOnGoing(false);
-              return;
-            }
+          const depositAmount = outcome.deltaCollateral;
+          
+          const adjustHash = await writeContract(WAGMI_CONFIG, {
+            address: position.position,
+            abi: PositionV2ABI,
+            functionName: "adjust",
+            args: [principal, outcome.next.collateral, outcome.next.liqPrice, false],
+            value: isNativeWrappedPosition ? depositAmount : undefined,
+          });
 
-            const depositAmount = outcome.deltaCollateral;
-            const depositHash = await writeContract(WAGMI_CONFIG, {
-              address: gatewayAddress,
-              abi: CoinLendingGatewayABI,
-              functionName: "addCollateralWithCoin" as any,
-              args: [position.position as Address],
-              value: depositAmount,
-            } as any);
+          const toastContent = [
+            {
+              title: t("common.txs.amount"),
+              value: formatPositionValue(depositAmount, position.collateralDecimals, normalizeTokenSymbol(position.collateralSymbol)),
+            },
+            {
+              title: t("common.txs.transaction"),
+              hash: adjustHash,
+            },
+          ];
 
-            const toastContent = [
-              {
-                title: t("common.txs.amount"),
-                value: formatPositionValue(depositAmount, position.collateralDecimals, normalizeTokenSymbol(position.collateralSymbol)),
-              },
-              {
-                title: t("common.txs.transaction"),
-                hash: depositHash,
-              },
-            ];
-
-            await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: depositHash, confirmations: 1 }), {
-              pending: {
-                render: <TxToast title={t("mint.txs.adding_collateral")} rows={toastContent} />,
-              },
-              success: {
-                render: <TxToast title={t("mint.txs.adding_collateral_success")} rows={toastContent} />,
-              },
-            });
-          } else {
-            const adjustHash = await writeContract(WAGMI_CONFIG, {
-              address: position.position,
-              abi: PositionV2ABI,
-              functionName: "adjust",
-              args: [principal, outcome.next.collateral, outcome.next.liqPrice, false],
-            });
-
-            const toastContent = [
-              {
-                title: t("common.txs.amount"),
-                value: formatPositionValue(outcome.deltaCollateral, position.collateralDecimals, normalizeTokenSymbol(position.collateralSymbol)),
-              },
-              {
-                title: t("common.txs.transaction"),
-                hash: adjustHash,
-              },
-            ];
-
-            await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: adjustHash, confirmations: 1 }), {
-              pending: {
-                render: <TxToast title={t("mint.txs.adding_collateral")} rows={toastContent} />,
-              },
-              success: {
-                render: <TxToast title={t("mint.txs.adding_collateral_success")} rows={toastContent} />,
-              },
-            });
-          }
+          await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: adjustHash, confirmations: 1 }), {
+            pending: {
+              render: <TxToast title={t("mint.txs.adding_collateral")} rows={toastContent} />,
+            },
+            success: {
+              render: <TxToast title={t("mint.txs.adding_collateral_success")} rows={toastContent} />,
+            },
+          });
         } else if (action === 'WITHDRAW') {
           const withdrawHash = await writeContract(WAGMI_CONFIG, {
             address: position.position,

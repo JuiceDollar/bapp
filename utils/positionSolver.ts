@@ -58,8 +58,13 @@ export function solveManage(
       if (newCollateral <= 0n) throw new Error('Collateral must be positive');
       
       if (strategy === 'KEEP_LOAN') {
+        // Keep loan constant, calculate new price proportionally
         newDebt = currentDebt;
-        newLiqPrice = (k * newDebt) / newCollateral;
+        // Calculate new price: newPrice = currentPrice * currentCollateral / newCollateral
+        // Add 1% safety margin to ensure position stays properly collateralized
+        const calculatedPrice = (currentLiqPrice * currentCollateral) / newCollateral;
+        const safetyMargin = calculatedPrice / 100n; // 1% buffer
+        newLiqPrice = calculatedPrice + safetyMargin;
       } else {
         newLiqPrice = currentLiqPrice;
         newDebt = (newLiqPrice * newCollateral) / k;
