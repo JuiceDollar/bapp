@@ -808,7 +808,7 @@ export const ManageSolver = () => {
 						</div>
 						<div className="text-xs text-text-muted2 mt-1">
 							Contract withdraws collateral BEFORE adjusting price. At current price ({formatCurrency(formatUnits(liqPrice, priceDecimals), 0)} JUSD),
-							{formatUnits(outcome.next.collateral, position?.collateralDecimals || 18)} {normalizeTokenSymbol(position?.collateralSymbol || "")} doesn't cover the debt.
+							{formatUnits(outcome.next.collateral, position?.collateralDecimals || 18)} {normalizeTokenSymbol(position?.collateralSymbol || "")} is not enough to cover the debt.
 						</div>
 						<div className="text-xs text-text-muted3 mt-1">
 							Try: Increase price first (triggers cooldown), then withdraw after cooldown ends.
@@ -822,7 +822,7 @@ export const ManageSolver = () => {
 							Insufficient collateral for new debt
 						</div>
 						<div className="text-xs text-text-muted2 mt-1">
-							Collateral value doesn't cover the new loan amount. Add more collateral or borrow less.
+							Collateral value too low. Add more collateral or borrow less.
 						</div>
 					</AppBox>
 				)}
