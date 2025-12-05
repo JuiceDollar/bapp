@@ -71,26 +71,26 @@ export const ManageSolver = () => {
 	const { data, refetch: refetchReadContracts } = useReadContracts({
 		contracts: position
 			? [
-				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "principal" },
-				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "price" },
-				{
-					chainId,
-					abi: erc20Abi,
-					address: position.collateral as Address,
-					functionName: "balanceOf",
-					args: [position.position],
-				},
-				{ chainId, abi: PositionV2ABI, address: position.position, functionName: "getDebt" },
-				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "cooldown" },
-				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "minimumCollateral" },
-				{
-					chainId,
-					abi: erc20Abi,
-					address: ADDRESS[chainId]?.juiceDollar as Address,
-					functionName: "allowance",
-					args: [userAddress as Address, position.position as Address],
-				},
-			]
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "principal" },
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "price" },
+					{
+						chainId,
+						abi: erc20Abi,
+						address: position.collateral as Address,
+						functionName: "balanceOf",
+						args: [position.position],
+					},
+					{ chainId, abi: PositionV2ABI, address: position.position, functionName: "getDebt" },
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "cooldown" },
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "minimumCollateral" },
+					{
+						chainId,
+						abi: erc20Abi,
+						address: ADDRESS[chainId]?.juiceDollar as Address,
+						functionName: "allowance",
+						args: [userAddress as Address, position.position as Address],
+					},
+			  ]
 			: [],
 	});
 
@@ -110,9 +110,10 @@ export const ManageSolver = () => {
 		? `${Math.floor(cooldownRemaining / 3600)}h ${Math.floor((cooldownRemaining % 3600) / 60)}m`
 		: null;
 
-	const getPriceRatio = (newPrice: bigint) => liqPrice > 0n ? Number(newPrice) / Number(liqPrice) : 0;
+	const getPriceRatio = (newPrice: bigint) => (liqPrice > 0n ? Number(newPrice) / Number(liqPrice) : 0);
 	const isPriceTooHigh = (newPrice: bigint) => getPriceRatio(newPrice) > 2;
-	const isBelowMinCollateral = (newCollateral: bigint) => newCollateral > 0n && newCollateral < BigInt(minimumCollateral) && principal > 0n;
+	const isBelowMinCollateral = (newCollateral: bigint) =>
+		newCollateral > 0n && newCollateral < BigInt(minimumCollateral) && principal > 0n;
 	const isInsufficientCollateral = (newCollateral: bigint, newDebt: bigint, newPrice: bigint) => {
 		if (newDebt === 0n || newCollateral === 0n) return false;
 		const collateralValue = newCollateral * newPrice;
@@ -536,10 +537,11 @@ export const ManageSolver = () => {
 							className="text-left hover:opacity-80 transition-opacity"
 						>
 							<AppBox
-								className={`h-full transition-all ${selectedTarget === target.id
-									? "ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10"
-									: "hover:ring-2 hover:ring-orange-300"
-									}`}
+								className={`h-full transition-all ${
+									selectedTarget === target.id
+										? "ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10"
+										: "hover:ring-2 hover:ring-orange-300"
+								}`}
 							>
 								<DisplayLabel label={target.label} />
 								{target.value !== null ? (
@@ -735,10 +737,11 @@ export const ManageSolver = () => {
 								className="text-left hover:opacity-80 transition-opacity"
 							>
 								<AppBox
-									className={`h-full transition-all ${isSelected
-										? "ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10"
-										: "hover:ring-2 hover:ring-orange-300"
-										}`}
+									className={`h-full transition-all ${
+										isSelected
+											? "ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10"
+											: "hover:ring-2 hover:ring-orange-300"
+									}`}
 								>
 									<div className="text-lg font-bold text-text-title mb-2">{strat.label}</div>
 									<div className="text-sm text-text-muted2 mb-2">{strat.description}</div>
@@ -781,34 +784,33 @@ export const ManageSolver = () => {
 
 				{isPriceTooHigh(outcome.next.liqPrice) && (
 					<AppBox className="ring-2 ring-red-300 bg-red-50 dark:bg-red-900/10">
-						<div className="text-sm text-text-title font-medium">
-							Price increase exceeds 2x limit
-						</div>
+						<div className="text-sm text-text-title font-medium">Price increase exceeds 2x limit</div>
 						<div className="text-xs text-text-muted2 mt-1">
-							Max allowed: {formatCurrency(formatUnits(liqPrice * 2n, priceDecimals), 0)} JUSD (current: {formatCurrency(formatUnits(liqPrice, priceDecimals), 0)} → new: {formatCurrency(formatUnits(outcome.next.liqPrice, priceDecimals), 0)})
+							Max allowed: {formatCurrency(formatUnits(liqPrice * 2n, priceDecimals), 0)} JUSD (current:{" "}
+							{formatCurrency(formatUnits(liqPrice, priceDecimals), 0)} → new:{" "}
+							{formatCurrency(formatUnits(outcome.next.liqPrice, priceDecimals), 0)})
 						</div>
 					</AppBox>
 				)}
 
 				{isBelowMinCollateral(outcome.next.collateral) && (
 					<AppBox className="ring-2 ring-red-300 bg-red-50 dark:bg-red-900/10">
-						<div className="text-sm text-text-title font-medium">
-							Collateral below minimum
-						</div>
+						<div className="text-sm text-text-title font-medium">Collateral below minimum</div>
 						<div className="text-xs text-text-muted2 mt-1">
-							Min required: {formatUnits(BigInt(minimumCollateral), position?.collateralDecimals || 18)} {normalizeTokenSymbol(position?.collateralSymbol || "")} (you have outstanding debt)
+							Min required: {formatUnits(BigInt(minimumCollateral), position?.collateralDecimals || 18)}{" "}
+							{normalizeTokenSymbol(position?.collateralSymbol || "")} (you have outstanding debt)
 						</div>
 					</AppBox>
 				)}
 
 				{isUndercollateralizedAtCurrentPrice(outcome.next.collateral, outcome.next.liqPrice) && (
 					<AppBox className="ring-2 ring-red-300 bg-red-50 dark:bg-red-900/10">
-						<div className="text-sm text-text-title font-medium">
-							Insufficient collateral at current price
-						</div>
+						<div className="text-sm text-text-title font-medium">Insufficient collateral at current price</div>
 						<div className="text-xs text-text-muted2 mt-1">
-							Contract withdraws collateral BEFORE adjusting price. At current price ({formatCurrency(formatUnits(liqPrice, priceDecimals), 0)} JUSD),
-							{formatUnits(outcome.next.collateral, position?.collateralDecimals || 18)} {normalizeTokenSymbol(position?.collateralSymbol || "")} is not enough to cover the debt.
+							Contract withdraws collateral BEFORE adjusting price. At current price (
+							{formatCurrency(formatUnits(liqPrice, priceDecimals), 0)} JUSD),
+							{formatUnits(outcome.next.collateral, position?.collateralDecimals || 18)}{" "}
+							{normalizeTokenSymbol(position?.collateralSymbol || "")} is not enough to cover the debt.
 						</div>
 						<div className="text-xs text-text-muted3 mt-1">
 							Try: Increase price first (triggers cooldown), then withdraw after cooldown ends.
@@ -818,12 +820,8 @@ export const ManageSolver = () => {
 
 				{isInsufficientCollateral(outcome.next.collateral, outcome.next.debt, outcome.next.liqPrice) && (
 					<AppBox className="ring-2 ring-red-300 bg-red-50 dark:bg-red-900/10">
-						<div className="text-sm text-text-title font-medium">
-							Insufficient collateral for new debt
-						</div>
-						<div className="text-xs text-text-muted2 mt-1">
-							Collateral value too low. Add more collateral or borrow less.
-						</div>
+						<div className="text-sm text-text-title font-medium">Insufficient collateral for new debt</div>
+						<div className="text-xs text-text-muted2 mt-1">Collateral value too low. Add more collateral or borrow less.</div>
 					</AppBox>
 				)}
 
@@ -863,11 +861,10 @@ export const ManageSolver = () => {
 
 						{needsJusdApproval(outcome) && (
 							<AppBox className="ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10">
-								<div className="text-sm text-text-title font-medium">
-									Approval required
-								</div>
+								<div className="text-sm text-text-title font-medium">Approval required</div>
 								<div className="text-xs text-text-muted2 mt-1">
-									Approve {formatCurrency(formatUnits(getRequiredRepayAmount(outcome), 18))} {position?.stablecoinSymbol} for repayment
+									Approve {formatCurrency(formatUnits(getRequiredRepayAmount(outcome), 18))} {position?.stablecoinSymbol}{" "}
+									for repayment
 								</div>
 							</AppBox>
 						)}
