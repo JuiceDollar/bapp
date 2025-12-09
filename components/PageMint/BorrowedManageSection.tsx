@@ -276,12 +276,13 @@ export const BorrowedManageSection = () => {
 
 			let payBackHash: `0x${string}` = zeroAddress as `0x${string}`;
 
-			if (amount.toString() === debt.toString()) {
+			const isPayingFullDebt = BigInt(amount) >= debt;
+
+			if (isPayingFullDebt) {
 				payBackHash = await writeContract(WAGMI_CONFIG, {
 					address: position.position,
 					abi: PositionV2ABI,
-					functionName: "adjust",
-					args: [BigInt(0), BigInt(0), BigInt(position.price), false],
+					functionName: "repayFull",
 				});
 			} else {
 				const userInputAmount = BigInt(amount);
@@ -408,8 +409,8 @@ export const BorrowedManageSection = () => {
 						isBorrowMore
 							? "mint.borrow_more"
 							: amount && BigInt(amount) && amount.toString() === debt.toString()
-							? "mint.pay_back_and_close"
-							: "mint.pay_back"
+								? "mint.pay_back_and_close"
+								: "mint.pay_back"
 					)}
 				</Button>
 			)}
