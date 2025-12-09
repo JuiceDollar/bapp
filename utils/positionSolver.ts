@@ -84,33 +84,33 @@ export function solveManage(pos: SolverPosition, target: Target, strategy: Strat
 		let newDebt = currentDebt;
 		let newLiqPrice = currentLiqPrice;
 
-	if (target === "COLLATERAL") {
-		newCollateral = BigInt(newValue as bigint);
-		
-		if (newCollateral === 0n && currentDebt > 0n) {
-			if (strategy === "KEEP_LOAN") {
-				throw new Error("Must repay debt before withdrawing all collateral");
-			}
-		}
-		
-		if (newCollateral < 0n) throw new Error("Collateral cannot be negative");
+		if (target === "COLLATERAL") {
+			newCollateral = BigInt(newValue as bigint);
 
-		if (strategy === "KEEP_LOAN") {
-			newDebt = currentDebt;
-			if (newCollateral > 0n) {
-				const calculatedPrice = (currentLiqPrice * currentCollateral) / newCollateral;
-				const safetyMargin = calculatedPrice / 100n;
-				newLiqPrice = calculatedPrice + safetyMargin;
-			}
-		} else {
-			newLiqPrice = currentLiqPrice;
 			if (newCollateral === 0n && currentDebt > 0n) {
-				newDebt = 0n;
-			} else {
-				newDebt = (newLiqPrice * newCollateral) / k;
+				if (strategy === "KEEP_LOAN") {
+					throw new Error("Must repay debt before withdrawing all collateral");
+				}
 			}
-		}
-	} else if (target === "LIQ_PRICE") {
+
+			if (newCollateral < 0n) throw new Error("Collateral cannot be negative");
+
+			if (strategy === "KEEP_LOAN") {
+				newDebt = currentDebt;
+				if (newCollateral > 0n) {
+					const calculatedPrice = (currentLiqPrice * currentCollateral) / newCollateral;
+					const safetyMargin = calculatedPrice / 100n;
+					newLiqPrice = calculatedPrice + safetyMargin;
+				}
+			} else {
+				newLiqPrice = currentLiqPrice;
+				if (newCollateral === 0n && currentDebt > 0n) {
+					newDebt = 0n;
+				} else {
+					newDebt = (newLiqPrice * newCollateral) / k;
+				}
+			}
+		} else if (target === "LIQ_PRICE") {
 			newLiqPrice = BigInt(newValue as bigint);
 			if (newLiqPrice <= 0n) throw new Error("Liquidation price must be positive");
 

@@ -355,62 +355,72 @@ export const ManageSolver = () => {
 							render: <TxToast title={t("mint.txs.adding_collateral_success")} rows={toastContent} />,
 						},
 					});
-			} else if (action === "WITHDRAW") {
-				if (outcome.next.collateral === 0n && principal > 0n) {
-					const repayHash = await writeContract(WAGMI_CONFIG, {
+				} else if (action === "WITHDRAW") {
+					if (outcome.next.collateral === 0n && principal > 0n) {
+						const repayHash = await writeContract(WAGMI_CONFIG, {
+							address: position.position,
+							abi: PositionV2ABI,
+							functionName: "repayFull",
+						});
+
+						const repayToastContent = [
+							{
+								title: t("common.txs.transaction"),
+								hash: repayHash,
+							},
+						];
+
+						await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: repayHash, confirmations: 1 }), {
+							pending: {
+								render: (
+									<TxToast
+										title={t("mint.txs.pay_back", { symbol: position.stablecoinSymbol })}
+										rows={repayToastContent}
+									/>
+								),
+							},
+							success: {
+								render: (
+									<TxToast
+										title={t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol })}
+										rows={repayToastContent}
+									/>
+								),
+							},
+						});
+					}
+
+					const withdrawHash = await writeContract(WAGMI_CONFIG, {
 						address: position.position,
 						abi: PositionV2ABI,
-						functionName: "repayFull",
+						functionName: "adjust",
+						args: [outcome.next.debt, outcome.next.collateral, outcome.next.liqPrice, isNativeWrappedPosition],
 					});
 
-					const repayToastContent = [
+					const toastContent = [
+						{
+							title: t("common.txs.amount"),
+							value: formatPositionValue(
+								-outcome.deltaCollateral,
+								position.collateralDecimals,
+								normalizeTokenSymbol(position.collateralSymbol)
+							),
+						},
 						{
 							title: t("common.txs.transaction"),
-							hash: repayHash,
+							hash: withdrawHash,
 						},
 					];
 
-					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: repayHash, confirmations: 1 }), {
+					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
 						pending: {
-							render: <TxToast title={t("mint.txs.pay_back", { symbol: position.stablecoinSymbol })} rows={repayToastContent} />,
+							render: <TxToast title={t("mint.txs.removing_collateral")} rows={toastContent} />,
 						},
 						success: {
-							render: <TxToast title={t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol })} rows={repayToastContent} />,
+							render: <TxToast title={t("mint.txs.removing_collateral_success")} rows={toastContent} />,
 						},
 					});
-				}
-
-				const withdrawHash = await writeContract(WAGMI_CONFIG, {
-					address: position.position,
-					abi: PositionV2ABI,
-					functionName: "adjust",
-					args: [outcome.next.debt, outcome.next.collateral, outcome.next.liqPrice, isNativeWrappedPosition],
-				});
-
-				const toastContent = [
-					{
-						title: t("common.txs.amount"),
-						value: formatPositionValue(
-							-outcome.deltaCollateral,
-							position.collateralDecimals,
-							normalizeTokenSymbol(position.collateralSymbol)
-						),
-					},
-					{
-						title: t("common.txs.transaction"),
-						hash: withdrawHash,
-					},
-				];
-
-				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
-					pending: {
-						render: <TxToast title={t("mint.txs.removing_collateral")} rows={toastContent} />,
-					},
-					success: {
-						render: <TxToast title={t("mint.txs.removing_collateral_success")} rows={toastContent} />,
-					},
-				});
-			} else if (action === "BORROW") {
+				} else if (action === "BORROW") {
 					const borrowHash = await writeContract(WAGMI_CONFIG, {
 						address: position.position,
 						abi: PositionV2ABI,
@@ -439,52 +449,52 @@ export const ManageSolver = () => {
 							),
 						},
 					});
-			} else if (action === "REPAY") {
-				if (withdrawHandlesRepay) continue;
-				const repayAmount = -outcome.deltaDebt;
+				} else if (action === "REPAY") {
+					if (withdrawHandlesRepay) continue;
+					const repayAmount = -outcome.deltaDebt;
 
-				let repayHash: `0x${string}`;
+					let repayHash: `0x${string}`;
 
-				if (outcome.next.debt === 0n) {
-					repayHash = await writeContract(WAGMI_CONFIG, {
-						address: position.position,
-						abi: PositionV2ABI,
-						functionName: "repayFull",
-					});
-				} else {
-					repayHash = await writeContract(WAGMI_CONFIG, {
-						address: position.position,
-						abi: PositionV2ABI,
-						functionName: "repay",
-						args: [repayAmount],
+					if (outcome.next.debt === 0n) {
+						repayHash = await writeContract(WAGMI_CONFIG, {
+							address: position.position,
+							abi: PositionV2ABI,
+							functionName: "repayFull",
+						});
+					} else {
+						repayHash = await writeContract(WAGMI_CONFIG, {
+							address: position.position,
+							abi: PositionV2ABI,
+							functionName: "repay",
+							args: [repayAmount],
+						});
+					}
+
+					const toastContent = [
+						{
+							title: t("common.txs.amount"),
+							value: formatPositionValue(repayAmount, 18, position.stablecoinSymbol),
+						},
+						{
+							title: t("common.txs.transaction"),
+							hash: repayHash,
+						},
+					];
+
+					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: repayHash, confirmations: 1 }), {
+						pending: {
+							render: <TxToast title={t("mint.txs.pay_back", { symbol: position.stablecoinSymbol })} rows={toastContent} />,
+						},
+						success: {
+							render: (
+								<TxToast
+									title={t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol })}
+									rows={toastContent}
+								/>
+							),
+						},
 					});
 				}
-
-				const toastContent = [
-					{
-						title: t("common.txs.amount"),
-						value: formatPositionValue(repayAmount, 18, position.stablecoinSymbol),
-					},
-					{
-						title: t("common.txs.transaction"),
-						hash: repayHash,
-					},
-				];
-
-				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: repayHash, confirmations: 1 }), {
-					pending: {
-						render: <TxToast title={t("mint.txs.pay_back", { symbol: position.stablecoinSymbol })} rows={toastContent} />,
-					},
-					success: {
-						render: (
-							<TxToast
-								title={t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol })}
-								rows={toastContent}
-							/>
-						),
-					},
-				});
-			}
 			}
 
 			await refetchReadContracts();

@@ -409,8 +409,8 @@ export const BorrowedManageSection = () => {
 						isBorrowMore
 							? "mint.borrow_more"
 							: amount && BigInt(amount) && amount.toString() === debt.toString()
-								? "mint.pay_back_and_close"
-								: "mint.pay_back"
+							? "mint.pay_back_and_close"
+							: "mint.pay_back"
 					)}
 				</Button>
 			)}
