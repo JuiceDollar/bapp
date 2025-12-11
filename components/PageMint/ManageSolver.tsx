@@ -889,12 +889,12 @@ export const ManageSolver = () => {
 					<AppBox className="ring-2 ring-red-300 bg-red-50 dark:bg-red-900/10">
 						<div className="text-sm text-text-title font-medium">Exceeds position price limit</div>
 						<div className="text-xs text-text-muted2 mt-1">
-							Max mintable at position price ({formatCurrency(formatUnits(BigInt(position?.price || 0), priceDecimals), 0)} JUSD):{" "}
-							{formatCurrency(formatUnits((BigInt(position?.price || 0) * outcome.next.collateral) / BigInt(1e18), 18), 2)} JUSD
+							Max mintable at position price ({formatCurrency(formatUnits(BigInt(position?.price || 0), priceDecimals), 0)}{" "}
+							JUSD):{" "}
+							{formatCurrency(formatUnits((BigInt(position?.price || 0) * outcome.next.collateral) / BigInt(1e18), 18), 2)}{" "}
+							JUSD
 						</div>
-						<div className="text-xs text-text-muted3 mt-1">
-							Add more collateral to borrow this amount.
-						</div>
+						<div className="text-xs text-text-muted3 mt-1">Add more collateral to borrow this amount.</div>
 					</AppBox>
 				)}
 
