@@ -6,7 +6,15 @@ import DisplayAmount from "@components/DisplayAmount";
 import TokenInput from "@components/Input/TokenInput";
 import { erc20Abi, zeroAddress } from "viem";
 import { useEffect, useState } from "react";
-import { ContractUrl, formatBigInt, formatDuration, shortenAddress, TOKEN_SYMBOL, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
+import {
+	ContractUrl,
+	formatBigInt,
+	formatDuration,
+	shortenAddress,
+	TOKEN_SYMBOL,
+	normalizeTokenSymbol,
+	NATIVE_WRAPPED_SYMBOLS,
+} from "@utils";
 import { useNativeBalance } from "../../../hooks/useNativeBalance";
 import { useAccount, useBlockNumber, useChainId } from "wagmi";
 import { Address } from "viem";
@@ -50,7 +58,7 @@ export default function PositionChallenge() {
 
 	const nativeBalance = useNativeBalance();
 	const isNativeWrappedPosition = position && NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase());
-	const userBalance = isNativeWrappedPosition ? (nativeBalance.balance || 0n) : userErc20Balance;
+	const userBalance = isNativeWrappedPosition ? nativeBalance.balance || 0n : userErc20Balance;
 
 	useEffect(() => {
 		const acc: Address | undefined = account.address;
@@ -137,10 +145,20 @@ export default function PositionChallenge() {
 
 			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: approveWriteHash, confirmations: 1 }), {
 				pending: {
-					render: <TxToast title={t("common.txs.title", { symbol: normalizeTokenSymbol(position.collateralSymbol) })} rows={toastContent} />,
+					render: (
+						<TxToast
+							title={t("common.txs.title", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}
+							rows={toastContent}
+						/>
+					),
 				},
 				success: {
-					render: <TxToast title={t("common.txs.success", { symbol: normalizeTokenSymbol(position.collateralSymbol) })} rows={toastContent} />,
+					render: (
+						<TxToast
+							title={t("common.txs.success", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}
+							rows={toastContent}
+						/>
+					),
 				},
 			});
 		} catch (error) {
