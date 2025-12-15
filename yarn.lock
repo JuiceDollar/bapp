@@ -807,10 +807,10 @@
     viem "^2.19.1"
     winston "^3.18.3"
 
-"@juicedollar/jusd@1.0.6":
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/@juicedollar/jusd/-/jusd-1.0.6.tgz#5e28a415a71b1abd77d1c278ae2816b95fc72bb3"
-  integrity sha512-5fp4n5rAyq/pw6rEbCWEdJ0U5v50NHh/cR63gG+Km8aNj8GO1wxG53/cNuXku/45TWGGFsboDci18C4X8tdEOg==
+"@juicedollar/jusd@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@juicedollar/jusd/-/jusd-1.0.1.tgz#b9cd0787bd98a49c2238f0a2cb175ebb54f5cd5f"
+  integrity sha512-giqtQtwn+AC3gH5Ed7u/zlcT72OIanQ6/8NIFN6Hm0/nJfRUf/3ngNSqvvSXxX6zLEurU7684XTICw3wGlmGyA==
   dependencies:
     "@openzeppelin/contracts" "^5.1.0"
     hardhat-abi-exporter "^2.10.0"
@@ -822,10 +822,10 @@
     ts-node "^10.9.1"
     typescript "^5.2.2"
 
-"@juicedollar/jusd@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@juicedollar/jusd/-/jusd-1.0.1.tgz#b9cd0787bd98a49c2238f0a2cb175ebb54f5cd5f"
-  integrity sha512-giqtQtwn+AC3gH5Ed7u/zlcT72OIanQ6/8NIFN6Hm0/nJfRUf/3ngNSqvvSXxX6zLEurU7684XTICw3wGlmGyA==
+"@juicedollar/jusd@^1.0.6":
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@juicedollar/jusd/-/jusd-1.0.6.tgz#5e28a415a71b1abd77d1c278ae2816b95fc72bb3"
+  integrity sha512-5fp4n5rAyq/pw6rEbCWEdJ0U5v50NHh/cR63gG+Km8aNj8GO1wxG53/cNuXku/45TWGGFsboDci18C4X8tdEOg==
   dependencies:
     "@openzeppelin/contracts" "^5.1.0"
     hardhat-abi-exporter "^2.10.0"
