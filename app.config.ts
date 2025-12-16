@@ -7,6 +7,7 @@ import { injected, coinbaseWallet, walletConnect } from "@wagmi/connectors";
 import { testnet, mainnet } from "./chains";
 import axios from "axios";
 import { Address, Chain } from "viem";
+import { TOKEN_SYMBOL } from "./utils/constant";
 
 export type ConfigEnv = {
 	landing: string;
@@ -50,18 +51,14 @@ export const CONFIG_CHAIN = (): Chain => {
 
 // CONFIG RPC
 export const CONFIG_RPC = (): string => {
-	return CONFIG.chain === "testnet"
-		? CONFIG.network.testnet
-		: CONFIG.network.mainnet;
+	return CONFIG.chain === "testnet" ? CONFIG.network.testnet : CONFIG.network.mainnet;
 };
 
 // Ponder fallback mechanism
 let fallbackUntil: number | null = null;
 
 function getPonderUrl(): string {
-	return fallbackUntil && Date.now() < fallbackUntil 
-		? CONFIG.ponderFallback 
-		: CONFIG.ponder;
+	return fallbackUntil && Date.now() < fallbackUntil ? CONFIG.ponderFallback : CONFIG.ponder;
 }
 
 function activateFallback(): void {
@@ -76,7 +73,7 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 	// Log GraphQL errors for better debugging
 	if (graphQLErrors) {
 		graphQLErrors.forEach((error) => {
-			console.error(`[GraphQL error in operation: ${operation?.operationName || 'unknown'}]`, {
+			console.error(`[GraphQL error in operation: ${operation?.operationName || "unknown"}]`, {
 				message: error.message,
 				locations: error.locations,
 				path: error.path,
@@ -99,7 +96,7 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 	}
 
 	// Handle other network errors
-	console.error(`[Network error in operation: ${operation?.operationName || 'unknown'}]`, {
+	console.error(`[Network error in operation: ${operation?.operationName || "unknown"}]`, {
 		message: (networkError as any).message,
 		name: (networkError as any).name,
 	});
@@ -121,16 +118,16 @@ export const PONDER_CLIENT = new ApolloClient({
 	cache: new InMemoryCache(),
 });
 
-// DEURO API CLIENT
-export const DEURO_API_CLIENT = axios.create({
+// API CLIENT
+export const API_CLIENT = axios.create({
 	baseURL: CONFIG.api,
 });
 
 // WAGMI CONFIG
 export const WAGMI_CHAIN = CONFIG_CHAIN();
 export const WAGMI_METADATA = {
-	name: "dEURO",
-	description: "dEURO Frontend Application",
+	name: TOKEN_SYMBOL,
+	description: `${TOKEN_SYMBOL} Frontend Application`,
 	url: CONFIG.landing,
 	icons: ["https://avatars.githubusercontent.com/u/37784886"],
 };

@@ -4,7 +4,7 @@ import Link from "next/link";
 import AppBox from "@components/AppBox";
 import DisplayLabel from "@components/DisplayLabel";
 import DisplayAmount from "@components/DisplayAmount";
-import { formatDate, getCarryOnQueryParams, shortenAddress, TOKEN_SYMBOL, toQueryString } from "@utils";
+import { formatDate, getCarryOnQueryParams, shortenAddress, TOKEN_SYMBOL, toQueryString, normalizeTokenSymbol } from "@utils";
 import { Address, formatUnits, zeroAddress } from "viem";
 import { useContractUrl } from "@hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -67,7 +67,9 @@ export default function PositionDetail() {
 	return (
 		<>
 			<Head>
-				<title>dEURO - {t("monitoring.position_overview")}</title>
+				<title>
+					{TOKEN_SYMBOL} - {t("monitoring.position_overview")}
+				</title>
 			</Head>
 			<div className="md:mt-8">
 				<section className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -93,7 +95,7 @@ export default function PositionDetail() {
 								<DisplayLabel label={t("monitoring.collateral")} />
 								<DisplayAmount
 									amount={BigInt(position.collateralBalance)}
-									currency={position.collateralSymbol}
+									currency={normalizeTokenSymbol(position.collateralSymbol)}
 									digits={position.collateralDecimals}
 									address={position.collateral}
 									className="mt-2"
@@ -160,15 +162,16 @@ export default function PositionDetail() {
 							>
 								{maturity <= 0 ? t("monitoring.force_sell") : t("monitoring.challenge")}
 							</SecondaryLinkButton>
-							<SecondaryLinkButton
-								className="h-10 order-2 md:order-3"
-								href={`/mint/${position.position}/`}
-							>
+							<SecondaryLinkButton className="h-10 order-2 md:order-3" href={`/mint/${position.position}/`}>
 								{t("mint.clone")}
 							</SecondaryLinkButton>
 							<Button
 								className="h-10 col-span-2 md:col-span-1 md:col-start-1 order-3 md:order-1"
-								onClick={() => navigate.push(`/mint/${position.position}/manage/collateral${toQueryString(getCarryOnQueryParams(router))}`)}
+								onClick={() =>
+									navigate.push(
+										`/mint/${position.position}/manage/collateral${toQueryString(getCarryOnQueryParams(router))}`
+									)
+								}
 							>
 								{t("dashboard.manage")}
 							</Button>
@@ -218,7 +221,7 @@ function ActiveAuctionsRow({ position, challenge }: Props) {
 					<DisplayAmount
 						amount={BigInt(challenge.size - challenge.filledSize)}
 						digits={position.collateralDecimals}
-						currency={position.collateralSymbol}
+						currency={normalizeTokenSymbol(position.collateralSymbol)}
 						address={position.collateral}
 						className="mt-2"
 					/>

@@ -12,7 +12,7 @@ export const toTimestamp = (value: Date) => {
 
 export function toDate(time: bigint | number | string) {
 	const v: bigint = BigInt(time);
-	return new Date(Number(v) * 1000);	
+	return new Date(Number(v) * 1000);
 }
 
 export enum FormatType {
@@ -78,6 +78,12 @@ export const formatBigInt = (value?: bigint, units = 18, displayDec = 2): string
 	}
 
 	return displayNum;
+};
+
+export const roundToWholeUnits = (value: string, decimals: number): string => {
+	if (!value) return value;
+	const rounded = (BigInt(value) / BigInt(10 ** decimals)) * BigInt(10 ** decimals);
+	return rounded.toString();
 };
 
 export const shortenString = (str: string) => {

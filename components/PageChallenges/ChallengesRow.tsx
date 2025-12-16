@@ -9,7 +9,7 @@ import { useRouter as useNavigation } from "next/navigation";
 import Button from "@components/Button";
 import { useContractUrl } from "@hooks";
 import AppBox from "@components/AppBox";
-import { TOKEN_SYMBOL } from "@utils";
+import { TOKEN_SYMBOL, normalizeTokenSymbol } from "@utils";
 import { useTranslation } from "next-i18next";
 
 interface Props {
@@ -28,7 +28,6 @@ export default function ChallengesRow({ headers, challenge, tab }: Props) {
 	const position = positions?.map[challenge.position.toLowerCase() as Address];
 	const url = useContractUrl(position?.collateral || zeroAddress);
 	if (!position) return null;
-
 
 	const challengePriceSearch: string | undefined = challengesPrices?.map[challenge.id as ChallengesId];
 	const challengePrice: string = formatUnits(BigInt(challengePriceSearch ?? "0"), 36 - position.collateralDecimals);
@@ -88,21 +87,21 @@ export default function ChallengesRow({ headers, challenge, tab }: Props) {
 				{/* desktop view */}
 				<div className="max-md:hidden flex flex-row items-center">
 					<span className="mr-3 cursor-pointer" onClick={openExplorer}>
-						<TokenLogo currency={position.collateralSymbol} />
+						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} />
 					</span>
-					<span className={`col-span-2 text-md font-extrabold text-text-primary`}>{`${formatCurrency(challengeRemainingSize)} ${
-						position.collateralSymbol
-					}`}</span>
+					<span className={`col-span-2 text-md font-extrabold text-text-primary`}>{`${formatCurrency(
+						challengeRemainingSize
+					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</span>
 				</div>
 
 				{/* mobile view */}
 				<div className="md:hidden flex flex-row items-center py-1 mb-3">
 					<div className="mr-3 cursor-pointer" onClick={openExplorer}>
-						<TokenLogo currency={position.collateralSymbol} />
+						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} />
 					</div>
-					<div className={`col-span-2 text-md text-text-primary font-semibold`}>{`${formatCurrency(challengeRemainingSize)} ${
-						position.collateralSymbol
-					}`}</div>
+					<div className={`col-span-2 text-md text-text-primary font-semibold`}>{`${formatCurrency(
+						challengeRemainingSize
+					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</div>
 				</div>
 			</div>
 

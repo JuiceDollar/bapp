@@ -1,15 +1,16 @@
 import { SecondaryLinkButton } from "@components/Button";
 import TokenLogo from "@components/TokenLogo";
 import { useTranslation } from "next-i18next";
-import { Fragment } from "react";
+import { Fragment, useMemo, useRef } from "react";
 import { HeaderCell, NoDataRow } from "./SectionTable";
 import { useAccount } from "wagmi";
 import { RootState } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
-import { Address, formatUnits, zeroAddress } from "viem";
-import { formatCurrency, TOKEN_SYMBOL } from "@utils";
+import { formatUnits, zeroAddress } from "viem";
+import { formatCurrency, TOKEN_SYMBOL, normalizeTokenSymbol } from "@utils";
 import { useRouter } from "next/router";
 import { getPublicViewAddress } from "../../utils/url";
+import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
 interface BorrowData {
 	position: `0x${string}`;
 	symbol: string;
@@ -96,12 +97,18 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 							</div>
 
 							<div className="w-full flex flex-row justify-between items-center">
-								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">{t("dashboard.liquidation_price")}</div>
-								<div className="font-medium text-base leading-tight">{item.liquidationPrice} {TOKEN_SYMBOL}</div>
+								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
+									{t("dashboard.liquidation_price")}
+								</div>
+								<div className="font-medium text-base leading-tight">
+									{item.liquidationPrice} {TOKEN_SYMBOL}
+								</div>
 							</div>
 
 							<div className="w-full flex flex-row justify-between items-center">
-								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">{t("dashboard.collateralization")}</div>
+								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
+									{t("dashboard.collateralization")}
+								</div>
 								<div className="font-medium text-base leading-tight">{item.collateralization} %</div>
 							</div>
 
@@ -113,7 +120,9 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 							</div>
 
 							<div className="w-full flex flex-row justify-between items-center">
-								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">{t("dashboard.amount_borrowed")}</div>
+								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
+									{t("dashboard.amount_borrowed")}
+								</div>
 								<div className="font-extrabold text-base leading-tight">
 									{item.amountBorrowed} {TOKEN_SYMBOL}
 								</div>
@@ -142,32 +151,43 @@ export const MyBorrow = () => {
 	const overwrite = getPublicViewAddress(router);
 	const account = overwrite || address || zeroAddress;
 
-	const ownedPositions = positions.filter((position) => position.owner.toLowerCase() === account.toLowerCase()).filter((position) => !position.closed);
+	const ownedPositions = positions
+		.filter((position) => position.owner.toLowerCase() === account.toLowerCase())
+		.filter((position) => !position.closed);
 
-	const borrowData = ownedPositions.map((position) => {
-		const { principal, reserveContribution, collateralBalance, collateralDecimals, collateralSymbol } = position;
-		const amountBorrowed = formatCurrency(
-			formatUnits(BigInt(principal) - (BigInt(principal) * BigInt(reserveContribution)) / 1_000_000n, position.stablecoinDecimals)
-		) as string;	
+	const cachedCollateralizations = useRef<Record<string, number>>({});
 
-		const collBalancePosition: number = Math.round((parseInt(position.collateralBalance) / 10 ** position.collateralDecimals) * 100) / 100;
-		const collTokenPriceMarket = prices[position.collateral.toLowerCase() as Address]?.price?.eur || 0;
-		const collTokenPricePosition: number = Math.round((parseInt(position.virtualPrice || position.price) / 10 ** (36 - position.collateralDecimals)) * 100) / 100;
-		
-		const marketValueCollateral: number = collBalancePosition * collTokenPriceMarket;
-		const positionValueCollateral: number = collBalancePosition * collTokenPricePosition;
-		const collateralizationPercentage: number = Math.round((marketValueCollateral / positionValueCollateral) * 10000) / 100;
+	const borrowData = useMemo(
+		() =>
+			ownedPositions.map((position) => {
+				const { principal, reserveContribution, collateralBalance, collateralDecimals, collateralSymbol } = position;
+				const amountBorrowed = formatCurrency(
+					formatUnits(
+						BigInt(principal) - (BigInt(principal) * BigInt(reserveContribution)) / 1_000_000n,
+						position.stablecoinDecimals
+					)
+				) as string;
 
-		return {
-			position: position.position as `0x${string}`,
-			symbol: collateralSymbol,
-			collateralAmount: formatCurrency(formatUnits(BigInt(collateralBalance), collateralDecimals) as string, 0, 5),
-			collateralization: collateralizationPercentage.toString(),
-			loanDueIn: formatCurrency(Math.round((position.expiration * 1000 - Date.now()) / 1000 / 60 / 60 / 24)) as string,
-			amountBorrowed,
-			liquidationPrice: formatCurrency(formatUnits(BigInt(position.virtualPrice || position.price), 36 - collateralDecimals) as string, 2, 2) as string,
-		};
-	});
+				const calculatedPercentage = calculateCollateralizationPercentage(position, prices);
+				if (calculatedPercentage > 0) cachedCollateralizations.current[position.position] = calculatedPercentage;
+				const collateralizationPercentage = cachedCollateralizations.current[position.position] || 0;
+
+				return {
+					position: position.position as `0x${string}`,
+					symbol: normalizeTokenSymbol(collateralSymbol),
+					collateralAmount: formatCurrency(formatUnits(BigInt(collateralBalance), collateralDecimals) as string, 0, 5),
+					collateralization: collateralizationPercentage.toString(),
+					loanDueIn: formatCurrency(Math.round((position.expiration * 1000 - Date.now()) / 1000 / 60 / 60 / 24)) as string,
+					amountBorrowed,
+					liquidationPrice: formatCurrency(
+						formatUnits(BigInt(position.virtualPrice || position.price), 36 - collateralDecimals) as string,
+						2,
+						2
+					) as string,
+				};
+			}),
+		[ownedPositions, prices]
+	);
 
 	const totalOwed = ownedPositions.reduce(
 		(acc, curr) => acc + BigInt(curr.principal) - (BigInt(curr.principal) * BigInt(curr.reserveContribution)) / 1_000_000n,
