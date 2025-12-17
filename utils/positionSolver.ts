@@ -25,7 +25,6 @@ export interface SolverOutcome {
 export function solveManage(pos: SolverPosition, target: Target, strategy: Strategy, newValue: bigint | number): SolverOutcome {
 	const { collateral: currentCollateral, debt: currentDebt, liqPrice: currentLiqPrice, expiration } = pos;
 
-
 	if (target === Target.EXPIRATION) {
 		return {
 			next: { ...pos, expiration: Number(newValue) },
