@@ -127,7 +127,8 @@ export function solveManage(pos: SolverPosition, target: Target, strategy: Strat
 
 			if (strategy === "KEEP_LIQ_PRICE") {
 				newLiqPrice = currentLiqPrice;
-				newCollateral = (k * newDebt) / newLiqPrice;
+				const baseCollateral = (k * newDebt) / newLiqPrice;
+				newCollateral = baseCollateral + baseCollateral / 100n;
 			} else {
 				newCollateral = currentCollateral;
 				newLiqPrice = (k * newDebt) / newCollateral;

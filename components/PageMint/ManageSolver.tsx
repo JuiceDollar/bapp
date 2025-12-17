@@ -43,6 +43,7 @@ import { MaxButton } from "@components/Input/MaxButton";
 import { usePositionMaxAmounts } from "../../hooks/usePositionMaxAmounts";
 import { ErrorDisplay } from "@components/ErrorDisplay";
 import { ManageButtons } from "@components/ManageButtons";
+import { AdjustLoan } from "./AdjustLoan";
 
 type Step = "SELECT_TARGET" | "ENTER_VALUE" | "CHOOSE_STRATEGY" | "PREVIEW";
 
@@ -633,6 +634,24 @@ export const ManageSolver = () => {
 		);
 	}
 
+	if (step === "ENTER_VALUE" && selectedTarget === "LOAN") {
+		return (
+			<AdjustLoan
+				position={position}
+				collateralBalance={collateralBalance}
+				currentDebt={currentDebt}
+				liqPrice={liqPrice}
+				principal={principal}
+				currentPosition={currentPosition}
+				walletBalance={walletBalance}
+				jusdAllowance={jusdAllowance}
+				refetchAllowance={refetchReadContracts}
+				onBack={handleReset}
+				onSuccess={handleReset}
+			/>
+		);
+	}
+
 	if (step === "ENTER_VALUE") {
 		const { value: currentValue, decimals, unit } = getValueInfo(selectedTarget!);
 		const delta = BigInt(deltaAmount || 0);
@@ -644,8 +663,6 @@ export const ManageSolver = () => {
 					return `${t("mint.adjust")} ${t("mint.collateral")}`;
 				case "LIQ_PRICE":
 					return `${t("mint.adjust")} ${t("mint.liquidation_price")}`;
-				case "LOAN":
-					return `${t("mint.adjust")} ${t("mint.loan_amount")}`;
 				default:
 					return t("mint.enter_change_amount");
 			}
@@ -654,7 +671,6 @@ export const ManageSolver = () => {
 		const handleMaxClick = () => {
 			const maxAmounts = {
 				COLLATERAL: isIncrease ? walletBalance : currentValue,
-				LOAN: currentValue,
 				LIQ_PRICE: currentValue,
 				EXPIRATION: 0n,
 			};
