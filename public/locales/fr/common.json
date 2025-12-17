@@ -208,6 +208,7 @@
 		"more_collateral": "Plus de garantie",
 		"higher_liq_price": "Prix de liquidation plus élevé",
 		"cooldown_warning": "L'augmentation du prix déclenchera une période de refroidissement",
+		"cooldown_ends_at": "Fin: {{date}}",
 		"withdraw_all_collateral": "Retirer toute la garantie",
 		"collateral_returned": "Garantie retournée",
 		"position_will_be_closed": "Cela fermera votre position",

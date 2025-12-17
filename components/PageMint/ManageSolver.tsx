@@ -518,6 +518,9 @@ export const ManageSolver = () => {
 				currentDebt={currentDebt}
 				liqPrice={liqPrice}
 				onSelectTarget={handleSelectTarget}
+				isInCooldown={isInCooldown}
+				cooldownRemainingFormatted={cooldownRemainingFormatted}
+				cooldownEndsAt={isInCooldown ? new Date(Number(cooldownBigInt) * 1000) : undefined}
 			/>
 		);
 	}

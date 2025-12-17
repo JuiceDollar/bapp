@@ -23,9 +23,21 @@ interface AdjustPositionProps {
 	currentDebt: bigint;
 	liqPrice: bigint;
 	onSelectTarget: (target: Target) => void;
+	isInCooldown?: boolean;
+	cooldownRemainingFormatted?: string | null;
+	cooldownEndsAt?: Date;
 }
 
-export const AdjustPosition = ({ position, collateralBalance, currentDebt, liqPrice, onSelectTarget }: AdjustPositionProps) => {
+export const AdjustPosition = ({
+	position,
+	collateralBalance,
+	currentDebt,
+	liqPrice,
+	onSelectTarget,
+	isInCooldown,
+	cooldownRemainingFormatted,
+	cooldownEndsAt,
+}: AdjustPositionProps) => {
 	const { t } = useTranslation();
 	const url = useContractUrl((position.position as Address) || zeroAddress);
 	const priceDecimals = 36 - (position.collateralDecimals || 18);
@@ -106,6 +118,20 @@ export const AdjustPosition = ({ position, collateralBalance, currentDebt, liqPr
 					</button>
 				))}
 			</div>
+
+			{isInCooldown && (
+				<AppBox className="ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10">
+					<div className="text-sm text-text-title font-medium">
+						{t("my_positions.is_in_cooldown")}
+						{cooldownRemainingFormatted && <strong className="ml-1">({cooldownRemainingFormatted})</strong>}
+					</div>
+					{cooldownEndsAt && (
+						<div className="text-xs text-text-muted2 mt-1">
+							{t("mint.cooldown_ends_at", { date: cooldownEndsAt.toLocaleString() })}
+						</div>
+					)}
+				</AppBox>
+			)}
 		</div>
 	);
 };

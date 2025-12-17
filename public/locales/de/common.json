@@ -209,6 +209,7 @@
 		"more_collateral": "Mehr Sicherheit",
 		"higher_liq_price": "Höherer Liquidationspreis",
 		"cooldown_warning": "Preiserhöhung löst Abkühlphase aus",
+		"cooldown_ends_at": "Endet: {{date}}",
 		"withdraw_all_collateral": "Alle Sicherheiten abheben",
 		"collateral_returned": "Sicherheit zurückgegeben",
 		"position_will_be_closed": "Dies schließt Ihre Position",

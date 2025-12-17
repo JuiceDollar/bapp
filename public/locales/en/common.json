@@ -209,6 +209,7 @@
 		"more_collateral": "More collateral",
 		"higher_liq_price": "Higher liquidation price",
 		"cooldown_warning": "Price increase will trigger cooldown period",
+		"cooldown_ends_at": "Ends: {{date}}",
 		"withdraw_all_collateral": "Withdraw all collateral",
 		"collateral_returned": "Collateral returned",
 		"position_will_be_closed": "This will close your position",
