@@ -3,6 +3,7 @@ import { useTranslation } from "next-i18next";
 import { Address, formatUnits } from "viem";
 import { formatCurrency, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { solveManage, SolverPosition, SolverOutcome } from "../../utils/positionSolver";
+import { Target } from "./AdjustPosition";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
 import { RemoveCircleOutlineIcon } from "@components/SvgComponents/remove_circle_outline";
@@ -83,8 +84,8 @@ export const AdjustLoan = ({
 	const delta = BigInt(deltaAmount || 0);
 	const showStrategyOptions = isIncrease && delta > 0n;
 	const newDebtValue = currentDebt + delta;
-	const outcomeKeepPrice = showStrategyOptions ? solveManage(currentPosition, "LOAN", "KEEP_LIQ_PRICE", newDebtValue) : null;
-	const outcomeKeepCollateral = showStrategyOptions ? solveManage(currentPosition, "LOAN", "KEEP_COLLATERAL", newDebtValue) : null;
+	const outcomeKeepPrice = showStrategyOptions ? solveManage(currentPosition, Target.LOAN, "KEEP_LIQ_PRICE", newDebtValue) : null;
+	const outcomeKeepCollateral = showStrategyOptions ? solveManage(currentPosition, Target.LOAN, "KEEP_COLLATERAL", newDebtValue) : null;
 	const collateralNeeded = outcomeKeepPrice?.deltaCollateral || 0n;
 	const priceIncrease = outcomeKeepCollateral?.deltaLiqPrice || 0n;
 	const FULL_REPAY_THRESHOLD = currentDebt / 1000n;
@@ -112,15 +113,15 @@ export const AdjustLoan = ({
 						isValid: true,
 					});
 				}
-				return setOutcome(solveManage(currentPosition, "LOAN", "KEEP_COLLATERAL", currentDebt - delta));
+				return setOutcome(solveManage(currentPosition, Target.LOAN, "KEEP_COLLATERAL", currentDebt - delta));
 			}
 			if (!strategies.addCollateral && !strategies.higherPrice) return setOutcome(null);
 			const newDebt = currentDebt + delta;
-			if (strategies.addCollateral && strategies.higherPrice) {
-				const [collatOutcome, priceOutcome] = [
-					solveManage(currentPosition, "LOAN", "KEEP_LIQ_PRICE", newDebt),
-					solveManage(currentPosition, "LOAN", "KEEP_COLLATERAL", newDebt),
-				];
+		if (strategies.addCollateral && strategies.higherPrice) {
+			const [collatOutcome, priceOutcome] = [
+				solveManage(currentPosition, Target.LOAN, "KEEP_LIQ_PRICE", newDebt),
+				solveManage(currentPosition, Target.LOAN, "KEEP_COLLATERAL", newDebt),
+			];
 				if (collatOutcome && priceOutcome) {
 					return setOutcome({
 						...collatOutcome,
@@ -129,8 +130,8 @@ export const AdjustLoan = ({
 					});
 				}
 			}
-			const strategy = strategies.addCollateral ? "KEEP_LIQ_PRICE" : "KEEP_COLLATERAL";
-			setOutcome(solveManage(currentPosition, "LOAN", strategy, newDebt));
+		const strategy = strategies.addCollateral ? "KEEP_LIQ_PRICE" : "KEEP_COLLATERAL";
+		setOutcome(solveManage(currentPosition, Target.LOAN, strategy, newDebt));
 		} catch {
 			setOutcome(null);
 		}
