@@ -22,7 +22,7 @@ interface AdjustPositionProps {
 
 export const AdjustPosition = ({ position, collateralBalance, currentDebt, liqPrice, onSelectTarget }: AdjustPositionProps) => {
 	const { t } = useTranslation();
-	const url = useContractUrl(position.position as Address || zeroAddress);
+	const url = useContractUrl((position.position as Address) || zeroAddress);
 	const priceDecimals = 36 - (position.collateralDecimals || 18);
 
 	const targets = [
