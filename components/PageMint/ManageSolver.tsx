@@ -7,12 +7,10 @@ import { Address, formatUnits, zeroAddress, erc20Abi } from "viem";
 import {
 	formatCurrency,
 	normalizeTokenSymbol,
-	shortenAddress,
 	getDisplayDecimals,
 	formatPositionValue,
 	formatPositionDelta,
 	NATIVE_WRAPPED_SYMBOLS,
-	formatDate,
 	roundToWholeUnits,
 } from "@utils";
 import { useReadContracts, useChainId, useAccount } from "wagmi";
@@ -22,7 +20,6 @@ import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
 import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
-import Button from "@components/Button";
 import { SectionTitle } from "@components/SectionTitle";
 import { Strategy, solveManage, getStrategiesForTarget, SolverPosition, SolverOutcome } from "../../utils/positionSolver";
 import { AdjustPosition, Target } from "./AdjustPosition";
@@ -33,13 +30,8 @@ import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outli
 import { RemoveCircleOutlineIcon } from "@components/SvgComponents/remove_circle_outline";
 import { SvgIconButton } from "./PlusMinusButtons";
 import { getLoanDetailsByCollateralAndStartingLiqPrice } from "../../utils/loanCalculations";
-import Link from "next/link";
 import { useContractUrl } from "../../hooks/useContractUrl";
 import AppBox from "@components/AppBox";
-import DisplayLabel from "@components/DisplayLabel";
-import DisplayAmount from "@components/DisplayAmount";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { MaxButton } from "@components/Input/MaxButton";
 import { usePositionMaxAmounts } from "../../hooks/usePositionMaxAmounts";
 import { ErrorDisplay } from "@components/ErrorDisplay";
@@ -73,26 +65,26 @@ export const ManageSolver = () => {
 	const { data, refetch: refetchReadContracts } = useReadContracts({
 		contracts: position
 			? [
-					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "principal" },
-					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "price" },
-					{
-						chainId,
-						abi: erc20Abi,
-						address: position.collateral as Address,
-						functionName: "balanceOf",
-						args: [position.position],
-					},
-					{ chainId, abi: PositionV2ABI, address: position.position, functionName: "getDebt" },
-					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "cooldown" },
-					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "minimumCollateral" },
-					{
-						chainId,
-						abi: erc20Abi,
-						address: ADDRESS[chainId]?.juiceDollar as Address,
-						functionName: "allowance",
-						args: [userAddress as Address, position.position as Address],
-					},
-			  ]
+				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "principal" },
+				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "price" },
+				{
+					chainId,
+					abi: erc20Abi,
+					address: position.collateral as Address,
+					functionName: "balanceOf",
+					args: [position.position],
+				},
+				{ chainId, abi: PositionV2ABI, address: position.position, functionName: "getDebt" },
+				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "cooldown" },
+				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "minimumCollateral" },
+				{
+					chainId,
+					abi: erc20Abi,
+					address: ADDRESS[chainId]?.juiceDollar as Address,
+					functionName: "allowance",
+					args: [userAddress as Address, position.position as Address],
+				},
+			]
 			: [],
 	});
 
@@ -570,8 +562,6 @@ export const ManageSolver = () => {
 					return `${t("mint.adjust")} ${t("mint.collateral")}`;
 				case Target.LIQ_PRICE:
 					return `${t("mint.adjust")} ${t("mint.liquidation_price")}`;
-				case Target.LOAN:
-					return `${t("mint.adjust")} ${t("mint.loan_amount")}`;
 				default:
 					return t("mint.enter_change_amount");
 			}
@@ -722,11 +712,10 @@ export const ManageSolver = () => {
 								className="text-left hover:opacity-80 transition-opacity"
 							>
 								<AppBox
-									className={`h-full transition-all ${
-										isSelected
+									className={`h-full transition-all ${isSelected
 											? "ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10"
 											: "hover:ring-2 hover:ring-orange-300"
-									}`}
+										}`}
 								>
 									<div className="text-lg font-bold text-text-title mb-2">{strat.label}</div>
 									<div className="text-sm text-text-muted2 mb-2">{strat.description}</div>

@@ -117,11 +117,11 @@ export const AdjustLoan = ({
 			}
 			if (!strategies.addCollateral && !strategies.higherPrice) return setOutcome(null);
 			const newDebt = currentDebt + delta;
-		if (strategies.addCollateral && strategies.higherPrice) {
-			const [collatOutcome, priceOutcome] = [
-				solveManage(currentPosition, Target.LOAN, "KEEP_LIQ_PRICE", newDebt),
-				solveManage(currentPosition, Target.LOAN, "KEEP_COLLATERAL", newDebt),
-			];
+			if (strategies.addCollateral && strategies.higherPrice) {
+				const [collatOutcome, priceOutcome] = [
+					solveManage(currentPosition, Target.LOAN, "KEEP_LIQ_PRICE", newDebt),
+					solveManage(currentPosition, Target.LOAN, "KEEP_COLLATERAL", newDebt),
+				];
 				if (collatOutcome && priceOutcome) {
 					return setOutcome({
 						...collatOutcome,
@@ -130,8 +130,8 @@ export const AdjustLoan = ({
 					});
 				}
 			}
-		const strategy = strategies.addCollateral ? "KEEP_LIQ_PRICE" : "KEEP_COLLATERAL";
-		setOutcome(solveManage(currentPosition, Target.LOAN, strategy, newDebt));
+			const strategy = strategies.addCollateral ? "KEEP_LIQ_PRICE" : "KEEP_COLLATERAL";
+			setOutcome(solveManage(currentPosition, Target.LOAN, strategy, newDebt));
 		} catch {
 			setOutcome(null);
 		}
@@ -144,7 +144,7 @@ export const AdjustLoan = ({
 		setDeltaAmountError(
 			exceedsMax
 				? t("mint.error.amount_greater_than_max_to_remove") +
-						(!strategies.addCollateral ? ". Add more collateral to increase limit" : "")
+				(!strategies.addCollateral ? ". Add more collateral to increase limit" : "")
 				: null
 		);
 	}, [deltaAmount, isIncrease, hasAnyStrategy, strategies.addCollateral, maxDelta, t]);
