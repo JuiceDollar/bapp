@@ -144,7 +144,7 @@ export const AdjustLoan = ({
 		setDeltaAmountError(
 			exceedsMax
 				? t("mint.error.amount_greater_than_max_to_remove") +
-				(!strategies.addCollateral ? ". Add more collateral to increase limit" : "")
+						(!strategies.addCollateral ? ". Add more collateral to increase limit" : "")
 				: null
 		);
 	}, [deltaAmount, isIncrease, hasAnyStrategy, strategies.addCollateral, maxDelta, t]);

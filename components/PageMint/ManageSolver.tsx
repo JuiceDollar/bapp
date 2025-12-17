@@ -65,26 +65,26 @@ export const ManageSolver = () => {
 	const { data, refetch: refetchReadContracts } = useReadContracts({
 		contracts: position
 			? [
-				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "principal" },
-				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "price" },
-				{
-					chainId,
-					abi: erc20Abi,
-					address: position.collateral as Address,
-					functionName: "balanceOf",
-					args: [position.position],
-				},
-				{ chainId, abi: PositionV2ABI, address: position.position, functionName: "getDebt" },
-				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "cooldown" },
-				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "minimumCollateral" },
-				{
-					chainId,
-					abi: erc20Abi,
-					address: ADDRESS[chainId]?.juiceDollar as Address,
-					functionName: "allowance",
-					args: [userAddress as Address, position.position as Address],
-				},
-			]
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "principal" },
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "price" },
+					{
+						chainId,
+						abi: erc20Abi,
+						address: position.collateral as Address,
+						functionName: "balanceOf",
+						args: [position.position],
+					},
+					{ chainId, abi: PositionV2ABI, address: position.position, functionName: "getDebt" },
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "cooldown" },
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "minimumCollateral" },
+					{
+						chainId,
+						abi: erc20Abi,
+						address: ADDRESS[chainId]?.juiceDollar as Address,
+						functionName: "allowance",
+						args: [userAddress as Address, position.position as Address],
+					},
+			  ]
 			: [],
 	});
 
@@ -712,10 +712,11 @@ export const ManageSolver = () => {
 								className="text-left hover:opacity-80 transition-opacity"
 							>
 								<AppBox
-									className={`h-full transition-all ${isSelected
+									className={`h-full transition-all ${
+										isSelected
 											? "ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10"
 											: "hover:ring-2 hover:ring-orange-300"
-										}`}
+									}`}
 								>
 									<div className="text-lg font-bold text-text-title mb-2">{strat.label}</div>
 									<div className="text-sm text-text-muted2 mb-2">{strat.description}</div>
