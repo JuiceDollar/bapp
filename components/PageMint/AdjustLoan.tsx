@@ -58,6 +58,7 @@ export const AdjustLoan = ({
 	const priceDecimals = 36 - (position.collateralDecimals || 18);
 	const collateralDecimals = position.collateralDecimals || 18;
 	const collateralSymbol = normalizeTokenSymbol(position.collateralSymbol || "");
+	const cooldownDays = Math.ceil(position.challengePeriod / 60 / 60 / 24);
 
 	useEffect(() => {
 		setDeltaAmount("");
@@ -320,7 +321,9 @@ export const AdjustLoan = ({
 								</span>
 							</div>
 							{strategies.higherPrice && outcome.next.liqPrice > liqPrice && (
-								<div className="text-xs text-orange-600 dark:text-orange-400 mt-1">{t("mint.cooldown_warning")}</div>
+								<div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+									{t("mint.cooldown_warning")} ({cooldownDays} {cooldownDays === 1 ? t("common.day") : t("common.days")})
+								</div>
 							)}
 						</div>
 					)}
