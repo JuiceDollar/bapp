@@ -24,7 +24,8 @@ import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import Button from "@components/Button";
 import { SectionTitle } from "@components/SectionTitle";
-import { Target, Strategy, solveManage, getStrategiesForTarget, SolverPosition, SolverOutcome } from "../../utils/positionSolver";
+import { Strategy, solveManage, getStrategiesForTarget, SolverPosition, SolverOutcome } from "../../utils/positionSolver";
+import { AdjustPosition, Target } from "./AdjustPosition";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
 import { ExpirationManageSection } from "./ExpirationManageSection";
@@ -512,113 +513,19 @@ export const ManageSolver = () => {
 		}
 	};
 	if (step === "SELECT_TARGET") {
-		const targets = [
-			{
-				id: "COLLATERAL" as const,
-				label: t("mint.collateral"),
-				desc: t("mint.adjust_collateral_description"),
-				value: collateralBalance,
-				decimals: position.collateralDecimals,
-				currency: normalizeTokenSymbol(position.collateralSymbol),
-			},
-			{
-				id: "LIQ_PRICE" as const,
-				label: t("mint.liquidation_price"),
-				desc: t("mint.adjust_liq_price_description"),
-				value: liqPrice,
-				decimals: priceDecimals,
-				currency: position.stablecoinSymbol,
-			},
-			{
-				id: "LOAN" as const,
-				label: t("mint.loan_amount"),
-				desc: t("mint.adjust_loan_amount_description"),
-				value: currentDebt,
-				decimals: 18,
-				currency: position.stablecoinSymbol,
-			},
-			{
-				id: "EXPIRATION" as const,
-				label: t("mint.expiration"),
-				desc: t("mint.adjust_expiration_description"),
-				value: null,
-				decimals: 0,
-				currency: "",
-			},
-		];
-
-		const handleConfirm = () => {
-			if (!selectedTarget) return;
-			setStep(selectedTarget === "EXPIRATION" ? "PREVIEW" : "ENTER_VALUE");
-		};
-
-		// Get dynamic button text based on selection
-		const getButtonText = () => {
-			if (!selectedTarget) return t("mint.adjust_position");
-
-			switch (selectedTarget) {
-				case "COLLATERAL":
-					return `${t("mint.adjust")} ${t("mint.collateral")}`;
-				case "LIQ_PRICE":
-					return `${t("mint.adjust")} ${t("mint.liquidation_price")}`;
-				case "LOAN":
-					return `${t("mint.adjust")} ${t("mint.loan_amount")}`;
-				case "EXPIRATION":
-					return `${t("mint.adjust")} ${t("mint.expiration")}`;
-				default:
-					return t("mint.adjust_position");
-			}
+		const handleSelectTarget = (target: Target) => {
+			setSelectedTarget(target);
+			setStep(target === "EXPIRATION" ? "PREVIEW" : "ENTER_VALUE");
 		};
 
 		return (
-			<div className="flex flex-col gap-y-4">
-				<Link href={url} target="_blank">
-					<div className="text-lg font-bold underline text-center">
-						{t("monitoring.position")} {shortenAddress(position.position)}
-						<FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-3 ml-2" />
-					</div>
-				</Link>
-
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-					{targets.map((target) => (
-						<button
-							key={target.id}
-							onClick={() => setSelectedTarget(target.id)}
-							className="text-left hover:opacity-80 transition-opacity"
-						>
-							<AppBox
-								className={`h-full transition-all ${
-									selectedTarget === target.id
-										? "ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10"
-										: "hover:ring-2 hover:ring-orange-300"
-								}`}
-							>
-								<DisplayLabel label={target.label} />
-								{target.value !== null ? (
-									<DisplayAmount
-										amount={target.value}
-										currency={target.currency}
-										digits={target.decimals}
-										className="mt-2"
-									/>
-								) : (
-									<div className="mt-2">
-										<b>{formatDate(position.expiration)}</b>
-									</div>
-								)}
-							</AppBox>
-						</button>
-					))}
-				</div>
-
-				<div className="text-center">
-					<p className="text-sm text-text-muted2">{t("mint.select_parameter_to_modify")}</p>
-				</div>
-
-				<Button onClick={handleConfirm} disabled={!selectedTarget} className="text-lg leading-snug !font-extrabold">
-					{getButtonText()}
-				</Button>
-			</div>
+			<AdjustPosition
+				position={position}
+				collateralBalance={collateralBalance}
+				currentDebt={currentDebt}
+				liqPrice={liqPrice}
+				onSelectTarget={handleSelectTarget}
+			/>
 		);
 	}
 	if (selectedTarget === "EXPIRATION" && step === "PREVIEW") {
