@@ -10,7 +10,12 @@ import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { useContractUrl } from "../../hooks/useContractUrl";
 import { PositionQuery } from "@juicedollar/api";
 
-export type Target = "COLLATERAL" | "LIQ_PRICE" | "LOAN" | "EXPIRATION";
+export enum Target {
+	COLLATERAL = "COLLATERAL",
+	LIQ_PRICE = "LIQ_PRICE",
+	LOAN = "LOAN",
+	EXPIRATION = "EXPIRATION",
+}
 
 interface AdjustPositionProps {
 	position: PositionQuery;
@@ -27,7 +32,7 @@ export const AdjustPosition = ({ position, collateralBalance, currentDebt, liqPr
 
 	const targets = [
 		{
-			id: "LOAN" as const,
+			id: Target.LOAN,
 			label: t("mint.loan_amount"),
 			desc: t("mint.adjust_loan_amount_description"),
 			value: currentDebt,
@@ -35,7 +40,7 @@ export const AdjustPosition = ({ position, collateralBalance, currentDebt, liqPr
 			currency: position.stablecoinSymbol,
 		},
 		{
-			id: "COLLATERAL" as const,
+			id: Target.COLLATERAL,
 			label: t("mint.collateral"),
 			desc: t("mint.adjust_collateral_description"),
 			value: collateralBalance,
@@ -43,7 +48,7 @@ export const AdjustPosition = ({ position, collateralBalance, currentDebt, liqPr
 			currency: normalizeTokenSymbol(position.collateralSymbol),
 		},
 		{
-			id: "LIQ_PRICE" as const,
+			id: Target.LIQ_PRICE,
 			label: t("mint.liquidation_price"),
 			desc: t("mint.adjust_liq_price_description"),
 			value: liqPrice,
@@ -51,7 +56,7 @@ export const AdjustPosition = ({ position, collateralBalance, currentDebt, liqPr
 			currency: position.stablecoinSymbol,
 		},
 		{
-			id: "EXPIRATION" as const,
+			id: Target.EXPIRATION,
 			label: t("mint.expiration"),
 			desc: t("mint.adjust_expiration_description"),
 			value: null,

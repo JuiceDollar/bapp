@@ -72,26 +72,26 @@ export const ManageSolver = () => {
 	const { data, refetch: refetchReadContracts } = useReadContracts({
 		contracts: position
 			? [
-					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "principal" },
-					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "price" },
-					{
-						chainId,
-						abi: erc20Abi,
-						address: position.collateral as Address,
-						functionName: "balanceOf",
-						args: [position.position],
-					},
-					{ chainId, abi: PositionV2ABI, address: position.position, functionName: "getDebt" },
-					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "cooldown" },
-					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "minimumCollateral" },
-					{
-						chainId,
-						abi: erc20Abi,
-						address: ADDRESS[chainId]?.juiceDollar as Address,
-						functionName: "allowance",
-						args: [userAddress as Address, position.position as Address],
-					},
-			  ]
+				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "principal" },
+				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "price" },
+				{
+					chainId,
+					abi: erc20Abi,
+					address: position.collateral as Address,
+					functionName: "balanceOf",
+					args: [position.position],
+				},
+				{ chainId, abi: PositionV2ABI, address: position.position, functionName: "getDebt" },
+				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "cooldown" },
+				{ chainId, address: position.position, abi: PositionV2ABI, functionName: "minimumCollateral" },
+				{
+					chainId,
+					abi: erc20Abi,
+					address: ADDRESS[chainId]?.juiceDollar as Address,
+					functionName: "allowance",
+					args: [userAddress as Address, position.position as Address],
+				},
+			]
 			: [],
 	});
 
@@ -188,7 +188,7 @@ export const ManageSolver = () => {
 			return;
 		}
 		try {
-			const value = selectedTarget === "EXPIRATION" ? Number(newValue) : BigInt(newValue);
+			const value = selectedTarget === Target.EXPIRATION ? Number(newValue) : BigInt(newValue);
 			setOutcome(solveManage(currentPosition, selectedTarget, selectedStrategy, value));
 		} catch (error) {
 			setOutcome(null);
@@ -203,7 +203,7 @@ export const ManageSolver = () => {
 
 		const delta = BigInt(deltaAmount || 0);
 
-		if (!isIncrease && selectedTarget === "COLLATERAL" && delta > collateralBalance) {
+		if (!isIncrease && selectedTarget === Target.COLLATERAL && delta > collateralBalance) {
 			setDeltaAmountError(t("mint.error.amount_greater_than_position_balance"));
 		} else {
 			setDeltaAmountError(null);
@@ -229,9 +229,9 @@ export const ManageSolver = () => {
 	};
 
 	const getPreviewItems = (outcome: SolverOutcome) => [
-		{ label: t("mint.collateral"), value: outcome.next.collateral, delta: outcome.deltaCollateral, target: "COLLATERAL" as Target },
-		{ label: t("mint.liquidation_price"), value: outcome.next.liqPrice, delta: outcome.deltaLiqPrice, target: "LIQ_PRICE" as Target },
-		{ label: t("mint.loan_amount"), value: outcome.next.debt, delta: outcome.deltaDebt, target: "LOAN" as Target },
+		{ label: t("mint.collateral"), value: outcome.next.collateral, delta: outcome.deltaCollateral, target: Target.COLLATERAL },
+		{ label: t("mint.liquidation_price"), value: outcome.next.liqPrice, delta: outcome.deltaLiqPrice, target: Target.LIQ_PRICE },
+		{ label: t("mint.loan_amount"), value: outcome.next.debt, delta: outcome.deltaDebt, target: Target.LOAN },
 	];
 
 	const renderPreviewItems = (items: ReturnType<typeof getPreviewItems>) => (
@@ -260,10 +260,10 @@ export const ManageSolver = () => {
 
 	const getActionValue = (action: string, outcome: SolverOutcome) => {
 		const values = {
-			DEPOSIT: formatValue(outcome.deltaCollateral, "COLLATERAL"),
-			WITHDRAW: formatValue(-outcome.deltaCollateral, "COLLATERAL"),
-			BORROW: formatValue(outcome.deltaDebt, "LOAN"),
-			REPAY: formatValue(-outcome.deltaDebt, "LOAN"),
+			DEPOSIT: formatValue(outcome.deltaCollateral, Target.COLLATERAL),
+			WITHDRAW: formatValue(-outcome.deltaCollateral, Target.COLLATERAL),
+			BORROW: formatValue(outcome.deltaDebt, Target.LOAN),
+			REPAY: formatValue(-outcome.deltaDebt, Target.LOAN),
 		};
 		return values[action as keyof typeof values] || "";
 	};
@@ -515,7 +515,7 @@ export const ManageSolver = () => {
 	if (step === "SELECT_TARGET") {
 		const handleSelectTarget = (target: Target) => {
 			setSelectedTarget(target);
-			setStep(target === "EXPIRATION" ? "PREVIEW" : "ENTER_VALUE");
+			setStep(target === Target.EXPIRATION ? "PREVIEW" : "ENTER_VALUE");
 		};
 
 		return (
@@ -528,7 +528,7 @@ export const ManageSolver = () => {
 			/>
 		);
 	}
-	if (selectedTarget === "EXPIRATION" && step === "PREVIEW") {
+	if (selectedTarget === Target.EXPIRATION && step === "PREVIEW") {
 		return (
 			<div className="flex flex-col gap-y-4">
 				<button onClick={handleReset} className="text-left text-primary hover:text-primary-hover text-sm font-medium">
@@ -547,11 +547,11 @@ export const ManageSolver = () => {
 
 		const getAdjustTitle = () => {
 			switch (selectedTarget) {
-				case "COLLATERAL":
+				case Target.COLLATERAL:
 					return `${t("mint.adjust")} ${t("mint.collateral")}`;
-				case "LIQ_PRICE":
+				case Target.LIQ_PRICE:
 					return `${t("mint.adjust")} ${t("mint.liquidation_price")}`;
-				case "LOAN":
+				case Target.LOAN:
 					return `${t("mint.adjust")} ${t("mint.loan_amount")}`;
 				default:
 					return t("mint.enter_change_amount");
@@ -589,7 +589,7 @@ export const ManageSolver = () => {
 						</div>
 					</div>
 
-					{selectedTarget === "LIQ_PRICE" ? (
+					{selectedTarget === Target.LIQ_PRICE ? (
 						<SliderInputOutlined
 							value={deltaAmount}
 							onChange={(val) => setDeltaAmount(roundToWholeUnits(val, priceDecimals))}
@@ -612,14 +612,14 @@ export const ManageSolver = () => {
 									<div className="h-7 justify-end items-center gap-2.5 flex">
 										<div className="text-input-label text-xs font-medium leading-none">
 											{formatUnits(
-												isIncrease && selectedTarget === "COLLATERAL" ? walletBalance : currentValue,
+												isIncrease && selectedTarget === Target.COLLATERAL ? walletBalance : currentValue,
 												decimals
 											)}{" "}
 											{unit}
 										</div>
 										<MaxButton
 											disabled={
-												(isIncrease && selectedTarget === "COLLATERAL" && walletBalance === 0n) ||
+												(isIncrease && selectedTarget === Target.COLLATERAL && walletBalance === 0n) ||
 												(!isIncrease && currentValue === 0n)
 											}
 											onClick={handleMaxClick}
@@ -671,7 +671,7 @@ export const ManageSolver = () => {
 		const allStrategies = getStrategiesForTarget(selectedTarget!, BigInt(newValue) > currentValue);
 
 		const hasNoDebt = currentDebt === 0n || currentDebt < 1000n;
-		const isRemovingCollateral = selectedTarget === "COLLATERAL" && BigInt(newValue) < currentValue;
+		const isRemovingCollateral = selectedTarget === Target.COLLATERAL && BigInt(newValue) < currentValue;
 
 		const strategies = allStrategies.filter((strat) => {
 			if (hasNoDebt && isRemovingCollateral && strat.strategy === "KEEP_LIQ_PRICE") {
@@ -683,7 +683,7 @@ export const ManageSolver = () => {
 		const getStrategyOutcome = (strategy: Strategy) => {
 			if (!currentPosition || !selectedTarget || !newValue) return null;
 			try {
-				const value = selectedTarget === "EXPIRATION" ? Number(newValue) : BigInt(newValue);
+				const value = selectedTarget === Target.EXPIRATION ? Number(newValue) : BigInt(newValue);
 				return solveManage(currentPosition, selectedTarget, strategy, value);
 			} catch (error) {
 				return null;
@@ -704,11 +704,10 @@ export const ManageSolver = () => {
 								className="text-left hover:opacity-80 transition-opacity"
 							>
 								<AppBox
-									className={`h-full transition-all ${
-										isSelected
+									className={`h-full transition-all ${isSelected
 											? "ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10"
 											: "hover:ring-2 hover:ring-orange-300"
-									}`}
+										}`}
 								>
 									<div className="text-lg font-bold text-text-title mb-2">{strat.label}</div>
 									<div className="text-sm text-text-muted2 mb-2">{strat.description}</div>
