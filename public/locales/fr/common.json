@@ -70,7 +70,10 @@
 			"collateral": "Garantie :",
 			"price": "Prix :",
 			"receive": "Recevoir :",
-			"shares": "Actions :"
+			"shares": "Actions :",
+			"failed": "Transaction échouée",
+			"approving": "Approbation en cours...",
+			"approved": "Approuvé"
 		},
 		"error": {
 			"insufficient_balance": "Solde insuffisant de {{symbol}} dans votre portefeuille.",
@@ -270,7 +273,8 @@
 			"extending": "Prolongation de la position",
 			"extending_success": "Position prolongée avec succès",
 			"adjusting_price": "Ajustement du prix de la position...",
-			"adjusting_price_success": "Prix de la position ajusté avec succès"
+			"adjusting_price_success": "Prix de la position ajusté avec succès",
+			"adjust_success": "Position ajustée avec succès"
 		}
 	},
 	"my_positions": {

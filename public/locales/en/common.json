@@ -71,7 +71,9 @@
 			"price": "Price:",
 			"receive": "Receive:",
 			"shares": "Shares:",
-			"failed": "Transaction Failed"
+			"failed": "Transaction Failed",
+			"approving": "Approving...",
+			"approved": "Approved"
 		},
 		"error": {
 			"insufficient_balance": "Not enough {{symbol}} in your wallet.",
@@ -271,7 +273,8 @@
 			"extending": "Extending position",
 			"extending_success": "Successfully extended position",
 			"adjusting_price": "Adjusting position price...",
-			"adjusting_price_success": "Position price adjusted successfully"
+			"adjusting_price_success": "Position price adjusted successfully",
+			"adjust_success": "Position adjusted successfully"
 		}
 	},
 	"my_positions": {

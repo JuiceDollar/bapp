@@ -71,7 +71,9 @@
 			"price": "Precio:",
 			"receive": "Recibir:",
 			"shares": "Acciones:",
-			"failed": "Transacción fallida"
+			"failed": "Transacción fallida",
+			"approving": "Aprobando...",
+			"approved": "Aprobado"
 		},
 		"error": {
 			"insufficient_balance": "No hay suficientes {{symbol}} en su monedero.",
@@ -271,7 +273,8 @@
 			"extending": "Extendiendo posición",
 			"extending_success": "Posición extendida correctamente",
 			"adjusting_price": "Ajustando precio de posición...",
-			"adjusting_price_success": "Precio de posición ajustado exitosamente"
+			"adjusting_price_success": "Precio de posición ajustado exitosamente",
+			"adjust_success": "Posición ajustada exitosamente"
 		}
 	},
 	"my_positions": {
