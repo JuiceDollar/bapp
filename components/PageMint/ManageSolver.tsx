@@ -21,7 +21,7 @@ import { toast } from "react-toastify";
 import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { SectionTitle } from "@components/SectionTitle";
-import { Strategy, solveManage, getStrategiesForTarget, SolverPosition, SolverOutcome } from "../../utils/positionSolver";
+import { Strategy, TxAction, solveManage, getStrategiesForTarget, SolverPosition, SolverOutcome } from "../../utils/positionSolver";
 import { AdjustPosition, Target } from "./AdjustPosition";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
@@ -89,12 +89,17 @@ export const ManageSolver = () => {
 	});
 
 	const principal = data?.[0]?.result || 0n;
-	const liqPrice = data?.[1]?.result || 1n;
+	const positionPriceLimit = data?.[1]?.result || 1n;
 	const collateralBalance = data?.[2]?.result || 0n;
 	const currentDebt = data?.[3]?.result || 0n;
 	const cooldown = data?.[4]?.result || 0n;
 	const minimumCollateral = data?.[5]?.result || 0n;
 	const jusdAllowance = data?.[6]?.result || 0n;
+
+	const collateralDecimals = position?.collateralDecimals || 18;
+	const liqPrice = collateralBalance > 0n
+		? (currentDebt * BigInt(10 ** (36 - collateralDecimals))) / collateralBalance
+		: positionPriceLimit;
 
 	const now = BigInt(Math.floor(Date.now() / 1000));
 	const cooldownBigInt = BigInt(cooldown);
@@ -316,11 +321,11 @@ export const ManageSolver = () => {
 		try {
 			setIsTxOnGoing(true);
 
-			const hasWithdraw = outcome.txPlan.includes("WITHDRAW");
+			const hasWithdraw = outcome.txPlan.includes(TxAction.WITHDRAW);
 			const withdrawHandlesRepay = hasWithdraw && outcome.deltaDebt < 0n;
 
 			for (const action of outcome.txPlan) {
-				if (action === "DEPOSIT") {
+				if (action === TxAction.DEPOSIT) {
 					const depositAmount = outcome.deltaCollateral;
 
 					const adjustHash = await writeContract(WAGMI_CONFIG, {
@@ -354,7 +359,7 @@ export const ManageSolver = () => {
 							render: <TxToast title={t("mint.txs.adding_collateral_success")} rows={toastContent} />,
 						},
 					});
-				} else if (action === "WITHDRAW") {
+				} else if (action === TxAction.WITHDRAW) {
 					if (outcome.next.collateral === 0n && principal > 0n) {
 						const repayHash = await writeContract(WAGMI_CONFIG, {
 							address: position.position,
@@ -419,7 +424,7 @@ export const ManageSolver = () => {
 							render: <TxToast title={t("mint.txs.removing_collateral_success")} rows={toastContent} />,
 						},
 					});
-				} else if (action === "BORROW") {
+				} else if (action === TxAction.BORROW) {
 					const borrowHash = await writeContract(WAGMI_CONFIG, {
 						address: position.position,
 						abi: PositionV2ABI,
@@ -448,7 +453,7 @@ export const ManageSolver = () => {
 							),
 						},
 					});
-				} else if (action === "REPAY") {
+				} else if (action === TxAction.REPAY) {
 					if (withdrawHandlesRepay) continue;
 					const repayAmount = -outcome.deltaDebt;
 
@@ -550,6 +555,9 @@ export const ManageSolver = () => {
 				refetchAllowance={refetchReadContracts}
 				onBack={handleReset}
 				onSuccess={handleReset}
+				isInCooldown={isInCooldown}
+				cooldownRemainingFormatted={cooldownRemainingFormatted}
+				cooldownEndsAt={isInCooldown ? new Date(Number(cooldownBigInt) * 1000) : undefined}
 			/>
 		);
 	}
@@ -685,7 +693,7 @@ export const ManageSolver = () => {
 		const isRemovingCollateral = selectedTarget === Target.COLLATERAL && BigInt(newValue) < currentValue;
 
 		const strategies = allStrategies.filter((strat) => {
-			if (hasNoDebt && isRemovingCollateral && strat.strategy === "KEEP_LIQ_PRICE") {
+			if (hasNoDebt && isRemovingCollateral && strat.strategy === Strategy.KEEP_LIQ_PRICE) {
 				return false;
 			}
 			return true;

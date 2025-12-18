@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "next-i18next";
 import { Address, formatUnits } from "viem";
 import { formatCurrency, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
-import { solveManage, SolverPosition, SolverOutcome } from "../../utils/positionSolver";
+import { solveManage, SolverPosition, SolverOutcome, Strategy, TxAction } from "../../utils/positionSolver";
 import { Target } from "./AdjustPosition";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
@@ -10,7 +10,8 @@ import { RemoveCircleOutlineIcon } from "@components/SvgComponents/remove_circle
 import { SvgIconButton } from "./PlusMinusButtons";
 import { MaxButton } from "@components/Input/MaxButton";
 import { ErrorDisplay } from "@components/ErrorDisplay";
-import { ManageButtons } from "@components/ManageButtons";
+import Button from "@components/Button";
+import { Tooltip } from "flowbite-react";
 import { PositionQuery } from "@juicedollar/api";
 import { useChainId, useAccount } from "wagmi";
 import { ADDRESS } from "@juicedollar/jusd";
@@ -29,6 +30,9 @@ interface AdjustLoanProps {
 	refetchAllowance: () => void;
 	onBack: () => void;
 	onSuccess: () => void;
+	isInCooldown: boolean;
+	cooldownRemainingFormatted: string | null;
+	cooldownEndsAt?: Date;
 }
 
 export const AdjustLoan = ({
@@ -43,6 +47,9 @@ export const AdjustLoan = ({
 	refetchAllowance,
 	onBack,
 	onSuccess,
+	isInCooldown,
+	cooldownRemainingFormatted,
+	cooldownEndsAt,
 }: AdjustLoanProps) => {
 	const { t } = useTranslation();
 	const chainId = useChainId();
@@ -52,7 +59,6 @@ export const AdjustLoan = ({
 	const [deltaAmount, setDeltaAmount] = useState<string>("");
 	const [isIncrease, setIsIncrease] = useState(true);
 	const [strategies, setStrategies] = useState({ addCollateral: false, higherPrice: false });
-	const [withdrawAllCollateral, setWithdrawAllCollateral] = useState(false);
 	const [outcome, setOutcome] = useState<SolverOutcome | null>(null);
 	const [deltaAmountError, setDeltaAmountError] = useState<string | null>(null);
 	const priceDecimals = 36 - (position.collateralDecimals || 18);
@@ -84,11 +90,6 @@ export const AdjustLoan = ({
 
 	const delta = BigInt(deltaAmount || 0);
 	const showStrategyOptions = isIncrease && delta > 0n;
-	const newDebtValue = currentDebt + delta;
-	const outcomeKeepPrice = showStrategyOptions ? solveManage(currentPosition, Target.LOAN, "KEEP_LIQ_PRICE", newDebtValue) : null;
-	const outcomeKeepCollateral = showStrategyOptions ? solveManage(currentPosition, Target.LOAN, "KEEP_COLLATERAL", newDebtValue) : null;
-	const collateralNeeded = outcomeKeepPrice?.deltaCollateral || 0n;
-	const priceIncrease = outcomeKeepCollateral?.deltaLiqPrice || 0n;
 	const FULL_REPAY_THRESHOLD = currentDebt / 1000n;
 	const isFullRepay = !isIncrease && delta > 0n && (delta >= currentDebt || currentDebt - delta <= FULL_REPAY_THRESHOLD);
 
@@ -102,26 +103,26 @@ export const AdjustLoan = ({
 				if (isFullRepayNow) {
 					return setOutcome({
 						next: {
-							collateral: withdrawAllCollateral ? 0n : collateralBalance,
+							collateral: 0n,
 							debt: 0n,
 							liqPrice,
 							expiration: currentPosition.expiration,
 						},
-						deltaCollateral: withdrawAllCollateral ? -collateralBalance : 0n,
+						deltaCollateral: -collateralBalance,
 						deltaDebt: -currentDebt,
 						deltaLiqPrice: 0n,
-						txPlan: withdrawAllCollateral ? ["REPAY", "WITHDRAW"] : ["REPAY"],
+						txPlan: [TxAction.REPAY, TxAction.WITHDRAW],
 						isValid: true,
 					});
 				}
-				return setOutcome(solveManage(currentPosition, Target.LOAN, "KEEP_COLLATERAL", currentDebt - delta));
+				return setOutcome(solveManage(currentPosition, Target.LOAN, Strategy.KEEP_COLLATERAL, currentDebt - delta));
 			}
 			if (!strategies.addCollateral && !strategies.higherPrice) return setOutcome(null);
 			const newDebt = currentDebt + delta;
 			if (strategies.addCollateral && strategies.higherPrice) {
 				const [collatOutcome, priceOutcome] = [
-					solveManage(currentPosition, Target.LOAN, "KEEP_LIQ_PRICE", newDebt),
-					solveManage(currentPosition, Target.LOAN, "KEEP_COLLATERAL", newDebt),
+					solveManage(currentPosition, Target.LOAN, Strategy.KEEP_LIQ_PRICE, newDebt),
+					solveManage(currentPosition, Target.LOAN, Strategy.KEEP_COLLATERAL, newDebt),
 				];
 				if (collatOutcome && priceOutcome) {
 					return setOutcome({
@@ -131,12 +132,12 @@ export const AdjustLoan = ({
 					});
 				}
 			}
-			const strategy = strategies.addCollateral ? "KEEP_LIQ_PRICE" : "KEEP_COLLATERAL";
+			const strategy = strategies.addCollateral ? Strategy.KEEP_LIQ_PRICE : Strategy.KEEP_COLLATERAL;
 			setOutcome(solveManage(currentPosition, Target.LOAN, strategy, newDebt));
 		} catch {
 			setOutcome(null);
 		}
-	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, withdrawAllCollateral, collateralBalance, liqPrice]);
+	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, collateralBalance, liqPrice]);
 
 	useEffect(() => {
 		if (!deltaAmount || (isIncrease && !hasAnyStrategy)) return setDeltaAmountError(null);
@@ -145,7 +146,7 @@ export const AdjustLoan = ({
 		setDeltaAmountError(
 			exceedsMax
 				? t("mint.error.amount_greater_than_max_to_remove") +
-						(!strategies.addCollateral ? ". Add more collateral to increase limit" : "")
+						(!strategies.addCollateral ? `. ${t("mint.add_collateral_to_increase_limit")}` : "")
 				: null
 		);
 	}, [deltaAmount, isIncrease, hasAnyStrategy, strategies.addCollateral, maxDelta, t]);
@@ -187,25 +188,29 @@ export const AdjustLoan = ({
 
 	const DefaultSummaryTable = () => (
 		<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
-			<div className="flex justify-between text-sm">
-				<span className="text-text-muted2">Principal</span>
-				<span className="font-medium text-text-title">{formatCurrency(formatUnits(principal, 18), 0, 2)} JUSD</span>
-			</div>
-			<div className="flex justify-between text-sm">
-				<span className="text-text-muted2">Collateral</span>
-				<span className="font-medium text-text-title">
-					{formatCurrency(formatUnits(collateralBalance, collateralDecimals), 0, 6)} {collateralSymbol}
-				</span>
-			</div>
-			<div className="flex justify-between text-sm">
-				<span className="text-text-muted2">Liq Price</span>
-				<span className="font-medium text-text-title">{formatCurrency(formatUnits(liqPrice, priceDecimals), 0, 0)} JUSD</span>
-			</div>
+		  <div className="flex justify-between text-sm">
+			<span className="text-text-muted2">{t("mint.loan_amount")}</span>
+			<span className="font-medium text-text-title">
+			  {formatCurrency(formatUnits(principal, 18), 0, 2)} JUSD
+			</span>
+		  </div>
+		  <div className="flex justify-between text-sm">
+			<span className="text-text-muted2">{t("mint.retained_reserve")}</span>
+			<span className="font-medium text-text-title">
+			  {formatCurrency(formatUnits(currentDebt - principal, 18), 0, 2)} JUSD
+			</span>
+		  </div>
+		  <div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
+			<span className="text-text-muted2 font-medium">{t("mint.total")}</span>
+			<span className="font-medium text-text-title">
+			  {formatCurrency(formatUnits(currentDebt, 18), 0, 2)} JUSD
+			</span>
+		  </div>
 		</div>
-	);
+	  );
 
 	return (
-		<div className="flex flex-col gap-y-6">
+		<div className="flex flex-col gap-y-4">
 			<div className="flex flex-col gap-y-3">
 				<div className="flex flex-row justify-between items-center">
 					<div className="text-lg font-bold">{isIncrease ? t("mint.borrow_more") : t("mint.repay_loan")}</div>
@@ -239,27 +244,10 @@ export const AdjustLoan = ({
 				<ErrorDisplay error={deltaAmountError} />
 			</div>
 
-			{showStrategyOptions && (
-				<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
-					{!hasAnyStrategy && <div className="text-sm font-medium text-text-title">{t("mint.position_needs_adjustments")}</div>}
-					{!strategies.addCollateral && (
-						<div
-							role="button"
-							tabIndex={0}
-							onClick={() => toggleStrategy("addCollateral")}
-							onKeyDown={(e) => e.key === "Enter" && toggleStrategy("addCollateral")}
-							className="flex justify-between items-center cursor-pointer py-1 hover:opacity-80 transition-opacity"
-						>
-							<div className="flex items-center gap-1">
-								<span className="text-sm text-text-title">{t("mint.more_collateral")}</span>
-								<span className="w-4 h-4 text-primary flex items-center">
-									<AddCircleOutlineIcon color="currentColor" />
-								</span>
-							</div>
-							<span className="text-sm font-semibold text-primary">
-								+{formatCurrency(formatUnits(collateralNeeded, collateralDecimals), 0, 4)} {collateralSymbol}
-							</span>
-						</div>
+			{showStrategyOptions && (!strategies.addCollateral || !strategies.higherPrice) && (
+				<div className="space-y-1 px-4">
+					{!hasAnyStrategy && (
+						<div className="text-sm font-medium text-text-title">{t("mint.position_needs_adjustments")}</div>
 					)}
 					{!strategies.higherPrice && (
 						<div
@@ -267,152 +255,136 @@ export const AdjustLoan = ({
 							tabIndex={0}
 							onClick={() => toggleStrategy("higherPrice")}
 							onKeyDown={(e) => e.key === "Enter" && toggleStrategy("higherPrice")}
-							className="flex justify-between items-center cursor-pointer py-1 hover:opacity-80 transition-opacity"
+							className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
 						>
 							<div className="flex items-center gap-1">
 								<span className="text-sm text-text-title">{t("mint.higher_liq_price")}</span>
-								<span className="w-4 h-4 text-primary flex items-center">
-									<AddCircleOutlineIcon color="currentColor" />
-								</span>
+								<Tooltip content={t("mint.tooltip_add_liq_price")} arrow style="light">
+									<span className="w-4 h-4 text-primary flex items-center">
+										<AddCircleOutlineIcon color="currentColor" />
+									</span>
+								</Tooltip>
 							</div>
-							<span className="text-sm font-semibold text-primary">
-								+{formatCurrency(formatUnits(priceIncrease, priceDecimals), 0, 0)} JUSD
+						</div>
+					)}
+					{!strategies.addCollateral && (
+						<div
+							role="button"
+							tabIndex={0}
+							onClick={() => toggleStrategy("addCollateral")}
+							onKeyDown={(e) => e.key === "Enter" && toggleStrategy("addCollateral")}
+							className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+						>
+							<div className="flex items-center gap-1">
+								<span className="text-sm text-text-title">{t("mint.more_collateral")}</span>
+								<Tooltip content={t("mint.tooltip_add_collateral")} arrow style="light">
+									<span className="w-4 h-4 text-primary flex items-center">
+										<AddCircleOutlineIcon color="currentColor" />
+									</span>
+								</Tooltip>
+							</div>
+						</div>
+					)}
+				</div>
+			)}
+
+			{isIncrease && (
+				<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
+					{strategies.addCollateral && outcome && (
+						<div className="flex justify-between text-sm">
+							<div className="flex items-center gap-1">
+								<span className="text-text-muted2">{t("mint.more_collateral")}</span>
+								<Tooltip content={t("mint.tooltip_remove_collateral")} arrow style="light">
+									<span
+										className="w-4 h-4 text-primary cursor-pointer hover:opacity-80 flex items-center"
+										onClick={() => toggleStrategy("addCollateral")}
+									>
+										<RemoveCircleOutlineIcon color="currentColor" />
+									</span>
+								</Tooltip>
+							</div>
+							<span className="font-medium text-text-title">
+								{formatCurrency(formatUnits(outcome.next.collateral, collateralDecimals), 0, 6)} {collateralSymbol}
 							</span>
 						</div>
 					)}
-					{hasAnyStrategy && outcome && (
-						<div className="space-y-2 pt-2 border-t border-gray-300 dark:border-gray-600">
-							<div className="flex justify-between text-sm">
-								<span className="text-text-muted2">New Principal</span>
-								<span className="font-medium text-text-title">
-									{formatCurrency(formatUnits(principal + outcome.deltaDebt, 18), 0, 2)} JUSD
-								</span>
+					{strategies.higherPrice && outcome && (
+						<div className="flex justify-between text-sm">
+							<div className="flex items-center gap-1">
+								<span className="text-text-muted2">{t("mint.higher_liq_price")}</span>
+								<Tooltip content={t("mint.tooltip_remove_liq_price")} arrow style="light">
+									<span
+										className="w-4 h-4 text-primary cursor-pointer hover:opacity-80 flex items-center"
+										onClick={() => toggleStrategy("higherPrice")}
+									>
+										<RemoveCircleOutlineIcon color="currentColor" />
+									</span>
+								</Tooltip>
 							</div>
-							<div className="flex justify-between text-sm">
-								<div className="flex items-center gap-1">
-									<span className="text-text-muted2">New Collateral</span>
-									{strategies.addCollateral && (
-										<span
-											className="w-4 h-4 text-primary cursor-pointer hover:opacity-80 flex items-center"
-											onClick={() => toggleStrategy("addCollateral")}
-										>
-											<RemoveCircleOutlineIcon color="currentColor" />
-										</span>
-									)}
-								</div>
-								<span className="font-medium text-text-title">
-									{formatCurrency(formatUnits(outcome.next.collateral, collateralDecimals), 0, 6)} {collateralSymbol}
-								</span>
-							</div>
-							<div className="flex justify-between text-sm">
-								<div className="flex items-center gap-1">
-									<span className="text-text-muted2">New Liq Price</span>
-									{strategies.higherPrice && (
-										<span
-											className="w-4 h-4 text-primary cursor-pointer hover:opacity-80 flex items-center"
-											onClick={() => toggleStrategy("higherPrice")}
-										>
-											<RemoveCircleOutlineIcon color="currentColor" />
-										</span>
-									)}
-								</div>
-								<span className="font-medium text-text-title">
-									{formatCurrency(formatUnits(outcome.next.liqPrice, priceDecimals), 0, 0)} JUSD
-								</span>
-							</div>
-							{strategies.higherPrice && outcome.next.liqPrice > liqPrice && (
-								<div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-									{t("mint.cooldown_warning")} ({cooldownDays} {cooldownDays === 1 ? t("common.day") : t("common.days")})
-								</div>
-							)}
+							<span className="font-medium text-text-title">
+								{formatCurrency(formatUnits(outcome.next.liqPrice, priceDecimals), 0, 0)} JUSD
+							</span>
 						</div>
 					)}
+					<div className="flex justify-between text-sm">
+						<span className="text-text-muted2">{t("mint.loan_amount")}</span>
+						<span className="font-medium text-text-title">
+							{formatCurrency(formatUnits(principal + delta, 18), 0, 2)} JUSD
+						</span>
+					</div>
+					<div className="flex justify-between text-sm">
+						<span className="text-text-muted2">{t("mint.retained_reserve")}</span>
+						<span className="font-medium text-text-title">
+							{formatCurrency(formatUnits((BigInt(position.reserveContribution) * (principal + delta)) / 1_000_000n, 18), 0, 2)} JUSD
+						</span>
+					</div>
+					<div className="flex justify-between text-sm">
+						<span className="text-text-muted2">{t("mint.total")}</span>
+						<span className="font-medium text-text-title">
+							{formatCurrency(formatUnits(currentDebt + delta, 18), 0, 2)} JUSD
+						</span>
+					</div>
 				</div>
 			)}
 
-			{isIncrease && delta === 0n && <DefaultSummaryTable />}
-
-			{!isIncrease && delta > 0n && (
-				<div className="flex flex-col gap-2">
-					{isFullRepay && withdrawAllCollateral && (
-						<div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
-							<p className="text-sm font-medium text-orange-800 dark:text-orange-200">{t("mint.position_will_be_closed")}</p>
-						</div>
-					)}
-					{outcome && (
-						<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
-							{isFullRepay && !withdrawAllCollateral && (
-								<div
-									role="button"
-									tabIndex={0}
-									onClick={() => setWithdrawAllCollateral(true)}
-									onKeyDown={(e) => e.key === "Enter" && setWithdrawAllCollateral(true)}
-									className="flex justify-between items-center cursor-pointer py-1 hover:opacity-80 transition-opacity"
-								>
-									<div className="flex items-center gap-1">
-										<span className="text-sm text-text-title">{t("mint.withdraw_collateral")}</span>
-										<span className="w-4 h-4 text-primary flex items-center">
-											<AddCircleOutlineIcon color="currentColor" />
-										</span>
-									</div>
-									<span className="text-sm font-semibold text-primary">
-										+{formatCurrency(formatUnits(collateralBalance, collateralDecimals), 0, 6)} {collateralSymbol}
-									</span>
-								</div>
-							)}
-							{isFullRepay && !withdrawAllCollateral && <div className="border-t border-gray-300 dark:border-gray-600" />}
-							<div className="flex justify-between text-sm">
-								<span className="text-text-muted2">New Principal</span>
-								<span className="font-medium text-text-title">
-									{formatCurrency(formatUnits(isFullRepay ? 0n : principal + outcome.deltaDebt, 18), 0, 2)} JUSD
-								</span>
-							</div>
-							<div className="flex justify-between text-sm">
-								<div className="flex items-center gap-1">
-									<span className="text-text-muted2">New Collateral</span>
-									{isFullRepay && withdrawAllCollateral && (
-										<span
-											className="w-4 h-4 text-primary cursor-pointer hover:opacity-80 flex items-center"
-											onClick={() => setWithdrawAllCollateral(false)}
-										>
-											<RemoveCircleOutlineIcon color="currentColor" />
-										</span>
-									)}
-								</div>
-								<span className="font-medium text-text-title">
-									{formatCurrency(
-										formatUnits(
-											isFullRepay && withdrawAllCollateral ? 0n : outcome.next.collateral,
-											collateralDecimals
-										),
-										0,
-										6
-									)}{" "}
-									{collateralSymbol}
-								</span>
-							</div>
-							{!(isFullRepay && withdrawAllCollateral) && (
-								<div className="flex justify-between text-sm">
-									<span className="text-text-muted2">New Liq Price</span>
-									<span className="font-medium text-text-title">
-										{formatCurrency(formatUnits(outcome.next.liqPrice, priceDecimals), 0, 0)} JUSD
-									</span>
-								</div>
-							)}
-							{isFullRepay && withdrawAllCollateral && (
-								<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
-									<span className="text-text-muted2">{t("mint.collateral_returned")}</span>
-									<span className="font-medium text-green-600 dark:text-green-400">
-										+{formatCurrency(formatUnits(collateralBalance, collateralDecimals), 0, 6)} {collateralSymbol}
-									</span>
-								</div>
-							)}
-						</div>
-					)}
+			{strategies.higherPrice && outcome && outcome.next.liqPrice > liqPrice && (
+				<div className="text-xs text-text-muted2 px-4">
+					{t("mint.cooldown_warning", { days: cooldownDays, dayLabel: cooldownDays === 1 ? t("common.day") : t("common.days") })}
 				</div>
 			)}
 
-			{!isIncrease && delta === 0n && <DefaultSummaryTable />}
+			{!isIncrease && (
+				<>
+					<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
+						{isFullRepay && (
+							<div className="flex justify-between text-sm">
+								<span className="text-text-muted2">{t("mint.collateral_returned")}</span>
+								<span className="font-medium text-green-600 dark:text-green-400">
+									+{formatCurrency(formatUnits(collateralBalance, collateralDecimals), 0, 6)} {collateralSymbol}
+								</span>
+							</div>
+						)}
+						<div className="flex justify-between text-sm">
+							<span className="text-text-muted2">{t("mint.loan_amount")}</span>
+							<span className="font-medium text-text-title">
+								{formatCurrency(formatUnits(delta >= principal ? 0n : principal - delta, 18), 0, 2)} JUSD
+							</span>
+						</div>
+						<div className="flex justify-between text-sm">
+							<span className="text-text-muted2">{t("mint.retained_reserve")}</span>
+							<span className="font-medium text-text-title">
+								{formatCurrency(formatUnits((BigInt(position.reserveContribution) * (delta >= principal ? 0n : principal - delta)) / 1_000_000n, 18), 0, 2)} JUSD
+							</span>
+						</div>
+						<div className="flex justify-between text-sm">
+							<span className="text-text-muted2">{t("mint.total")}</span>
+							<span className="font-medium text-text-title">
+								{formatCurrency(formatUnits(delta >= currentDebt ? 0n : currentDebt - delta, 18), 0, 2)} JUSD
+							</span>
+						</div>
+					</div>
+				</>
+			)}
 
 			{needsApproval && outcome && (
 				<div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
@@ -426,13 +398,38 @@ export const AdjustLoan = ({
 				</div>
 			)}
 
-			<ManageButtons
-				onBack={onBack}
-				onAction={needsApproval ? handleApprove : handleExecute}
-				actionLabel={needsApproval ? t("common.approve") : t("mint.confirm_execute")}
-				disabled={!outcome || !outcome.isValid || isTxOnGoing || Boolean(deltaAmountError)}
+			{((isIncrease && isInCooldown) || (!isIncrease && isFullRepay && isInCooldown)) && (
+				<div className="text-xs text-text-muted2 px-4">
+					{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
+					<br />
+					{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
+				</div>
+			)}
+
+			<Button
+				className="w-full text-lg leading-snug !font-extrabold"
+				onClick={needsApproval ? handleApprove : handleExecute}
+				disabled={
+					!outcome ||
+					!outcome.isValid ||
+					isTxOnGoing ||
+					Boolean(deltaAmountError) ||
+					(isIncrease && isInCooldown) ||
+					(!isIncrease && isFullRepay && isInCooldown)
+				}
 				isLoading={isTxOnGoing}
-			/>
+			>
+				{needsApproval ? t("common.approve") : isFullRepay ? t("mint.confirm_close_position") : t("mint.confirm_execute")}
+			</Button>
+
+			<div className="text-center">
+				<span
+					className="text-sm text-text-muted2 cursor-pointer hover:text-text-title transition-colors"
+					onClick={onBack}
+				>
+					{t("common.back")}
+				</span>
+			</div>
 		</div>
 	);
 };
