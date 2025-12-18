@@ -188,26 +188,20 @@ export const AdjustLoan = ({
 
 	const DefaultSummaryTable = () => (
 		<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
-		  <div className="flex justify-between text-sm">
-			<span className="text-text-muted2">{t("mint.loan_amount")}</span>
-			<span className="font-medium text-text-title">
-			  {formatCurrency(formatUnits(principal, 18), 0, 2)} JUSD
-			</span>
-		  </div>
-		  <div className="flex justify-between text-sm">
-			<span className="text-text-muted2">{t("mint.retained_reserve")}</span>
-			<span className="font-medium text-text-title">
-			  {formatCurrency(formatUnits(currentDebt - principal, 18), 0, 2)} JUSD
-			</span>
-		  </div>
-		  <div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
-			<span className="text-text-muted2 font-medium">{t("mint.total")}</span>
-			<span className="font-medium text-text-title">
-			  {formatCurrency(formatUnits(currentDebt, 18), 0, 2)} JUSD
-			</span>
-		  </div>
+			<div className="flex justify-between text-sm">
+				<span className="text-text-muted2">{t("mint.loan_amount")}</span>
+				<span className="font-medium text-text-title">{formatCurrency(formatUnits(principal, 18), 0, 2)} JUSD</span>
+			</div>
+			<div className="flex justify-between text-sm">
+				<span className="text-text-muted2">{t("mint.retained_reserve")}</span>
+				<span className="font-medium text-text-title">{formatCurrency(formatUnits(currentDebt - principal, 18), 0, 2)} JUSD</span>
+			</div>
+			<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
+				<span className="text-text-muted2 font-medium">{t("mint.total")}</span>
+				<span className="font-medium text-text-title">{formatCurrency(formatUnits(currentDebt, 18), 0, 2)} JUSD</span>
+			</div>
 		</div>
-	  );
+	);
 
 	return (
 		<div className="flex flex-col gap-y-4">
@@ -246,9 +240,7 @@ export const AdjustLoan = ({
 
 			{showStrategyOptions && (!strategies.addCollateral || !strategies.higherPrice) && (
 				<div className="space-y-1 px-4">
-					{!hasAnyStrategy && (
-						<div className="text-sm font-medium text-text-title">{t("mint.position_needs_adjustments")}</div>
-					)}
+					{!hasAnyStrategy && <div className="text-sm font-medium text-text-title">{t("mint.position_needs_adjustments")}</div>}
 					{!strategies.higherPrice && (
 						<div
 							role="button"
@@ -328,14 +320,17 @@ export const AdjustLoan = ({
 					)}
 					<div className="flex justify-between text-sm">
 						<span className="text-text-muted2">{t("mint.loan_amount")}</span>
-						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(principal + delta, 18), 0, 2)} JUSD
-						</span>
+						<span className="font-medium text-text-title">{formatCurrency(formatUnits(principal + delta, 18), 0, 2)} JUSD</span>
 					</div>
 					<div className="flex justify-between text-sm">
 						<span className="text-text-muted2">{t("mint.retained_reserve")}</span>
 						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits((BigInt(position.reserveContribution) * (principal + delta)) / 1_000_000n, 18), 0, 2)} JUSD
+							{formatCurrency(
+								formatUnits((BigInt(position.reserveContribution) * (principal + delta)) / 1_000_000n, 18),
+								0,
+								2
+							)}{" "}
+							JUSD
 						</span>
 					</div>
 					<div className="flex justify-between text-sm">
@@ -373,7 +368,15 @@ export const AdjustLoan = ({
 						<div className="flex justify-between text-sm">
 							<span className="text-text-muted2">{t("mint.retained_reserve")}</span>
 							<span className="font-medium text-text-title">
-								{formatCurrency(formatUnits((BigInt(position.reserveContribution) * (delta >= principal ? 0n : principal - delta)) / 1_000_000n, 18), 0, 2)} JUSD
+								{formatCurrency(
+									formatUnits(
+										(BigInt(position.reserveContribution) * (delta >= principal ? 0n : principal - delta)) / 1_000_000n,
+										18
+									),
+									0,
+									2
+								)}{" "}
+								JUSD
 							</span>
 						</div>
 						<div className="flex justify-between text-sm">
@@ -423,10 +426,7 @@ export const AdjustLoan = ({
 			</Button>
 
 			<div className="text-center">
-				<span
-					className="text-sm text-text-muted2 cursor-pointer hover:text-text-title transition-colors"
-					onClick={onBack}
-				>
+				<span className="text-sm text-text-muted2 cursor-pointer hover:text-text-title transition-colors" onClick={onBack}>
 					{t("common.back")}
 				</span>
 			</div>

@@ -97,9 +97,8 @@ export const ManageSolver = () => {
 	const jusdAllowance = data?.[6]?.result || 0n;
 
 	const collateralDecimals = position?.collateralDecimals || 18;
-	const liqPrice = collateralBalance > 0n
-		? (currentDebt * BigInt(10 ** (36 - collateralDecimals))) / collateralBalance
-		: positionPriceLimit;
+	const liqPrice =
+		collateralBalance > 0n ? (currentDebt * BigInt(10 ** (36 - collateralDecimals))) / collateralBalance : positionPriceLimit;
 
 	const now = BigInt(Math.floor(Date.now() / 1000));
 	const cooldownBigInt = BigInt(cooldown);

@@ -102,9 +102,9 @@ export function solveManage(pos: SolverPosition, target: Target, strategy: Strat
 			newCollateral = BigInt(newValue as bigint);
 
 			if (newCollateral === 0n && currentDebt > 0n) {
-if (strategy === Strategy.KEEP_LOAN) {
-				throw new Error("Must repay debt before withdrawing all collateral");
-			}
+				if (strategy === Strategy.KEEP_LOAN) {
+					throw new Error("Must repay debt before withdrawing all collateral");
+				}
 			}
 
 			if (newCollateral < 0n) throw new Error("Collateral cannot be negative");
