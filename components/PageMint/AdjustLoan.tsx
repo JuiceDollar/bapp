@@ -389,18 +389,6 @@ export const AdjustLoan = ({
 				</>
 			)}
 
-			{needsApproval && outcome && (
-				<div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
-					<div className="text-sm text-text-title font-medium">{t("common.approval_required")}</div>
-					<div className="text-xs text-text-muted2 mt-1">
-						{t("mint.approve_for_repayment", {
-							amount: formatCurrency(formatUnits(repayAmount, 18), 0, 2),
-							symbol: position.stablecoinSymbol,
-						})}
-					</div>
-				</div>
-			)}
-
 			{((isIncrease && isInCooldown) || (!isIncrease && isFullRepay && isInCooldown)) && (
 				<div className="text-xs text-text-muted2 px-4">
 					{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
