@@ -213,6 +213,7 @@
 		"more_collateral": "Más colateral",
 		"higher_liq_price": "Precio de liquidación más alto",
 		"cooldown_warning": "El aumento de precio activará un período de cooldown de 3 días. Después de eso, podrás pedir prestado el monto solicitado.",
+		"price_increase_cooldown_warning": "El aumento de precio activará un período de cooldown de 3 días.",
 		"adjust_liq_price_btn": "Ajustar precio de liquidación",
 		"cooldown_ends_at": "Finaliza: {{date}}",
 		"cooldown_please_wait": "Esta posición está en cooldown, por favor espera ({{remaining}})",

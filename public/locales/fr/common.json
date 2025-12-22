@@ -213,6 +213,7 @@
 		"more_collateral": "Plus de garantie",
 		"higher_liq_price": "Prix de liquidation plus élevé",
 		"cooldown_warning": "L'augmentation du prix déclenchera une période de refroidissement de 3 jours. Après cela, vous pourrez emprunter le montant demandé.",
+		"price_increase_cooldown_warning": "L'augmentation du prix déclenchera une période de refroidissement de 3 jours.",
 		"adjust_liq_price_btn": "Ajuster le prix de liquidation",
 		"cooldown_ends_at": "Fin: {{date}}",
 		"cooldown_please_wait": "Cette position est en refroidissement, veuillez patienter ({{remaining}})",
