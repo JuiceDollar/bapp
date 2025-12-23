@@ -1,35 +1,29 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "next-i18next";
+import { useRouter } from "next/router";
 import { formatUnits } from "viem";
-import { formatCurrency, roundToWholeUnits } from "@utils";
+import { formatCurrency, roundToWholeUnits, normalizeTokenSymbol } from "@utils";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
 import { RemoveCircleOutlineIcon } from "@components/SvgComponents/remove_circle_outline";
 import { SvgIconButton } from "./PlusMinusButtons";
 import Button from "@components/Button";
-import AppBox from "@components/AppBox";
 import { PositionQuery } from "@juicedollar/api";
 import { SolverPosition } from "../../utils/positionSolver";
-import { useChainId, useAccount } from "wagmi";
-import { ADDRESS, PositionV2ABI } from "@juicedollar/jusd";
+import { useAccount } from "wagmi";
+import { PositionV2ABI } from "@juicedollar/jusd";
 import { writeContract, waitForTransactionReceipt } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
 import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import { store } from "../../redux/redux.store";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
-import { Address, erc20Abi } from "viem";
-import { Tooltip } from "flowbite-react";
-
-enum AdjustStrategy {
-	REMOVE_COLLATERAL = "REMOVE_COLLATERAL",
-}
+import { Address } from "viem";
 
 interface AdjustLiqPriceProps {
 	position: PositionQuery;
 	positionPrice: bigint;
 	priceDecimals: number;
-	jusdAllowance: bigint;
 	currentPosition: SolverPosition;
 	isInCooldown: boolean;
 	cooldownRemainingFormatted: string | null;
@@ -43,7 +37,6 @@ export const AdjustLiqPrice = ({
 	position,
 	positionPrice,
 	priceDecimals,
-	jusdAllowance,
 	currentPosition,
 	isInCooldown,
 	cooldownRemainingFormatted,
@@ -52,40 +45,25 @@ export const AdjustLiqPrice = ({
 	onSuccess,
 }: AdjustLiqPriceProps) => {
 	const { t } = useTranslation();
-	const chainId = useChainId();
+	const router = useRouter();
 	const { address: userAddress } = useAccount();
 
 	const [deltaAmount, setDeltaAmount] = useState<string>("");
 	const [isIncrease, setIsIncrease] = useState(true);
-	const [selectedStrategy, setSelectedStrategy] = useState<AdjustStrategy | null>(null);
 	const [isTxOnGoing, setIsTxOnGoing] = useState(false);
 
-	const delta = BigInt(deltaAmount || 0);
+	const delta = deltaAmount ? BigInt(deltaAmount) : 0n;
 	const newPrice = isIncrease ? positionPrice + delta : positionPrice - delta;
-	const minimumCollateral = BigInt(position.minimumCollateral || "0");
-	const maxPriceByCollateral =
-		minimumCollateral > 0n && currentPosition.debt > 0n
-			? (currentPosition.debt * BigInt(1e18)) / minimumCollateral
-			: positionPrice * 2n;
-	const maxDeltaByCollateral = maxPriceByCollateral > positionPrice ? maxPriceByCollateral - positionPrice : 0n;
-	const maxDelta = maxDeltaByCollateral < positionPrice ? maxDeltaByCollateral : positionPrice;
+	const minimumCollateral = BigInt(position.minimumCollateral);
+	const minCollateralNeeded = newPrice > 0n ? (currentPosition.debt * BigInt(1e18)) / newPrice : 0n;
 
-	const minCollateralNeeded = newPrice > 0n && currentPosition.debt > 0n ? (currentPosition.debt * BigInt(1e18)) / newPrice : 0n;
-
-	const collateralToRemove = (() => {
-		if (!isIncrease || delta === 0n) return 0n;
+	const collateralToRemove: bigint = (() => {
+		if (!isIncrease) return 0n;
 		const minRequired = minCollateralNeeded > minimumCollateral ? minCollateralNeeded : minimumCollateral;
-		return currentPosition.collateral > minRequired ? currentPosition.collateral - minRequired : 0n;
+		return currentPosition.collateral - minRequired;
 	})();
 
-	const canRemoveCollateral = collateralToRemove > 0n;
-	const needsStrategy = isIncrease && delta > 0n && canRemoveCollateral;
-	const hasValidStrategy = !needsStrategy || selectedStrategy !== null;
-
-	const minPriceForDecrease =
-		currentPosition.collateral > 0n && currentPosition.debt > 0n
-			? (currentPosition.debt * BigInt(1e18)) / currentPosition.collateral
-			: 0n;
+	const minPriceForDecrease = (currentPosition.debt * BigInt(1e18)) / currentPosition.collateral;
 	const maxDeltaDecrease = positionPrice > minPriceForDecrease ? positionPrice - minPriceForDecrease : 0n;
 
 	const isBlockedByCooldown = isInCooldown && isIncrease && delta > 0n;
@@ -93,30 +71,12 @@ export const AdjustLiqPrice = ({
 
 	useEffect(() => {
 		setDeltaAmount("");
-		setSelectedStrategy(null);
 	}, [isIncrease]);
-
-	useEffect(() => {
-		setSelectedStrategy(null);
-	}, [deltaAmount]);
 
 	const handleExecute = async () => {
 		if (!userAddress || delta === 0n) return;
 		try {
 			setIsTxOnGoing(true);
-
-			if (isIncrease && selectedStrategy === AdjustStrategy.REMOVE_COLLATERAL && collateralToRemove > 0n) {
-				const withdrawHash = await writeContract(WAGMI_CONFIG, {
-					address: position.position as Address,
-					abi: PositionV2ABI,
-					functionName: "withdrawCollateral",
-					args: [userAddress, collateralToRemove],
-				});
-				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
-					pending: { render: <TxToast title={t("mint.txs.withdrawing_collateral")} rows={[]} /> },
-					success: { render: <TxToast title={t("mint.txs.withdrawing_collateral_success")} rows={[]} /> },
-				});
-			}
 
 			const adjustHash = await writeContract(WAGMI_CONFIG, {
 				address: position.position as Address,
@@ -139,7 +99,7 @@ export const AdjustLiqPrice = ({
 		}
 	};
 
-	const isDisabled = delta === 0n || isBlockedByCooldown || isDecreaseInvalid || !hasValidStrategy;
+	const isDisabled = delta === 0n || isBlockedByCooldown || isDecreaseInvalid;
 
 	return (
 		<div className="flex flex-col gap-y-4">
@@ -150,10 +110,10 @@ export const AdjustLiqPrice = ({
 					</div>
 					<div className="flex flex-row items-center">
 						<SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
-							{t("common.add")}
+							{t("mint.increase")}
 						</SvgIconButton>
 						<SvgIconButton isSelected={!isIncrease} onClick={() => setIsIncrease(false)} SvgComponent={RemoveCircleOutlineIcon}>
-							{t("common.remove")}
+							{t("mint.reduce")}
 						</SvgIconButton>
 					</div>
 				</div>
@@ -162,71 +122,24 @@ export const AdjustLiqPrice = ({
 					value={deltaAmount}
 					onChange={(val) => setDeltaAmount(roundToWholeUnits(val, priceDecimals))}
 					min={0n}
-					max={maxDelta}
+					max={isIncrease ? positionPrice : maxDeltaDecrease}
 					decimals={priceDecimals}
-					isError={isDecreaseInvalid}
 					hideTrailingZeros
 				/>
 			</div>
 
-			{isBlockedByCooldown && (
-				<AppBox className="ring-2 ring-orange-300 bg-orange-50 dark:bg-orange-900/10">
-					<div className="text-sm text-text-title font-medium">
-						{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
-					</div>
-					<div className="text-xs text-text-muted2 mt-1">
-						{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
-					</div>
-				</AppBox>
-			)}
-
 			{isDecreaseInvalid && delta > 0n && (
-				<AppBox className="ring-2 ring-red-300 bg-red-50 dark:bg-red-900/10">
-					<div className="text-sm text-text-title font-medium">{t("mint.price_below_collateral_limit")}</div>
-					<div className="text-xs text-text-muted2 mt-1">
-						Min: {formatCurrency(formatUnits(minPriceForDecrease, priceDecimals), 0, 0)} {position.stablecoinSymbol}
-					</div>
-				</AppBox>
-			)}
-
-			{needsStrategy && (
-				<div className="space-y-2">
-					<div className="text-sm font-medium text-text-title">{t("mint.position_needs_adjustments")}</div>
-
-					{canRemoveCollateral && (
-						<div
-							role="button"
-							tabIndex={0}
-							onClick={() => setSelectedStrategy(AdjustStrategy.REMOVE_COLLATERAL)}
-							onKeyDown={(e) => e.key === "Enter" && setSelectedStrategy(AdjustStrategy.REMOVE_COLLATERAL)}
-							className={`p-3 rounded-lg border cursor-pointer transition-all ${
-								selectedStrategy === AdjustStrategy.REMOVE_COLLATERAL
-									? "border-primary bg-orange-50 dark:bg-orange-900/10"
-									: "border-gray-300 hover:border-primary"
-							}`}
-						>
-							<div className="flex justify-between items-center">
-								<div className="flex items-center gap-2">
-									<span className="text-sm font-medium text-text-title">{t("mint.remove_collateral")}</span>
-									<Tooltip content={t("mint.tooltip_remove_collateral_for_price")} arrow style="light">
-										<span className="w-4 h-4 text-primary flex items-center">
-											<AddCircleOutlineIcon color="currentColor" />
-										</span>
-									</Tooltip>
-								</div>
-								<span className="text-sm font-bold text-orange-600">
-									-{formatCurrency(formatUnits(collateralToRemove, position.collateralDecimals), 0, 6)}{" "}
-									{position.collateralSymbol}
-								</span>
-							</div>
-						</div>
-					)}
-
-					{!canRemoveCollateral && (
-						<AppBox className="ring-2 ring-gray-300 bg-gray-50 dark:bg-gray-800">
-							<div className="text-sm text-text-muted2">{t("mint.no_adjustment_available")}</div>
-						</AppBox>
-					)}
+				<div className="text-xs text-text-muted2 px-4">
+					{t("mint.price_below_collateral_limit", {
+						min: formatCurrency(formatUnits(minPriceForDecrease, priceDecimals), 0, 0),
+						symbol: position.stablecoinSymbol,
+					})}{" "}
+					<button
+						onClick={() => router.push(`/mint/${position.position}/manage/collateral`)}
+						className="text-primary underline hover:opacity-80"
+					>
+						{t("common.add")} {t("mint.collateral")}
+					</button>
 				</div>
 			)}
 
@@ -252,7 +165,28 @@ export const AdjustLiqPrice = ({
 				</div>
 			</div>
 
-			{isIncrease && delta > 0n && <div className="text-xs text-text-muted2 px-4">{t("mint.price_increase_cooldown_warning")}</div>}
+			{isIncrease &&
+				delta > 0n &&
+				(isInCooldown ? (
+					<div className="text-xs text-text-muted2 px-4">
+						{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
+						<br />
+						{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
+					</div>
+				) : (
+					<div className="text-xs text-text-muted2 px-4">
+						{t("mint.price_increase_cooldown_warning")}
+						{collateralToRemove > 0n && (
+							<span>
+								{" "}
+								{t("mint.after_cooldown_can_withdraw", {
+									amount: formatCurrency(formatUnits(collateralToRemove, position.collateralDecimals), 0, 6),
+									symbol: normalizeTokenSymbol(position.collateralSymbol || ""),
+								})}
+							</span>
+						)}
+					</div>
+				))}
 
 			<Button
 				className="w-full text-lg leading-snug !font-extrabold"

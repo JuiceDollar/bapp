@@ -214,6 +214,7 @@
 		"higher_liq_price": "Higher liquidation price",
 		"cooldown_warning": "Price increase will trigger a 3-day cooldown period. After that, you can borrow the requested amount.",
 		"price_increase_cooldown_warning": "Price increase will trigger a 3-day cooldown period.",
+		"after_cooldown_can_withdraw": "After cooldown you can withdraw {{amount}} {{symbol}} or borrow more.",
 		"price_below_collateral_limit": "Price cannot go below {{min}} {{symbol}} (collateral limit).",
 		"adjust_liq_price_btn": "Adjust liquidation price",
 		"close_position": "Close Position",
