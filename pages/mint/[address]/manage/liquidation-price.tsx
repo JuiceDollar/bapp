@@ -17,7 +17,6 @@ export default function ManageLiquidationPrice() {
 		position,
 		positionPrice,
 		priceDecimals,
-		jusdAllowance,
 		isInCooldown,
 		cooldownRemainingFormatted,
 		cooldownEndsAt,
@@ -52,7 +51,6 @@ export default function ManageLiquidationPrice() {
 						position={position}
 						positionPrice={positionPrice}
 						priceDecimals={priceDecimals}
-						jusdAllowance={jusdAllowance}
 						currentPosition={currentPosition}
 						isInCooldown={isInCooldown}
 						cooldownRemainingFormatted={cooldownRemainingFormatted}
