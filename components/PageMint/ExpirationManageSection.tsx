@@ -1,6 +1,5 @@
 import { DateInputOutlined } from "@components/Input/DateInputOutlined";
 import { MaxButton } from "@components/Input/MaxButton";
-import { DetailsExpandablePanel } from "@components/PageMint/DetailsExpandablePanel";
 import { useTranslation } from "next-i18next";
 import { useEffect, useMemo, useState } from "react";
 import { renderErrorTxToast } from "@components/TxToast";
@@ -11,15 +10,7 @@ import { writeContract } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
 import { useChainId, useReadContracts } from "wagmi";
 import { Address } from "viem/accounts";
-import {
-	getCarryOnQueryParams,
-	shortenAddress,
-	toDate,
-	toQueryString,
-	toTimestamp,
-	normalizeTokenSymbol,
-	NATIVE_WRAPPED_SYMBOLS,
-} from "@utils";
+import { getCarryOnQueryParams, toDate, toQueryString, toTimestamp, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { toast } from "react-toastify";
 import { TxToast } from "@components/TxToast";
 import { useSelector } from "react-redux";
@@ -27,9 +18,6 @@ import { RootState } from "../../redux/redux.store";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import Button from "@components/Button";
 import { erc20Abi, maxUint256 } from "viem";
-import Link from "next/link";
-import { useContractUrl } from "../../hooks/useContractUrl";
-import { getLoanDetailsByCollateralAndLiqPrice } from "../../utils/loanCalculations";
 
 export const ExpirationManageSection = () => {
 	const [expirationDate, setExpirationDate] = useState<Date | undefined | null>(undefined);
@@ -42,7 +30,6 @@ export const ExpirationManageSection = () => {
 
 	const positions = useSelector((state: RootState) => state.positions.list?.list || []);
 	const position = positions.find((p) => p.position == positionAddress);
-	const prices = useSelector((state: RootState) => state.prices.coingecko || {});
 
 	const challenges = useSelector((state: RootState) => state.challenges.list?.list || []);
 	const challengedPositions = challenges.filter((c) => c.status === "Active").map((c) => c.position);
@@ -91,8 +78,6 @@ export const ExpirationManageSection = () => {
 	const collateralAllowance = position ? balancesByAddress[position.collateral]?.allowance?.[ADDRESS[chainId].roller] : undefined;
 	const deuroAllowance = position ? balancesByAddress[position.stablecoinAddress]?.allowance?.[ADDRESS[chainId].roller] : undefined;
 	const deuroBalance = position ? balancesByAddress[position.stablecoinAddress]?.balanceOf : 0n;
-
-	const url = useContractUrl(position?.position || "");
 
 	// Fetch principal and debt from smart contract
 	const { data: contractData } = useReadContracts({
@@ -275,9 +260,6 @@ export const ExpirationManageSection = () => {
 		}
 	};
 
-	const collateralPrice = prices?.[position.collateral.toLowerCase() as Address]?.price?.usd || 0;
-	const loanDetails = getLoanDetailsByCollateralAndLiqPrice(position, BigInt(position?.collateralBalance), BigInt(position.price));
-
 	const daysUntilExpiration = Math.ceil((currentExpirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
 	// Calculate interest amount to be paid using smart contract data
@@ -336,11 +318,7 @@ export const ExpirationManageSection = () => {
 					}
 				/>
 			</div>
-			{!canExtend && (
-				<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-					<div className="text-sm text-yellow-800">{t("mint.no_extension_target_available")}</div>
-				</div>
-			)}
+			{!canExtend && <div className="text-xs text-text-muted2 px-4">{t("mint.no_extension_target_available")}</div>}
 			{!isNativeWrappedPosition && !collateralAllowance ? (
 				<Button
 					className="text-lg leading-snug !font-extrabold"
@@ -409,25 +387,6 @@ export const ExpirationManageSection = () => {
 					</Button>
 				</>
 			)}
-
-			<DetailsExpandablePanel
-				loanDetails={loanDetails}
-				collateralPriceDeuro={collateralPrice}
-				collateralDecimals={position.collateralDecimals}
-				startingLiquidationPrice={BigInt(position.price)}
-				extraRows={
-					<div className="py-1.5 flex justify-between">
-						<span className="text-base leading-tight">{t("common.position")}</span>
-						<Link
-							className="underline text-right text-sm font-extrabold leading-none tracking-tight"
-							href={url}
-							target="_blank"
-						>
-							{shortenAddress(position.position)}
-						</Link>
-					</div>
-				}
-			/>
 		</div>
 	);
 };
