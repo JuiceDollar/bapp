@@ -57,11 +57,8 @@ export const AdjustLiqPrice = ({
 	const minimumCollateral = BigInt(position.minimumCollateral);
 	const minCollateralNeeded = newPrice > 0n ? (currentPosition.debt * BigInt(1e18)) / newPrice : 0n;
 
-	const collateralToRemove: bigint = (() => {
-		if (!isIncrease) return 0n;
-		const minRequired = minCollateralNeeded > minimumCollateral ? minCollateralNeeded : minimumCollateral;
-		return currentPosition.collateral - minRequired;
-	})();
+	const minRequired = minCollateralNeeded > minimumCollateral ? minCollateralNeeded : minimumCollateral;
+	const collateralToRemove = isIncrease ? currentPosition.collateral - minRequired : 0n;
 
 	const minPriceForDecrease = (currentPosition.debt * BigInt(1e18)) / currentPosition.collateral;
 	const maxDeltaDecrease = positionPrice > minPriceForDecrease ? positionPrice - minPriceForDecrease : 0n;
