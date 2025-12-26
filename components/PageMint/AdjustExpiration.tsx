@@ -258,6 +258,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 			<div className="flex flex-col gap-y-1.5">
 				<div className="text-lg font-extrabold leading-[1.4375rem]">{t("mint.newly_selected_expiration_date")}</div>
 				<DateInputOutlined
+					minDate={currentExpirationDate}
 					maxDate={
 						canExtend && targetPositionForExtend?.expiration
 							? new Date(targetPositionForExtend.expiration * 1000)
