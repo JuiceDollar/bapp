@@ -5,7 +5,7 @@ import AppBox from "@components/AppBox";
 import TokenInput from "@components/Input/TokenInput";
 import DisplayAmount from "@components/DisplayAmount";
 import { Address, formatUnits, zeroAddress } from "viem";
-import { ContractUrl, formatBigInt, formatCurrency, formatDate, shortenAddress, TOKEN_SYMBOL } from "@utils";
+import { ContractUrl, formatBigInt, formatCurrency, formatDate, shortenAddress, TOKEN_SYMBOL, normalizeTokenSymbol } from "@utils";
 import Link from "next/link";
 import Button from "@components/Button";
 import { useAccount, useBlockNumber, useChainId } from "wagmi";
@@ -126,7 +126,7 @@ export default function MonitoringForceSell() {
 			const toastContent = [
 				{
 					title: t("monitoring.txs.force_sell"),
-					value: formatBigInt(amount, position.collateralDecimals) + " " + position.collateralSymbol,
+					value: formatBigInt(amount, position.collateralDecimals) + " " + normalizeTokenSymbol(position.collateralSymbol),
 				},
 				{
 					title: t("monitoring.txs.expected_euro", { symbol: TOKEN_SYMBOL }),
@@ -142,7 +142,7 @@ export default function MonitoringForceSell() {
 				pending: {
 					render: (
 						<TxToast
-							title={t("monitoring.txs.force_sell_pending", { symbol: position.collateralSymbol })}
+							title={t("monitoring.txs.force_sell_pending", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}
 							rows={toastContent}
 						/>
 					),
@@ -171,7 +171,7 @@ export default function MonitoringForceSell() {
 				<section className="mx-auto max-w-2xl sm:px-8">
 					<div className="bg-card-body-primary shadow-card rounded-xl p-4 flex flex-col gap-y-4">
 						<div className="text-lg font-bold text-center mt-3">
-							{t("monitoring.force_sell_description", { symbol: position.collateralSymbol })}
+							{t("monitoring.force_sell_description", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}
 						</div>
 
 						<div className="">
@@ -181,7 +181,7 @@ export default function MonitoringForceSell() {
 								value={amount.toString()}
 								onChange={onChangeAmount}
 								digit={position.collateralDecimals}
-								symbol={position.collateralSymbol}
+								symbol={normalizeTokenSymbol(position.collateralSymbol)}
 								error={error}
 								placeholder={t("common.input_placeholder")}
 								balanceLabel={t("common.available_label")}
@@ -203,7 +203,7 @@ export default function MonitoringForceSell() {
 								<DisplayLabel label={t("common.available")} />
 								<DisplayAmount
 									amount={BigInt(position.collateralBalance)}
-									currency={position.collateralSymbol}
+									currency={normalizeTokenSymbol(position.collateralSymbol)}
 									address={position.collateral}
 									digits={position.collateralDecimals}
 									className="mt-4"
