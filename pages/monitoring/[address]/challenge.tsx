@@ -177,6 +177,7 @@ export default function PositionChallenge() {
 				abi: MintingHubV2ABI,
 				functionName: "challenge",
 				args: [position.position, amount, BigInt(position.price)],
+				value: isNativeWrappedPosition ? amount : undefined,
 			});
 
 			const toastContent = [
