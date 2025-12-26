@@ -194,8 +194,8 @@ export const AdjustLiqPrice = ({
 				{delta === 0n
 					? t("common.continue")
 					: isIncrease
-					? `Increase ${formatCurrency(formatUnits(delta, priceDecimals), 0, 0)} ${position.stablecoinSymbol}`
-					: `Reduce ${formatCurrency(formatUnits(delta, priceDecimals), 0, 0)} ${position.stablecoinSymbol}`}
+					? `${t("mint.increase")} ${formatCurrency(formatUnits(delta, priceDecimals), 0, 0)} ${position.stablecoinSymbol}`
+					: `${t("mint.reduce")} ${formatCurrency(formatUnits(delta, priceDecimals), 0, 0)} ${position.stablecoinSymbol}`}
 			</Button>
 		</div>
 	);
