@@ -52,8 +52,8 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	);
 
 	const collateralAllowance = position ? balancesByAddress[position.collateral]?.allowance?.[ADDRESS[chainId].roller] : undefined;
-	const deuroAllowance = position ? balancesByAddress[position.stablecoinAddress]?.allowance?.[ADDRESS[chainId].roller] : undefined;
-	const deuroBalance = position ? balancesByAddress[position.stablecoinAddress]?.balanceOf : 0n;
+	const jusdAllowance = position ? balancesByAddress[position.stablecoinAddress]?.allowance?.[ADDRESS[chainId].roller] : undefined;
+	const jusdBalance = position ? balancesByAddress[position.stablecoinAddress]?.balanceOf : 0n;
 
 	const { data: contractData } = useReadContracts({
 		contracts: position
@@ -194,7 +194,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 		}
 	};
 
-	const handleApproveDeuro = async () => {
+	const handleApproveJusd = async () => {
 		try {
 			setIsTxOnGoing(true);
 
@@ -231,7 +231,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 
 	const daysUntilExpiration = Math.ceil((currentExpirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 	const interest = currentDebt > principal ? currentDebt - principal : 0n;
-	const hasInsufficientBalance = interest > 0n && BigInt(deuroBalance || 0) < interest;
+	const hasInsufficientBalance = interest > 0n && BigInt(jusdBalance || 0) < interest;
 	const formatNumber = (value: bigint, decimals: number = 18): string => {
 		const num = Number(value) / Math.pow(10, decimals);
 		return new Intl.NumberFormat(router?.locale || "en", {
@@ -291,10 +291,10 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 				>
 					{t("common.approve")} {normalizeTokenSymbol(position.collateralSymbol)}
 				</Button>
-			) : !deuroAllowance ? (
+			) : !jusdAllowance ? (
 				<Button
 					className="text-lg leading-snug !font-extrabold"
-					onClick={handleApproveDeuro}
+					onClick={handleApproveJusd}
 					isLoading={isTxOnGoing}
 					disabled={isTxOnGoing || !canExtend}
 				>
@@ -330,7 +330,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 									</div>
 									<div className="text-xs text-red-500 dark:text-red-500 mt-1">
 										{t("mint.you_have", {
-											amount: formatNumber(BigInt(deuroBalance || 0)),
+											amount: formatNumber(BigInt(jusdBalance || 0)),
 											symbol: position.stablecoinSymbol,
 										})}
 										<br />

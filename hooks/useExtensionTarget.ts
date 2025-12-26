@@ -37,10 +37,11 @@ export const useExtensionTarget = (position: PositionQuery | undefined, currentD
 					exp > currentExp &&
 					BigInt(p.availableForClones) > 0n &&
 					BigInt(p.availableForMinting) > 0n &&
-					collateralNeeded >= minCollateral
+					collateralNeeded >= minCollateral &&
+					targetPrice >= BigInt(position.price)
 				);
 			})
-			.sort((a, b) => toTimestamp(toDate(a.expiration)) - toTimestamp(toDate(b.expiration)));
+			.sort((a, b) => toTimestamp(toDate(b.expiration)) - toTimestamp(toDate(a.expiration)));
 
 		return {
 			targetPositionForExtend: extendTargets[0],
