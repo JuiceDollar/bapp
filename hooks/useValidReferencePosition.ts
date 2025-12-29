@@ -17,14 +17,15 @@ export const useValidReferencePosition = (
 		const now = Math.floor(Date.now() / 1000);
 
 		const validPosition = openPositions
-			.filter((p) => {
-				if (p.position.toLowerCase() === currentPosition.position.toLowerCase()) return false;
-				if (p.collateral.toLowerCase() !== currentPosition.collateral.toLowerCase()) return false;
-				if (p.closed || now >= p.expiration || now <= p.cooldown) return false;
-				if (BigInt(p.principal) === 0n) return false;
-				if (BigInt(p.price) <= currentPrice) return false;
-				return true;
-			})
+			.filter((p) =>
+				p.position.toLowerCase() !== currentPosition.position.toLowerCase() &&
+				p.collateral.toLowerCase() === currentPosition.collateral.toLowerCase() &&
+				!p.closed &&
+				now < p.expiration &&
+				now > p.cooldown &&
+				BigInt(p.principal) > 0n &&
+				BigInt(p.price) > currentPrice
+			)
 			.sort((a, b) => (BigInt(a.price) > BigInt(b.price) ? -1 : 1))[0];
 
 		return validPosition
