@@ -19,10 +19,12 @@ import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import { store } from "../../redux/redux.store";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { Address } from "viem";
+import { useValidReferencePosition } from "../../hooks/useValidReferencePosition";
 
 interface AdjustLiqPriceProps {
 	position: PositionQuery;
 	positionPrice: bigint;
+	liqPrice: bigint;
 	priceDecimals: number;
 	currentPosition: SolverPosition;
 	isInCooldown: boolean;
@@ -36,6 +38,7 @@ interface AdjustLiqPriceProps {
 export const AdjustLiqPrice = ({
 	position,
 	positionPrice,
+	liqPrice,
 	priceDecimals,
 	currentPosition,
 	isInCooldown,
@@ -53,7 +56,7 @@ export const AdjustLiqPrice = ({
 	const [isTxOnGoing, setIsTxOnGoing] = useState(false);
 
 	const delta = deltaAmount ? BigInt(deltaAmount) : 0n;
-	const newPrice = isIncrease ? positionPrice + delta : positionPrice - delta;
+	const newPrice = isIncrease ? liqPrice + delta : liqPrice - delta;
 	const minimumCollateral = BigInt(position.minimumCollateral);
 	const minCollateralNeeded = newPrice > 0n ? (currentPosition.debt * BigInt(1e18)) / newPrice : 0n;
 
@@ -61,26 +64,48 @@ export const AdjustLiqPrice = ({
 	const collateralToRemove = isIncrease ? currentPosition.collateral - minRequired : 0n;
 
 	const minPriceForDecrease = (currentPosition.debt * BigInt(1e18)) / currentPosition.collateral;
-	const maxDeltaDecrease = positionPrice > minPriceForDecrease ? positionPrice - minPriceForDecrease : 0n;
+	const maxDeltaDecrease = liqPrice > minPriceForDecrease ? liqPrice - minPriceForDecrease : 0n;
 
-	const isBlockedByCooldown = isInCooldown && isIncrease && delta > 0n;
+	const reference = useValidReferencePosition(position, positionPrice, isIncrease);
+	const hasValidReference = reference.address !== null;
+	
+	const maxPriceIncrease = liqPrice * 2n;
+	const maxAllowedPrice = hasValidReference && reference.price > 0n && reference.price < maxPriceIncrease
+		? reference.price
+		: maxPriceIncrease;
+	const maxDeltaIncrease = maxAllowedPrice > liqPrice ? maxAllowedPrice - liqPrice : 0n;
+	
 	const isDecreaseInvalid = !isIncrease && delta > maxDeltaDecrease;
 
 	useEffect(() => {
 		setDeltaAmount("");
 	}, [isIncrease]);
 
+	useEffect(() => {
+		if (isIncrease && !hasValidReference) {
+			setIsIncrease(false);
+		}
+	}, [hasValidReference]);
+
 	const handleExecute = async () => {
 		if (!userAddress || delta === 0n) return;
 		try {
 			setIsTxOnGoing(true);
 
-			const adjustHash = await writeContract(WAGMI_CONFIG, {
-				address: position.position as Address,
-				abi: PositionV2ABI,
-				functionName: "adjustPrice",
-				args: [newPrice],
-			});
+			const adjustHash = isIncrease
+				? await writeContract(WAGMI_CONFIG, {
+						address: position.position as Address,
+						abi: PositionV2ABI,
+						functionName: "adjustPriceWithReference",
+						args: [newPrice, reference.address!],
+				  })
+				: await writeContract(WAGMI_CONFIG, {
+						address: position.position as Address,
+						abi: PositionV2ABI,
+						functionName: "adjustPrice",
+						args: [newPrice],
+				  });
+
 			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: adjustHash, confirmations: 1 }), {
 				pending: { render: <TxToast title={t("mint.txs.adjusting_price")} rows={[]} /> },
 				success: { render: <TxToast title={t("mint.txs.adjusting_price_success")} rows={[]} /> },
@@ -96,7 +121,7 @@ export const AdjustLiqPrice = ({
 		}
 	};
 
-	const isDisabled = delta === 0n || isBlockedByCooldown || isDecreaseInvalid;
+	const isDisabled = delta === 0n || isDecreaseInvalid;
 
 	return (
 		<div className="flex flex-col gap-y-4">
@@ -106,9 +131,11 @@ export const AdjustLiqPrice = ({
 						{t("mint.adjust")} {t("mint.liquidation_price")}
 					</div>
 					<div className="flex flex-row items-center">
-						<SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
-							{t("mint.increase")}
-						</SvgIconButton>
+						{hasValidReference && (
+							<SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
+								{t("mint.increase")}
+							</SvgIconButton>
+						)}
 						<SvgIconButton isSelected={!isIncrease} onClick={() => setIsIncrease(false)} SvgComponent={RemoveCircleOutlineIcon}>
 							{t("mint.reduce")}
 						</SvgIconButton>
@@ -119,7 +146,7 @@ export const AdjustLiqPrice = ({
 					value={deltaAmount}
 					onChange={(val) => setDeltaAmount(roundToWholeUnits(val, priceDecimals))}
 					min={0n}
-					max={isIncrease ? positionPrice : maxDeltaDecrease}
+					max={isIncrease ? maxDeltaIncrease : maxDeltaDecrease}
 					decimals={priceDecimals}
 					hideTrailingZeros
 				/>
@@ -144,7 +171,7 @@ export const AdjustLiqPrice = ({
 				<div className="flex justify-between text-sm">
 					<span className="text-text-muted2">{t("mint.current_liquidation_price")}</span>
 					<span className="font-medium text-text-title">
-						{formatCurrency(formatUnits(positionPrice, priceDecimals), 0, 0)} {position.stablecoinSymbol}
+						{formatCurrency(formatUnits(liqPrice, priceDecimals), 0, 0)} {position.stablecoinSymbol}
 					</span>
 				</div>
 				<div className="flex justify-between text-sm">
@@ -161,29 +188,6 @@ export const AdjustLiqPrice = ({
 					</span>
 				</div>
 			</div>
-
-			{isIncrease &&
-				delta > 0n &&
-				(isInCooldown ? (
-					<div className="text-xs text-text-muted2 px-4">
-						{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
-						<br />
-						{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
-					</div>
-				) : (
-					<div className="text-xs text-text-muted2 px-4">
-						{t("mint.price_increase_cooldown_warning")}
-						{collateralToRemove > 0n && (
-							<span>
-								{" "}
-								{t("mint.after_cooldown_can_withdraw", {
-									amount: formatCurrency(formatUnits(collateralToRemove, position.collateralDecimals), 0, 6),
-									symbol: normalizeTokenSymbol(position.collateralSymbol || ""),
-								})}
-							</span>
-						)}
-					</div>
-				))}
 
 			<Button
 				className="w-full text-lg leading-snug !font-extrabold"
