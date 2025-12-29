@@ -68,13 +68,12 @@ export const AdjustLiqPrice = ({
 
 	const reference = useValidReferencePosition(position, positionPrice, isIncrease);
 	const hasValidReference = reference.address !== null;
-	
+
 	const maxPriceIncrease = liqPrice * 2n;
-	const maxAllowedPrice = hasValidReference && reference.price > 0n && reference.price < maxPriceIncrease
-		? reference.price
-		: maxPriceIncrease;
+	const maxAllowedPrice =
+		hasValidReference && reference.price > 0n && reference.price < maxPriceIncrease ? reference.price : maxPriceIncrease;
 	const maxDeltaIncrease = maxAllowedPrice > liqPrice ? maxAllowedPrice - liqPrice : 0n;
-	
+
 	const isDecreaseInvalid = !isIncrease && delta > maxDeltaDecrease;
 
 	useEffect(() => {
