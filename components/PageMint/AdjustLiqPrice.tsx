@@ -41,9 +41,6 @@ export const AdjustLiqPrice = ({
 	liqPrice,
 	priceDecimals,
 	currentPosition,
-	isInCooldown,
-	cooldownRemainingFormatted,
-	cooldownEndsAt,
 	refetch,
 	onSuccess,
 }: AdjustLiqPriceProps) => {
@@ -57,22 +54,18 @@ export const AdjustLiqPrice = ({
 
 	const delta = deltaAmount ? BigInt(deltaAmount) : 0n;
 	const newPrice = isIncrease ? liqPrice + delta : liqPrice - delta;
-	const minimumCollateral = BigInt(position.minimumCollateral);
-	const minCollateralNeeded = newPrice > 0n ? (currentPosition.debt * BigInt(1e18)) / newPrice : 0n;
-
-	const minRequired = minCollateralNeeded > minimumCollateral ? minCollateralNeeded : minimumCollateral;
-	const collateralToRemove = isIncrease ? currentPosition.collateral - minRequired : 0n;
 
 	const minPriceForDecrease = (currentPosition.debt * BigInt(1e18)) / currentPosition.collateral;
-	const maxDeltaDecrease = liqPrice > minPriceForDecrease ? liqPrice - minPriceForDecrease : 0n;
+	const deltaDecrease = liqPrice > minPriceForDecrease ? liqPrice - minPriceForDecrease : 0n;
+	const maxDeltaDecrease = deltaDecrease * 10n >= liqPrice ? deltaDecrease : 0n;
 
-	const reference = useValidReferencePosition(position, positionPrice, isIncrease);
-	const hasValidReference = reference.address !== null;
+	const reference = useValidReferencePosition(position, positionPrice);
 
 	const maxPriceIncrease = liqPrice * 2n;
-	const maxAllowedPrice =
-		hasValidReference && reference.price > 0n && reference.price < maxPriceIncrease ? reference.price : maxPriceIncrease;
-	const maxDeltaIncrease = maxAllowedPrice > liqPrice ? maxAllowedPrice - liqPrice : 0n;
+	const maxAllowedPrice = reference.address && reference.price < maxPriceIncrease ? reference.price : maxPriceIncrease;
+	const deltaIncrease = maxAllowedPrice > liqPrice ? maxAllowedPrice - liqPrice : 0n;
+	const maxDeltaIncrease = deltaIncrease * 10n >= liqPrice ? deltaIncrease : 0n;
+	const hasValidReference = reference.address !== null && maxDeltaIncrease > 0n;
 
 	const isDecreaseInvalid = !isIncrease && delta > maxDeltaDecrease;
 
@@ -81,7 +74,7 @@ export const AdjustLiqPrice = ({
 	}, [isIncrease]);
 
 	useEffect(() => {
-		if (isIncrease && !hasValidReference) {
+		if (!hasValidReference) {
 			setIsIncrease(false);
 		}
 	}, [hasValidReference]);
@@ -135,34 +128,47 @@ export const AdjustLiqPrice = ({
 								{t("mint.increase")}
 							</SvgIconButton>
 						)}
-						<SvgIconButton isSelected={!isIncrease} onClick={() => setIsIncrease(false)} SvgComponent={RemoveCircleOutlineIcon}>
-							{t("mint.reduce")}
-						</SvgIconButton>
+						{maxDeltaDecrease > 0n && (
+							<SvgIconButton
+								isSelected={!isIncrease}
+								onClick={() => setIsIncrease(false)}
+								SvgComponent={RemoveCircleOutlineIcon}
+							>
+								{t("mint.reduce")}
+							</SvgIconButton>
+						)}
 					</div>
 				</div>
 
-				<SliderInputOutlined
-					value={deltaAmount}
-					onChange={(val) => setDeltaAmount(roundToWholeUnits(val, priceDecimals))}
-					min={0n}
-					max={isIncrease ? maxDeltaIncrease : maxDeltaDecrease}
-					decimals={priceDecimals}
-					hideTrailingZeros
-				/>
+				{(maxDeltaIncrease > 0n || maxDeltaDecrease > 0n) && (
+					<SliderInputOutlined
+						value={deltaAmount}
+						onChange={(val) => setDeltaAmount(roundToWholeUnits(val, priceDecimals))}
+						min={0n}
+						max={isIncrease ? maxDeltaIncrease : maxDeltaDecrease}
+						decimals={priceDecimals}
+						hideTrailingZeros
+					/>
+				)}
 			</div>
 
-			{isDecreaseInvalid && delta > 0n && (
-				<div className="text-xs text-text-muted2 px-4">
-					{t("mint.price_below_collateral_limit", {
-						min: formatCurrency(formatUnits(minPriceForDecrease, priceDecimals), 0, 0),
-						symbol: position.stablecoinSymbol,
-					})}{" "}
+			{!hasValidReference && maxDeltaDecrease === 0n && (
+				<div className="text-sm text-text-muted2 px-4">
+					{t("mint.position_at_limit")}{" "}
 					<button
 						onClick={() => router.push(`/mint/${position.position}/manage/collateral`)}
 						className="text-primary underline hover:opacity-80"
 					>
 						{t("common.add")} {t("mint.collateral")}
-					</button>
+					</button>{" "}
+					{t("common.or")}{" "}
+					<button
+						onClick={() => router.push(`/mint/${position.position}/manage/loan`)}
+						className="text-primary underline hover:opacity-80"
+					>
+						{t("mint.repay_debt")}
+					</button>{" "}
+					{t("mint.to_adjust_price")}
 				</div>
 			)}
 

@@ -46,6 +46,7 @@
 		"loading": "Loading...",
 		"deposit": "Deposit",
 		"withdraw": "Withdraw",
+		"or": "or",
 		"navbar": {
 			"my_referrals": "My Referrals",
 			"swap": "Swap",
@@ -254,6 +255,9 @@
 		"increase": "Increase",
 		"reduce": "Reduce",
 		"lending": "Lending",
+		"position_at_limit": "Position at limit.",
+		"repay_debt": "repay debt",
+		"to_adjust_price": "to adjust price.",
 		"error": {
 			"could_not_obtain_token_data": "Could not obtain token data",
 			"token_decimals_should_be_less_than_24": "Token decimals should be less than 24.",

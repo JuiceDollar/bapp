@@ -6,13 +6,12 @@ import { PositionQuery } from "@juicedollar/api";
 
 export const useValidReferencePosition = (
 	currentPosition: PositionQuery | undefined,
-	currentPrice: bigint,
-	isIncrease: boolean
+	currentPrice: bigint
 ): { address: Address | null; price: bigint } => {
 	const openPositions = useSelector((state: RootState) => state.positions.openPositions || []);
 
 	return useMemo(() => {
-		if (!currentPosition || !isIncrease || currentPrice === 0n) return { address: null, price: 0n };
+		if (!currentPosition || currentPrice === 0n) return { address: null, price: 0n };
 
 		const now = Math.floor(Date.now() / 1000);
 
@@ -32,5 +31,5 @@ export const useValidReferencePosition = (
 		return validPosition
 			? { address: validPosition.position as Address, price: BigInt(validPosition.price) }
 			: { address: null, price: 0n };
-	}, [currentPosition, openPositions, currentPrice, isIncrease]);
+	}, [currentPosition, openPositions, currentPrice]);
 };
