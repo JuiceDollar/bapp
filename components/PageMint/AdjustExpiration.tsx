@@ -14,7 +14,7 @@ import { getCarryOnQueryParams, toQueryString, toTimestamp, normalizeTokenSymbol
 import { toast } from "react-toastify";
 import { TxToast } from "@components/TxToast";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
-import { useExtensionTarget } from "../../hooks/useExtensionTarget";
+import { useDefaultReferencePosition } from "../../hooks/useDefaultReferencePosition";
 import Button from "@components/Button";
 import { erc20Abi, maxUint256 } from "viem";
 import { PositionQuery } from "@juicedollar/api";
@@ -35,19 +35,19 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	const { balancesByAddress, refetchBalances } = useWalletERC20Balances(
 		position
 			? [
-					{
-						symbol: position.collateralSymbol,
-						address: position.collateral,
-						name: position.collateralSymbol,
-						allowance: [ADDRESS[chainId].roller],
-					},
-					{
-						symbol: position.stablecoinSymbol,
-						address: position.stablecoinAddress,
-						name: position.stablecoinSymbol,
-						allowance: [ADDRESS[chainId].roller],
-					},
-			  ]
+				{
+					symbol: position.collateralSymbol,
+					address: position.collateral,
+					name: position.collateralSymbol,
+					allowance: [ADDRESS[chainId].roller],
+				},
+				{
+					symbol: position.stablecoinSymbol,
+					address: position.stablecoinAddress,
+					name: position.stablecoinSymbol,
+					allowance: [ADDRESS[chainId].roller],
+				},
+			]
 			: []
 	);
 
@@ -58,36 +58,32 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	const { data: contractData } = useReadContracts({
 		contracts: position
 			? [
-					{
-						chainId,
-						address: position.position,
-						abi: PositionV2ABI,
-						functionName: "principal",
-					},
-					{
-						chainId,
-						address: position.position,
-						abi: PositionV2ABI,
-						functionName: "getDebt",
-					},
-			  ]
+				{
+					chainId,
+					address: position.position,
+					abi: PositionV2ABI,
+					functionName: "principal",
+				},
+				{
+					chainId,
+					address: position.position,
+					abi: PositionV2ABI,
+					functionName: "getDebt",
+				},
+			]
 			: [],
 	});
 
 	const principal = contractData?.[0]?.result || 0n;
 	const currentDebt = contractData?.[1]?.result || 0n;
 
-	const { targetPositionForExtend, canExtend } = useExtensionTarget(position, currentDebt);
+	const { data: defaultPosition, isLoading: loadingDefault } = useDefaultReferencePosition(position?.collateral);
 
 	useEffect(() => {
-		if (position) {
-			if (targetPositionForExtend?.expiration) {
-				setExpirationDate((date) => date ?? new Date(targetPositionForExtend.expiration * 1000));
-			} else {
-				setExpirationDate((date) => date ?? new Date(position.expiration * 1000));
-			}
+		if (position && defaultPosition) {
+			setExpirationDate((date) => date ?? new Date(defaultPosition.expiration * 1000));
 		}
-	}, [position, targetPositionForExtend]);
+	}, [position, defaultPosition]);
 
 	const currentExpirationDate = new Date(position.expiration * 1000);
 	const isExtending = !!(expirationDate && expirationDate.getTime() > currentExpirationDate.getTime());
@@ -96,13 +92,13 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 		try {
 			setIsTxOnGoing(true);
 
-			const newExpirationTimestamp = toTimestamp(expirationDate as Date);
-			const target = targetPositionForExtend?.position;
-
-			if (!target) {
+			if (!defaultPosition) {
 				toast.error(t("mint.no_extension_target_available"));
 				return;
 			}
+
+			const newExpirationTimestamp = toTimestamp(expirationDate as Date);
+			const target = defaultPosition.position;
 
 			let txHash: `0x${string}`;
 
@@ -250,8 +246,8 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					{daysUntilExpiration > 0
 						? t("mint.days_until_expiration", { days: daysUntilExpiration })
 						: daysUntilExpiration === 0
-						? t("mint.expires_today")
-						: t("mint.expired_days_ago", { days: Math.abs(daysUntilExpiration) })}
+							? t("mint.expires_today")
+							: t("mint.expired_days_ago", { days: Math.abs(daysUntilExpiration) })}
 				</div>
 				<div className="text-xs font-medium">{t("mint.extend_roll_borrowing_description")}</div>
 			</div>
@@ -259,11 +255,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 				<div className="text-lg font-extrabold leading-[1.4375rem]">{t("mint.newly_selected_expiration_date")}</div>
 				<DateInputOutlined
 					minDate={currentExpirationDate}
-					maxDate={
-						canExtend && targetPositionForExtend?.expiration
-							? new Date(targetPositionForExtend.expiration * 1000)
-							: currentExpirationDate
-					}
+					maxDate={defaultPosition ? new Date(defaultPosition.expiration * 1000) : currentExpirationDate}
 					value={expirationDate}
 					placeholderText={new Date(position.expiration * 1000).toISOString().split("T")[0]}
 					className="placeholder:text-[#5D647B]"
@@ -272,23 +264,23 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 						<MaxButton
 							className="h-full py-3.5 px-3"
 							onClick={() =>
-								setExpirationDate(
-									targetPositionForExtend?.expiration ? new Date(targetPositionForExtend.expiration * 1000) : undefined
-								)
+								setExpirationDate(defaultPosition ? new Date(defaultPosition.expiration * 1000) : undefined)
 							}
-							disabled={!targetPositionForExtend}
+							disabled={!defaultPosition}
 							label={t("common.max")}
 						/>
 					}
 				/>
 			</div>
-			{!canExtend && <div className="text-xs text-text-muted2 px-4">{t("mint.no_extension_target_available")}</div>}
+			{!defaultPosition && !loadingDefault && (
+				<div className="text-xs text-text-muted2 px-4">{t("mint.no_extension_target_available")}</div>
+			)}
 			{!isNativeWrappedPosition && !collateralAllowance ? (
 				<Button
 					className="text-lg leading-snug !font-extrabold"
 					onClick={handleApproveCollateral}
 					isLoading={isTxOnGoing}
-					disabled={isTxOnGoing || !canExtend}
+					disabled={isTxOnGoing || !defaultPosition}
 				>
 					{t("common.approve")} {normalizeTokenSymbol(position.collateralSymbol)}
 				</Button>
@@ -297,7 +289,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					className="text-lg leading-snug !font-extrabold"
 					onClick={handleApproveJusd}
 					isLoading={isTxOnGoing}
-					disabled={isTxOnGoing || !canExtend}
+					disabled={isTxOnGoing || !defaultPosition}
 				>
 					{t("common.approve")} {position.stablecoinSymbol}
 				</Button>
@@ -345,7 +337,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 						className="text-lg leading-snug !font-extrabold"
 						onClick={handleAdjustExpiration}
 						isLoading={isTxOnGoing}
-						disabled={isTxOnGoing || !expirationDate || !isExtending || !canExtend || hasInsufficientBalance}
+						disabled={isTxOnGoing || !expirationDate || !isExtending || !defaultPosition || hasInsufficientBalance}
 					>
 						{t("mint.extend_roll_borrowing")}{" "}
 						{expirationDate &&
