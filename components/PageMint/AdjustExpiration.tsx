@@ -35,19 +35,19 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	const { balancesByAddress, refetchBalances } = useWalletERC20Balances(
 		position
 			? [
-				{
-					symbol: position.collateralSymbol,
-					address: position.collateral,
-					name: position.collateralSymbol,
-					allowance: [ADDRESS[chainId].roller],
-				},
-				{
-					symbol: position.stablecoinSymbol,
-					address: position.stablecoinAddress,
-					name: position.stablecoinSymbol,
-					allowance: [ADDRESS[chainId].roller],
-				},
-			]
+					{
+						symbol: position.collateralSymbol,
+						address: position.collateral,
+						name: position.collateralSymbol,
+						allowance: [ADDRESS[chainId].roller],
+					},
+					{
+						symbol: position.stablecoinSymbol,
+						address: position.stablecoinAddress,
+						name: position.stablecoinSymbol,
+						allowance: [ADDRESS[chainId].roller],
+					},
+			  ]
 			: []
 	);
 
@@ -58,19 +58,19 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	const { data: contractData } = useReadContracts({
 		contracts: position
 			? [
-				{
-					chainId,
-					address: position.position,
-					abi: PositionV2ABI,
-					functionName: "principal",
-				},
-				{
-					chainId,
-					address: position.position,
-					abi: PositionV2ABI,
-					functionName: "getDebt",
-				},
-			]
+					{
+						chainId,
+						address: position.position,
+						abi: PositionV2ABI,
+						functionName: "principal",
+					},
+					{
+						chainId,
+						address: position.position,
+						abi: PositionV2ABI,
+						functionName: "getDebt",
+					},
+			  ]
 			: [],
 	});
 
@@ -246,8 +246,8 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					{daysUntilExpiration > 0
 						? t("mint.days_until_expiration", { days: daysUntilExpiration })
 						: daysUntilExpiration === 0
-							? t("mint.expires_today")
-							: t("mint.expired_days_ago", { days: Math.abs(daysUntilExpiration) })}
+						? t("mint.expires_today")
+						: t("mint.expired_days_ago", { days: Math.abs(daysUntilExpiration) })}
 				</div>
 				<div className="text-xs font-medium">{t("mint.extend_roll_borrowing_description")}</div>
 			</div>
@@ -263,9 +263,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					rightAdornment={
 						<MaxButton
 							className="h-full py-3.5 px-3"
-							onClick={() =>
-								setExpirationDate(defaultPosition ? new Date(defaultPosition.expiration * 1000) : undefined)
-							}
+							onClick={() => setExpirationDate(defaultPosition ? new Date(defaultPosition.expiration * 1000) : undefined)}
 							disabled={!defaultPosition}
 							label={t("common.max")}
 						/>
