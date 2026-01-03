@@ -144,7 +144,12 @@ export const AdjustCollateral = ({
 				error: t("mint.insufficient_balance", { symbol: position.stablecoinSymbol }),
 			},
 			{
-				condition: !isIncrease && !strategies[StrategyKey.REPAY_LOAN] && newCollateral > 0n && newCollateral < BigInt(position.minimumCollateral || 0) && validationDebt > 0n,
+				condition:
+					!isIncrease &&
+					!strategies[StrategyKey.REPAY_LOAN] &&
+					newCollateral > 0n &&
+					newCollateral < BigInt(position.minimumCollateral || 0) &&
+					validationDebt > 0n,
 				error: `${t("mint.error.collateral_below_min")} (${formattedCurrentCollateral} ${collateralSymbol})`,
 			},
 		];
@@ -332,7 +337,13 @@ export const AdjustCollateral = ({
 	};
 
 	const isDisabled =
-		!deltaAmount || delta === 0n || Boolean(deltaAmountError) || isTxOnGoing || needsStrategy || (!isIncrease && isInCooldown) || (!isIncrease && collateralBalance <= requiredCollateral);
+		!deltaAmount ||
+		delta === 0n ||
+		Boolean(deltaAmountError) ||
+		isTxOnGoing ||
+		needsStrategy ||
+		(!isIncrease && isInCooldown) ||
+		(!isIncrease && collateralBalance <= requiredCollateral);
 
 	const getButtonLabel = () => {
 		if (needsApproval) return t("common.approve");
@@ -400,9 +411,7 @@ export const AdjustCollateral = ({
 						</div>
 					}
 				/>
-				{deltaAmountError && (
-					<div className="ml-1 text-text-muted2 text-sm">{deltaAmountError}</div>
-				)}
+				{deltaAmountError && <div className="ml-1 text-text-muted2 text-sm">{deltaAmountError}</div>}
 			</div>
 
 			{showStrategyOptions && !hasAnyStrategy && (
