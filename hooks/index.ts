@@ -18,4 +18,4 @@ export * from "./useTotalSavingsQuery";
 export * from "./useWalletBalances";
 export * from "./useSavingsInterest";
 export * from "./useExtensionTarget";
-export * from "./useValidReferencePosition";
+export * from "./useReferencePosition";

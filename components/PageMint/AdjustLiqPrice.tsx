@@ -19,7 +19,7 @@ import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import { store } from "../../redux/redux.store";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { Address } from "viem";
-import { useValidReferencePosition } from "../../hooks/useValidReferencePosition";
+import { useReferencePosition } from "../../hooks/useReferencePosition";
 
 interface AdjustLiqPriceProps {
 	position: PositionQuery;
@@ -59,7 +59,7 @@ export const AdjustLiqPrice = ({
 	const deltaDecrease = liqPrice > minPriceForDecrease ? liqPrice - minPriceForDecrease : 0n;
 	const maxDeltaDecrease = deltaDecrease * 10n >= liqPrice ? deltaDecrease : 0n;
 
-	const reference = useValidReferencePosition(position, positionPrice);
+	const reference = useReferencePosition(position, positionPrice);
 
 	const maxPriceIncrease = liqPrice * 2n;
 	const maxAllowedPrice = reference.address && reference.price < maxPriceIncrease ? reference.price : maxPriceIncrease;
