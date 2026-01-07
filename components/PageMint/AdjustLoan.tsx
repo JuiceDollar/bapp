@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "next-i18next";
+import { useRouter } from "next/router";
 import { Address, formatUnits } from "viem";
 import { formatCurrency, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { solveManage, SolverPosition, SolverOutcome, Strategy, TxAction } from "../../utils/positionSolver";
@@ -62,6 +63,7 @@ export const AdjustLoan = ({
 	cooldownEndsAt,
 }: AdjustLoanProps) => {
 	const { t } = useTranslation();
+	const router = useRouter();
 	const chainId = useChainId();
 	const { address: userAddress } = useAccount();
 	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol?.toLowerCase() || "");
@@ -236,7 +238,7 @@ export const AdjustLoan = ({
 				: () => {
 						setDeltaAmount("");
 						setStrategies({ [StrategyKey.ADD_COLLATERAL]: false, [StrategyKey.HIGHER_PRICE]: false });
-						onSuccess();
+						router.push(`/mint/${position.position}/manage`);
 				  },
 			setIsTxOnGoing,
 		});
