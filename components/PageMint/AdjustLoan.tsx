@@ -246,23 +246,6 @@ export const AdjustLoan = ({
 
 	const toggleStrategy = (strategy: StrategyKey) => setStrategies((prev) => ({ ...prev, [strategy]: !prev[strategy] }));
 
-	const DefaultSummaryTable = () => (
-		<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
-			<div className="flex justify-between text-sm">
-				<span className="text-text-muted2">{t("mint.amount_lended")}</span>
-				<span className="font-medium text-text-title">{formatCurrency(formatUnits(amountLended, 18), 0, 2)} JUSD</span>
-			</div>
-			<div className="flex justify-between text-sm">
-				<span className="text-text-muted2">{t("mint.retained_reserve")}</span>
-				<span className="font-medium text-text-title">{formatCurrency(formatUnits(retainedReserve, 18), 0, 2)} JUSD</span>
-			</div>
-			<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
-				<span className="text-text-muted2 font-medium">{t("mint.total")}</span>
-				<span className="font-medium text-text-title">{formatCurrency(formatUnits(currentDebt, 18), 0, 2)} JUSD</span>
-			</div>
-		</div>
-	);
-
 	return (
 		<div className="flex flex-col gap-y-4">
 			<div className="flex flex-col gap-y-3">
