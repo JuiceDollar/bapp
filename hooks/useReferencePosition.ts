@@ -42,7 +42,7 @@ export const useReferencePosition = (
 		expiration: 1797341717,
 		reserveContribution: 200000,
 		annualInterestPPM: 100000,
-		principal: 500000000000000000000, // notice that in the blockchain the default position has pricipal = 0; the function _isValidPriceReference need to be fixed in position.sol to prevent the revert. 
+		principal: 500000000000000000000, // notice that in the blockchain the default position has pricipal = 0; the function _isValidPriceReference need to be fixed in position.sol to prevent the revert.
 	} as unknown as PositionQuery;
 
 	return useMemo(() => {
