@@ -56,13 +56,13 @@ export const AdjustLiqPrice = ({
 	const newPrice = isIncrease ? liqPrice + delta : liqPrice - delta;
 
 	const minPriceForDecrease = (currentPosition.debt * BigInt(1e18)) / currentPosition.collateral;
-	const deltaDecrease = liqPrice > minPriceForDecrease ? liqPrice - minPriceForDecrease : 0n;
+	const deltaDecrease = liqPrice > minPriceForDecrease ? ((liqPrice - minPriceForDecrease) * 99n) / 100n : 0n;
 	const maxDeltaDecrease = deltaDecrease * 10n >= liqPrice ? deltaDecrease : 0n;
 
 	const reference = useReferencePosition(position, positionPrice);
 
 	const maxPriceIncrease = liqPrice * 2n;
-	const maxAllowedPrice = reference.address && reference.price < maxPriceIncrease ? reference.price : maxPriceIncrease;
+	const maxAllowedPrice = reference.price <= maxPriceIncrease ? reference.price : maxPriceIncrease;
 	const deltaIncrease = maxAllowedPrice > liqPrice ? maxAllowedPrice - liqPrice : 0n;
 	const maxDeltaIncrease = deltaIncrease * 10n >= liqPrice ? deltaIncrease : 0n;
 	const hasValidReference = reference.address !== null && maxDeltaIncrease > 0n;
@@ -125,12 +125,20 @@ export const AdjustLiqPrice = ({
 						{t("mint.adjust")} {t("mint.liquidation_price")}
 					</div>
 					<div className="flex flex-row items-center">
-						<SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
-							{t("mint.increase")}
-						</SvgIconButton>
-						<SvgIconButton isSelected={!isIncrease} onClick={() => setIsIncrease(false)} SvgComponent={RemoveCircleOutlineIcon}>
-							{t("mint.decrease")}
-						</SvgIconButton>
+						{maxDeltaIncrease > 0n && (
+							<SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
+								{t("mint.increase")}
+							</SvgIconButton>
+						)}
+						{maxDeltaDecrease > 0n && (
+							<SvgIconButton
+								isSelected={!isIncrease}
+								onClick={() => setIsIncrease(false)}
+								SvgComponent={RemoveCircleOutlineIcon}
+							>
+								{t("mint.decrease")}
+							</SvgIconButton>
+						)}
 					</div>
 				</div>
 
