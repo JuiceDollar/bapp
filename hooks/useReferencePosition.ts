@@ -6,10 +6,14 @@ import { PositionQuery } from "@juicedollar/api";
 import { API_CLIENT } from "../app.config";
 import { slice } from "../redux/slices/positions.slice";
 
-export const useReferencePosition = (
-	currentPosition: PositionQuery | undefined,
-	currentPrice: bigint
-): { address: Address | null; price: bigint } => {
+type ReferencePositionResult = {
+	address: Address | null;
+	price: bigint;
+	defaultPosition: PositionQuery | null | undefined;
+	isLoading: boolean;
+};
+
+export const useReferencePosition = (currentPosition?: PositionQuery, currentPrice?: bigint): ReferencePositionResult => {
 	const dispatch = useDispatch<AppDispatch>();
 	const defaultPosition = useSelector((state: RootState) => state.positions.defaultPosition);
 
@@ -23,7 +27,7 @@ export const useReferencePosition = (
 				dispatch(slice.actions.setDefaultPosition(position));
 			} catch (error) {
 				console.error("Error fetching default position:", error);
-				dispatch(slice.actions.setDefaultPosition(undefined));
+				dispatch(slice.actions.setDefaultPosition(null));
 			}
 		};
 
@@ -31,7 +35,11 @@ export const useReferencePosition = (
 	}, [defaultPosition, dispatch]);
 
 	return useMemo(() => {
-		if (!currentPosition) return { address: null, price: 0n };
+		const isLoading = defaultPosition === undefined;
+
+		if (!currentPosition || currentPrice === undefined) {
+			return { address: null, price: 0n, defaultPosition, isLoading };
+		}
 
 		if (
 			defaultPosition &&
@@ -42,9 +50,11 @@ export const useReferencePosition = (
 			return {
 				address: defaultPosition.position as Address,
 				price: BigInt(defaultPosition.price),
+				defaultPosition,
+				isLoading,
 			};
 		}
 
-		return { address: null, price: 0n };
+		return { address: null, price: 0n, defaultPosition, isLoading };
 	}, [currentPosition, currentPrice, defaultPosition]);
 };
