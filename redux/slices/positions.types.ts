@@ -6,7 +6,7 @@ export type PositionsState = {
 	error: string | null;
 	loaded: boolean;
 
-	defaultPosition?: PositionQuery;
+	defaultPosition?: PositionQuery | null;
 	list?: ApiPositionsListing;
 	mapping?: ApiPositionsMapping;
 	requests?: ApiPositionsMapping;
@@ -58,5 +58,5 @@ export type DispatchPositionQueryArray2 = {
 
 export type DispatchPositionQuery = {
 	type: string;
-	payload: PositionQuery | undefined;
+	payload: PositionQuery | undefined | null;
 };

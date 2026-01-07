@@ -104,7 +104,7 @@ export const slice = createSlice({
 			state.openPositionsByCollateral = action.payload;
 		},
 
-		setDefaultPosition: (state, action: { payload: PositionQuery | undefined }) => {
+		setDefaultPosition: (state, action: { payload: PositionQuery | undefined | null }) => {
 			state.defaultPosition = action.payload;
 		},
 	},
