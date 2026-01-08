@@ -67,6 +67,7 @@ test.describe("Mint Page", () => {
 			const minLabel = page.getByText("MIN");
 			const maxLabel = page.locator("text=MAX").nth(1); // Second MAX is for slider
 			await expect(minLabel).toBeVisible({ timeout: 15000 });
+			await expect(maxLabel).toBeVisible({ timeout: 15000 });
 		});
 
 		test("should display expiration date picker", async ({ page }) => {
