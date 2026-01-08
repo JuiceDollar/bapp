@@ -139,11 +139,26 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000
 
 | Befehl | Beschreibung |
 |--------|--------------|
-| `yarn test:e2e` | Alle E2E-Tests ausführen |
+| `yarn test:e2e` | Basis-Tests ausführen (Navigation, UI) - ohne MetaMask |
+| `yarn test:e2e:wallet` | Wallet-Tests ausführen (erfordert Synpress-Cache) |
+| `yarn test:e2e:all` | Alle Tests ausführen |
 | `yarn test:e2e:ui` | Tests mit Playwright UI ausführen |
 | `yarn test:e2e:headed` | Tests im sichtbaren Browser ausführen |
 | `yarn test:e2e:debug` | Tests im Debug-Modus ausführen |
 | `yarn test:e2e:report` | Letzten Test-Report im Browser öffnen |
+| `yarn synpress:cache` | Synpress-Cache für Wallet-Tests erstellen |
+
+### Test-Kategorien
+
+**Basis-Tests** (`yarn test:e2e`)
+- Laufen ohne MetaMask
+- Testen Navigation und UI-Elemente
+- Können headless ausgeführt werden
+
+**Wallet-Tests** (`yarn test:e2e:wallet`)
+- Erfordern MetaMask-Integration
+- Benötigen Synpress-Cache (siehe unten)
+- Müssen im headed-Modus laufen
 
 ### Ersten Test durchführen
 
@@ -153,27 +168,37 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000
    ```
    Warte bis die App unter `http://localhost:3000` erreichbar ist.
 
-2. **Führe die Tests aus**:
+2. **Führe die Basis-Tests aus**:
    ```bash
-   yarn test:e2e:headed
+   yarn test:e2e
    ```
 
-   Dies startet:
-   - Einen Chrome-Browser mit MetaMask-Extension
-   - Die Test-Suite
-   - Du siehst den Browser und kannst die Tests live verfolgen
+### Wallet-Tests einrichten
+
+Für Wallet-Tests muss der Synpress-Cache einmalig erstellt werden:
+
+```bash
+# Cache erstellen (öffnet Browser mit MetaMask)
+yarn synpress:cache
+```
+
+Danach können Wallet-Tests ausgeführt werden:
+
+```bash
+yarn test:e2e:wallet
+```
 
 ### Einzelne Test-Dateien ausführen
 
 ```bash
-# Nur Wallet-Verbindungs-Tests
-npx playwright test connect-wallet.spec.ts
-
-# Nur Dashboard-Tests
-npx playwright test dashboard.spec.ts
-
 # Nur Navigations-Tests
 npx playwright test navigation.spec.ts
+
+# Nur UI-Tests
+npx playwright test ui.spec.ts
+
+# Nur Wallet-Verbindungs-Tests (erfordert Cache)
+npx playwright test tests/e2e/specs/wallet/connect-wallet.spec.ts
 ```
 
 ### Einzelne Tests ausführen
@@ -207,27 +232,39 @@ tests/
     ├── wallet-setup/
     │   └── basic.setup.ts           # MetaMask Wallet-Konfiguration
     └── specs/
-        ├── connect-wallet.spec.ts   # Wallet-Verbindungs-Tests
-        ├── dashboard.spec.ts        # Dashboard-Seiten-Tests
-        └── navigation.spec.ts       # Navigations-Tests
+        ├── navigation.spec.ts       # Navigations-Tests (ohne MetaMask)
+        ├── ui.spec.ts               # UI-Element-Tests (ohne MetaMask)
+        └── wallet/                  # Wallet-Tests (mit MetaMask)
+            ├── connect-wallet.spec.ts
+            └── dashboard.spec.ts
 ```
 
 ### Vorhandene Tests
 
-#### connect-wallet.spec.ts
-- Prüft, ob Connect-Button sichtbar ist
+#### Basis-Tests (ohne MetaMask)
+
+**navigation.spec.ts** (9 Tests)
+- Alle Hauptseiten erreichbar (Dashboard, Mint, Savings, Equity, etc.)
+- Home-Redirect zu Dashboard
+- 404-Handling für ungültige Routen
+
+**ui.spec.ts** (6 Tests)
+- Navigation-Bar sichtbar
+- Connect-Wallet-Button sichtbar
+- Logo sichtbar
+- Navigation-Links vorhanden
+- Responsive auf Mobile und Tablet
+
+#### Wallet-Tests (mit MetaMask)
+
+**wallet/connect-wallet.spec.ts**
 - Testet MetaMask-Verbindung zur dApp
 - Verifiziert Netzwerk-Wechsel zu Citrea Testnet
 
-#### dashboard.spec.ts
-- Dashboard nach Wallet-Verbindung anzeigen
+**wallet/dashboard.spec.ts**
+- Dashboard nach Wallet-Verbindung
 - Portfolio-Informationen laden
-- Navigation zu Mint-Seite
-- Navigation zu Savings-Seite
-
-#### navigation.spec.ts
-- Alle Hauptseiten erreichbar (Dashboard, Mint, Savings, Equity, etc.)
-- 404-Seite für ungültige Routen
+- Navigation zu Mint/Savings-Seite
 
 ---
 
