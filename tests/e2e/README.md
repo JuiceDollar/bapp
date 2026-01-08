@@ -19,10 +19,10 @@ Diese Anleitung erklärt, wie du das E2E-Test-Setup mit Playwright und Synpress 
 
 Bevor du mit dem Testen beginnen kannst, stelle sicher, dass folgende Software installiert ist:
 
-- **Node.js** >= 18.x
-- **Yarn** >= 1.22.x
-- **Google Chrome** (für MetaMask-Extension)
-- **Git**
+-   **Node.js** >= 18.x
+-   **Yarn** >= 1.22.x
+-   **Google Chrome** (für MetaMask-Extension)
+-   **Git**
 
 ### Versionen prüfen
 
@@ -125,11 +125,11 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000
 
 ### Variablen-Erklärung
 
-| Variable | Beschreibung | Beispiel |
-|----------|--------------|----------|
-| `WALLET_SEED_PHRASE` | 12-Wort Seed-Phrase deiner Test-Wallet | `test test test...` |
-| `WALLET_PASSWORD` | Passwort für MetaMask (min. 8 Zeichen) | `TestPassword123!` |
-| `PLAYWRIGHT_BASE_URL` | URL der App für Tests | `http://localhost:3000` |
+| Variable              | Beschreibung                           | Beispiel                |
+| --------------------- | -------------------------------------- | ----------------------- |
+| `WALLET_SEED_PHRASE`  | 12-Wort Seed-Phrase deiner Test-Wallet | `test test test...`     |
+| `WALLET_PASSWORD`     | Passwort für MetaMask (min. 8 Zeichen) | `TestPassword123!`      |
+| `PLAYWRIGHT_BASE_URL` | URL der App für Tests                  | `http://localhost:3000` |
 
 ---
 
@@ -137,41 +137,54 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000
 
 ### Verfügbare Test-Befehle
 
-| Befehl | Beschreibung |
-|--------|--------------|
-| `yarn test:e2e` | Basis-Tests ausführen (Navigation, UI) - ohne MetaMask |
-| `yarn test:e2e:wallet` | Wallet-Tests ausführen (erfordert Synpress-Cache) |
-| `yarn test:e2e:all` | Alle Tests ausführen |
-| `yarn test:e2e:ui` | Tests mit Playwright UI ausführen |
-| `yarn test:e2e:headed` | Tests im sichtbaren Browser ausführen |
-| `yarn test:e2e:debug` | Tests im Debug-Modus ausführen |
-| `yarn test:e2e:report` | Letzten Test-Report im Browser öffnen |
-| `yarn synpress:cache` | Synpress-Cache für Wallet-Tests erstellen |
+| Befehl                        | Beschreibung                                           |
+| ----------------------------- | ------------------------------------------------------ |
+| `yarn test:e2e`               | Basis-Tests ausführen (Navigation, UI) - ohne MetaMask |
+| `yarn test:e2e:visual`        | Visual Regression Tests ausführen                      |
+| `yarn test:e2e:visual:update` | Baseline-Screenshots aktualisieren                     |
+| `yarn test:e2e:wallet`        | Wallet-Tests ausführen (erfordert Synpress-Cache)      |
+| `yarn test:e2e:all`           | Alle Tests ausführen                                   |
+| `yarn test:e2e:ui`            | Tests mit Playwright UI ausführen                      |
+| `yarn test:e2e:headed`        | Tests im sichtbaren Browser ausführen                  |
+| `yarn test:e2e:debug`         | Tests im Debug-Modus ausführen                         |
+| `yarn test:e2e:report`        | Letzten Test-Report im Browser öffnen                  |
+| `yarn synpress:cache`         | Synpress-Cache für Wallet-Tests erstellen              |
 
 ### Test-Kategorien
 
 **Basis-Tests** (`yarn test:e2e`)
-- Laufen ohne MetaMask
-- Testen Navigation und UI-Elemente
-- Können headless ausgeführt werden
+
+-   Laufen ohne MetaMask
+-   Testen Navigation und UI-Elemente
+-   Können headless ausgeführt werden
+
+**Visual Regression Tests** (`yarn test:e2e:visual`)
+
+-   Vergleichen Screenshots gegen Baseline-Bilder
+-   Erkennen visuelle Änderungen automatisch
+-   Baseline aktualisieren mit `yarn test:e2e:visual:update`
+-   Screenshots werden in `tests/e2e/snapshots/` gespeichert
 
 **Wallet-Tests** (`yarn test:e2e:wallet`)
-- Erfordern MetaMask-Integration
-- Benötigen Synpress-Cache (siehe unten)
-- Müssen im headed-Modus laufen
+
+-   Erfordern MetaMask-Integration
+-   Benötigen Synpress-Cache (siehe unten)
+-   Müssen im headed-Modus laufen
 
 ### Ersten Test durchführen
 
 1. **Starte die App** (in einem separaten Terminal):
-   ```bash
-   yarn dev
-   ```
-   Warte bis die App unter `http://localhost:3000` erreichbar ist.
+
+    ```bash
+    yarn dev
+    ```
+
+    Warte bis die App unter `http://localhost:3000` erreichbar ist.
 
 2. **Führe die Basis-Tests aus**:
-   ```bash
-   yarn test:e2e
-   ```
+    ```bash
+    yarn test:e2e
+    ```
 
 ### Wallet-Tests einrichten
 
@@ -217,9 +230,10 @@ yarn test:e2e:debug
 ```
 
 Dies öffnet den Playwright Inspector, wo du:
-- Schritt für Schritt durch Tests gehen kannst
-- Selektoren inspizieren kannst
-- Den Browser-Zustand sehen kannst
+
+-   Schritt für Schritt durch Tests gehen kannst
+-   Selektoren inspizieren kannst
+-   Den Browser-Zustand sehen kannst
 
 ---
 
@@ -231,9 +245,16 @@ tests/
     ├── README.md                    # Diese Dokumentation
     ├── wallet-setup/
     │   └── basic.setup.ts           # MetaMask Wallet-Konfiguration
+    ├── snapshots/                   # Baseline-Screenshots für Visual Tests
+    │   └── specs/
+    │       └── visual.spec.ts/      # Screenshots pro Test-Datei
+    │           ├── dashboard.png
+    │           ├── mint.png
+    │           └── ...
     └── specs/
         ├── navigation.spec.ts       # Navigations-Tests (ohne MetaMask)
         ├── ui.spec.ts               # UI-Element-Tests (ohne MetaMask)
+        ├── visual.spec.ts           # Visual Regression Tests
         └── wallet/                  # Wallet-Tests (mit MetaMask)
             ├── connect-wallet.spec.ts
             └── dashboard.spec.ts
@@ -244,27 +265,39 @@ tests/
 #### Basis-Tests (ohne MetaMask)
 
 **navigation.spec.ts** (9 Tests)
-- Alle Hauptseiten erreichbar (Dashboard, Mint, Savings, Equity, etc.)
-- Home-Redirect zu Dashboard
-- 404-Handling für ungültige Routen
+
+-   Alle Hauptseiten erreichbar (Dashboard, Mint, Savings, Equity, etc.)
+-   Home-Redirect zu Dashboard
+-   404-Handling für ungültige Routen
 
 **ui.spec.ts** (6 Tests)
-- Navigation-Bar sichtbar
-- Connect-Wallet-Button sichtbar
-- Logo sichtbar
-- Navigation-Links vorhanden
-- Responsive auf Mobile und Tablet
+
+-   Navigation-Bar sichtbar
+-   Connect-Wallet-Button sichtbar
+-   Logo sichtbar
+-   Navigation-Links vorhanden
+-   Responsive auf Mobile und Tablet
+
+#### Visual Regression Tests
+
+**visual.spec.ts** (10 Tests)
+
+-   Screenshot-Vergleich für alle Hauptseiten (Dashboard, Mint, Savings, Equity, Governance, Challenges, Swap, Referrals)
+-   Responsive Screenshots (Mobile 375px, Tablet 768px)
+-   Dynamische Elemente werden vor Screenshot ausgeblendet (Loading-Spinner, Preise, etc.)
 
 #### Wallet-Tests (mit MetaMask)
 
 **wallet/connect-wallet.spec.ts**
-- Testet MetaMask-Verbindung zur dApp
-- Verifiziert Netzwerk-Wechsel zu Citrea Testnet
+
+-   Testet MetaMask-Verbindung zur dApp
+-   Verifiziert Netzwerk-Wechsel zu Citrea Testnet
 
 **wallet/dashboard.spec.ts**
-- Dashboard nach Wallet-Verbindung
-- Portfolio-Informationen laden
-- Navigation zu Mint/Savings-Seite
+
+-   Dashboard nach Wallet-Verbindung
+-   Portfolio-Informationen laden
+-   Navigation zu Mint/Savings-Seite
 
 ---
 
@@ -277,70 +310,63 @@ Erstelle eine neue Datei in `tests/e2e/specs/`:
 ```typescript
 // tests/e2e/specs/mein-feature.spec.ts
 
-import { testWithSynpress } from '@synthetixio/synpress'
-import { MetaMask, metaMaskFixtures } from '@synthetixio/synpress/playwright'
-import basicSetup from '../wallet-setup/basic.setup'
+import { testWithSynpress } from "@synthetixio/synpress";
+import { MetaMask, metaMaskFixtures } from "@synthetixio/synpress/playwright";
+import basicSetup from "../wallet-setup/basic.setup";
 
-const test = testWithSynpress(metaMaskFixtures(basicSetup))
-const { expect } = test
+const test = testWithSynpress(metaMaskFixtures(basicSetup));
+const { expect } = test;
 
-test.describe('Mein Feature', () => {
-  test('sollte etwas tun', async ({ page }) => {
-    await page.goto('/meine-seite')
+test.describe("Mein Feature", () => {
+	test("sollte etwas tun", async ({ page }) => {
+		await page.goto("/meine-seite");
 
-    // Dein Test-Code hier
-    await expect(page.locator('h1')).toBeVisible()
-  })
-})
+		// Dein Test-Code hier
+		await expect(page.locator("h1")).toBeVisible();
+	});
+});
 ```
 
 ### Test mit Wallet-Verbindung
 
 ```typescript
-test('sollte mit verbundener Wallet funktionieren', async ({
-  context,
-  page,
-  metamaskPage,
-  extensionId,
-}) => {
-  // MetaMask-Instanz erstellen
-  const metamask = new MetaMask(
-    context,
-    metamaskPage,
-    basicSetup.walletPassword,
-    extensionId
-  )
+test("sollte mit verbundener Wallet funktionieren", async ({ context, page, metamaskPage, extensionId }) => {
+	// MetaMask-Instanz erstellen
+	const metamask = new MetaMask(context, metamaskPage, basicSetup.walletPassword, extensionId);
 
-  await page.goto('/')
+	await page.goto("/");
 
-  // Wallet verbinden
-  await page.getByRole('button', { name: /connect/i }).click()
-  await page.getByText(/metamask/i).first().click()
-  await metamask.connectToDapp()
+	// Wallet verbinden
+	await page.getByRole("button", { name: /connect/i }).click();
+	await page
+		.getByText(/metamask/i)
+		.first()
+		.click();
+	await metamask.connectToDapp();
 
-  // Jetzt ist die Wallet verbunden - teste dein Feature
-  await page.goto('/mint')
-  // ...
-})
+	// Jetzt ist die Wallet verbunden - teste dein Feature
+	await page.goto("/mint");
+	// ...
+});
 ```
 
 ### Häufig verwendete MetaMask-Aktionen
 
 ```typescript
 // Wallet verbinden
-await metamask.connectToDapp()
+await metamask.connectToDapp();
 
 // Transaktion bestätigen
-await metamask.confirmTransaction()
+await metamask.confirmTransaction();
 
 // Signatur bestätigen
-await metamask.confirmSignature()
+await metamask.confirmSignature();
 
 // Netzwerk wechseln
-await metamask.switchNetwork('Citrea Testnet')
+await metamask.switchNetwork("Citrea Testnet");
 
 // Token hinzufügen
-await metamask.addToken('0x...')
+await metamask.addToken("0x...");
 ```
 
 ### Best Practices
@@ -357,6 +383,7 @@ await metamask.addToken('0x...')
 ### Problem: "Cache for playwright-metamask does not exist"
 
 **Lösung:**
+
 ```bash
 # Cache neu generieren
 npx synpress
@@ -369,11 +396,13 @@ ls .cache-synpress/
 ### Problem: Tests schlagen fehl wegen Timeout
 
 **Mögliche Ursachen:**
-- App läuft nicht (`yarn dev`)
-- Netzwerk-Verbindung langsam
-- Selektoren stimmen nicht
+
+-   App läuft nicht (`yarn dev`)
+-   Netzwerk-Verbindung langsam
+-   Selektoren stimmen nicht
 
 **Lösung:**
+
 ```bash
 # Debug-Modus verwenden
 yarn test:e2e:debug
@@ -382,19 +411,22 @@ yarn test:e2e:debug
 ### Problem: MetaMask öffnet sich nicht
 
 **Lösung:**
+
 1. Stelle sicher, dass `headless: false` in `playwright.config.ts` gesetzt ist
 2. Prüfe, ob Chromium korrekt installiert ist:
-   ```bash
-   npx playwright install chromium --force
-   ```
+    ```bash
+    npx playwright install chromium --force
+    ```
 
 ### Problem: Wallet-Verbindung schlägt fehl
 
 **Mögliche Ursachen:**
-- Falsche Seed-Phrase in `.env`
-- Passwort zu kurz (min. 8 Zeichen)
+
+-   Falsche Seed-Phrase in `.env`
+-   Passwort zu kurz (min. 8 Zeichen)
 
 **Lösung:**
+
 1. Prüfe `.env` Datei
 2. Teste Seed-Phrase manuell in MetaMask
 
@@ -402,30 +434,34 @@ yarn test:e2e:debug
 
 **Lösung:**
 Stelle sicher, dass das Citrea Testnet korrekt konfiguriert ist in `wallet-setup/basic.setup.ts`:
+
 ```typescript
 await metamask.addNetwork({
-  name: 'Citrea Testnet',
-  rpcUrl: 'https://rpc.testnet.citrea.xyz',
-  chainId: 5115,
-  symbol: 'cBTC',
-})
+	name: "Citrea Testnet",
+	rpcUrl: "https://rpc.testnet.citrea.xyz",
+	chainId: 5115,
+	symbol: "cBTC",
+});
 ```
 
 ### Problem: Tests laufen zu langsam
 
 **Tipps:**
-- Verwende `test.describe.serial()` für abhängige Tests
-- Reduziere `timeout` in `playwright.config.ts` für schnelleres Feedback
-- Nutze `test.skip()` für bekannte Probleme
+
+-   Verwende `test.describe.serial()` für abhängige Tests
+-   Reduziere `timeout` in `playwright.config.ts` für schnelleres Feedback
+-   Nutze `test.skip()` für bekannte Probleme
 
 ### Logs und Reports
 
 Nach jedem Test-Lauf findest du:
-- **HTML Report**: `playwright-report/index.html`
-- **Screenshots bei Fehlern**: `test-results/`
-- **Videos bei Fehlern**: `test-results/`
+
+-   **HTML Report**: `playwright-report/index.html`
+-   **Screenshots bei Fehlern**: `test-results/`
+-   **Videos bei Fehlern**: `test-results/`
 
 Report öffnen:
+
 ```bash
 yarn test:e2e:report
 ```
@@ -434,20 +470,21 @@ yarn test:e2e:report
 
 ## Weiterführende Ressourcen
 
-- [Playwright Dokumentation](https://playwright.dev/docs/intro)
-- [Synpress Dokumentation](https://docs.synpress.io/)
-- [Synpress GitHub](https://github.com/synpress-io/synpress)
-- [MetaMask Test Best Practices](https://docs.synpress.io/docs/guides/playwright)
+-   [Playwright Dokumentation](https://playwright.dev/docs/intro)
+-   [Synpress Dokumentation](https://docs.synpress.io/)
+-   [Synpress GitHub](https://github.com/synpress-io/synpress)
+-   [MetaMask Test Best Practices](https://docs.synpress.io/docs/guides/playwright)
 
 ---
 
 ## Support
 
 Bei Fragen oder Problemen:
+
 1. Prüfe zuerst dieses README und das Troubleshooting
 2. Schaue in die Playwright- und Synpress-Dokumentation
 3. Erstelle ein Issue im Repository mit:
-   - Fehlermeldung
-   - Schritte zur Reproduktion
-   - Node/Yarn Version
-   - Betriebssystem
+    - Fehlermeldung
+    - Schritte zur Reproduktion
+    - Node/Yarn Version
+    - Betriebssystem
