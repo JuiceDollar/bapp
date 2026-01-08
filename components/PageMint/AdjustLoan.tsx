@@ -207,7 +207,7 @@ export const AdjustLoan = ({
 				? onFullRepaySuccess
 				: () => {
 						setDeltaAmount("");
-						setStrategies({ [StrategyKey.ADD_COLLATERAL]: false, [StrategyKey.HIGHER_PRICE]: false });
+						setStrategies({ [StrategyKey.ADD_COLLATERAL]: false });
 						router.push(`/mint/${position.position}/manage`);
 				  },
 			setIsTxOnGoing,
