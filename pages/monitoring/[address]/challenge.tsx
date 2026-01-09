@@ -7,7 +7,6 @@ import TokenInput from "@components/Input/TokenInput";
 import { erc20Abi, zeroAddress } from "viem";
 import { useEffect, useState } from "react";
 import {
-	ContractUrl,
 	formatBigInt,
 	formatDuration,
 	shortenAddress,
@@ -20,7 +19,7 @@ import { useAccount, useBlockNumber, useChainId } from "wagmi";
 import { Address } from "viem";
 import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
 import { toast } from "react-toastify";
-import { TxToast, renderErrorToast, renderErrorTxStackToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import DisplayLabel from "@components/DisplayLabel";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CHAIN, WAGMI_CONFIG } from "../../../app.config";
@@ -52,7 +51,6 @@ export default function PositionChallenge() {
 
 	const positions = useSelector((state: RootState) => state.positions.list?.list || []);
 	const position = positions.find((p) => p.position == addressQuery);
-	const prices = useSelector((state: RootState) => state.prices.coingecko);
 
 	const { t } = useTranslation();
 
@@ -219,10 +217,6 @@ export default function PositionChallenge() {
 					{TOKEN_SYMBOL} - {t("monitoring.challenge_title")}
 				</title>
 			</Head>
-
-			{/* <div>
-				<AppPageHeader title="Lunch A Challenge" />
-			</div> */}
 
 			<div className="md:mt-8">
 				<section className="grid grid-cols-1 md:grid-cols-2 gap-4">
