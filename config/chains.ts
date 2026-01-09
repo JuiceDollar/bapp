@@ -23,4 +23,3 @@ export const mainnet = defineChain({
 		default: { name: "Citrea Scanner", url: "https://testnet.citreascan.com" },
 	},
 });
-

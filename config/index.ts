@@ -27,4 +27,3 @@ export const CONFIG: ConfigEnv = {
 		testnet: process.env.NEXT_PUBLIC_RPC_URL_TESTNET!,
 	},
 };
-
