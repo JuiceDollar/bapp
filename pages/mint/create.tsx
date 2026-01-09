@@ -391,8 +391,7 @@ export default function PositionCreate({}) {
 							/>
 						</div>
 						<div>
-							<Trans i18nKey="mint.discuss_recommendation">
-							</Trans>
+							<Trans i18nKey="mint.discuss_recommendation"></Trans>
 						</div>
 					</div>
 

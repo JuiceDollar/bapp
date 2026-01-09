@@ -120,8 +120,7 @@ export default function Dashboard() {
 							<div>
 								<SectionTitle className="!mb-1">{t("governance.new_positions")}</SectionTitle>
 								<p className="text-base leading-tight font-medium text-text-muted2">
-									<Trans i18nKey="dashboard.governance_description_2">
-									</Trans>
+									<Trans i18nKey="dashboard.governance_description_2"></Trans>
 								</p>
 							</div>
 							<GovernancePositionsTable />
