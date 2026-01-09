@@ -94,7 +94,7 @@ export default function MonitoringForceSell() {
 	const declineOnePriceTimestamp = start + duration;
 	const zeroPriceTimestamp = start + 2 * duration;
 
-	const expectedEURO = (bidAmount?: bigint) => {
+	const expectedJUSD = (bidAmount?: bigint) => {
 		if (!bidAmount) bidAmount = amount;
 		return (bidAmount * auctionPrice) / BigInt(1e18);
 	};
@@ -103,7 +103,7 @@ export default function MonitoringForceSell() {
 		const valueBigInt = BigInt(value);
 		setAmount(valueBigInt);
 
-		if (expectedEURO() > userBalance) {
+		if (expectedJUSD() > userBalance) {
 			setError(t("monitoring.error.not_enough_collateral", { symbol: TOKEN_SYMBOL }));
 		} else if (valueBigInt > BigInt(position.collateralBalance)) {
 			setError(t("monitoring.error.expected_buying_collateral"));
@@ -130,7 +130,7 @@ export default function MonitoringForceSell() {
 				},
 				{
 					title: t("monitoring.txs.expected_euro", { symbol: TOKEN_SYMBOL }),
-					value: formatCurrency(formatUnits(expectedEURO(), 18)) + " " + TOKEN_SYMBOL,
+					value: formatCurrency(formatUnits(expectedJUSD(), 18)) + " " + TOKEN_SYMBOL,
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -193,7 +193,7 @@ export default function MonitoringForceSell() {
 							</div>
 							<div className="flex flex-col">
 								<span>
-									{t("common.estimated_cost")} {formatCurrency(formatUnits(expectedEURO(), 18), 2, 2)} {TOKEN_SYMBOL}
+									{t("common.estimated_cost")} {formatCurrency(formatUnits(expectedJUSD(), 18), 2, 2)} {TOKEN_SYMBOL}
 								</span>
 							</div>
 						</div>
@@ -252,7 +252,7 @@ export default function MonitoringForceSell() {
 							{/* Override lable here */}
 							<GuardToAllowedChainBtn label={t("monitoring.force_sell_title")}>
 								<Button
-									disabled={amount == 0n || expectedEURO() > userBalance || error != ""}
+									disabled={amount == 0n || expectedJUSD() > userBalance || error != ""}
 									isLoading={isBidding}
 									onClick={() => handleBid()}
 								>

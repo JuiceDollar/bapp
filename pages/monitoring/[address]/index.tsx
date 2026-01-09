@@ -189,8 +189,7 @@ export default function PositionDetail() {
 							<div className="text-lg font-bold text-center">
 								{t("monitoring.active_challenges")} ({challengesActive.length})
 							</div>
-
-							{challengesActive.map((c) => ActiveAuctionsRow({ position, challenge: c }))}
+							{challengesActive.map((c) => <ActiveAuctionsRow key={c.id} position={position} challenge={c} />)}
 							{challengesActive.length === 0 ? <ActiveAuctionsRowEmpty /> : null}
 						</div>
 					</div>
