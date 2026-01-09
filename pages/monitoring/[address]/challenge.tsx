@@ -6,14 +6,7 @@ import DisplayAmount from "@components/DisplayAmount";
 import TokenInput from "@components/Input/TokenInput";
 import { erc20Abi, zeroAddress } from "viem";
 import { useEffect, useState } from "react";
-import {
-	formatBigInt,
-	formatDuration,
-	shortenAddress,
-	TOKEN_SYMBOL,
-	normalizeTokenSymbol,
-	NATIVE_WRAPPED_SYMBOLS,
-} from "@utils";
+import { formatBigInt, formatDuration, shortenAddress, TOKEN_SYMBOL, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { useNativeBalance } from "../../../hooks/useNativeBalance";
 import { useAccount, useBlockNumber, useChainId } from "wagmi";
 import { Address } from "viem";
