@@ -392,9 +392,6 @@ export default function PositionCreate({}) {
 						</div>
 						<div>
 							<Trans i18nKey="mint.discuss_recommendation">
-								<Link href={SOCIAL.Forum} target="_blank">
-									discuss
-								</Link>
 							</Trans>
 						</div>
 					</div>

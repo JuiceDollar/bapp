@@ -121,7 +121,6 @@ export default function Dashboard() {
 								<SectionTitle className="!mb-1">{t("governance.new_positions")}</SectionTitle>
 								<p className="text-base leading-tight font-medium text-text-muted2">
 									<Trans i18nKey="dashboard.governance_description_2">
-										<StyledLink href={SOCIAL.Github_contract_discussion}>{""}</StyledLink>
 									</Trans>
 								</p>
 							</div>

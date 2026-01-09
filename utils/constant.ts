@@ -3,11 +3,9 @@ export const SOCIAL = {
 	Github_contract: "https://github.com/JuiceDollar/smartContracts",
 	Github_dapp: "https://github.com/JuiceDollar/bapp",
 	Github_dapp_new_issue: "https://github.com/JuiceDollar/bapp/issues",
-	Github_contract_discussion: "https://github.com/orgs/JuiceDollar/discussions",
 	Telegram: "https://t.me/JuiceSwap",
 	TelegramApiBot: "https://t.me/JuiceSwap",
 	Twitter: "https://x.com/JuiceSwap_com",
-	Forum: "https://github.com/JuiceDollar/bapp/discussions",
 	Docs: "https://docs.juicedollar.com",
 	Partner_DfxSwiss: "https://exchange.dfx.swiss/",
 };
