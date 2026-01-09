@@ -1,22 +1,34 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 
 /**
  * Visual regression tests - capture and compare page screenshots
- * Run `yarn test:e2e:update-snapshots` to update baseline images
+ * Run `yarn test:e2e:visual:update` to update baseline images
  */
 
-test.describe("Visual Regression", () => {
-	test.beforeEach(async ({ page }) => {
-		// Wait for fonts and assets to load
-		await page.waitForLoadState("networkidle");
+/**
+ * Normalize scrollbars for consistent screenshot dimensions across platforms
+ */
+async function normalizeScrollbars(page: Page): Promise<void> {
+	await page.addStyleTag({
+		content: `
+			*, *::before, *::after {
+				scrollbar-width: none !important;
+				-ms-overflow-style: none !important;
+			}
+			*::-webkit-scrollbar {
+				display: none !important;
+				width: 0 !important;
+				height: 0 !important;
+			}
+		`,
 	});
+}
 
+test.describe("Visual Regression", () => {
 	test("dashboard page", async ({ page }) => {
 		await page.goto("/dashboard");
 		await page.waitForLoadState("networkidle");
-
-		// Hide dynamic elements that change between runs
-		await hideDynamicElements(page);
+		await normalizeScrollbars(page);
 
 		await expect(page).toHaveScreenshot("dashboard.png", {
 			fullPage: true,
@@ -27,8 +39,7 @@ test.describe("Visual Regression", () => {
 	test("mint page", async ({ page }) => {
 		await page.goto("/mint");
 		await page.waitForLoadState("networkidle");
-
-		await hideDynamicElements(page);
+		await normalizeScrollbars(page);
 
 		await expect(page).toHaveScreenshot("mint.png", {
 			fullPage: true,
@@ -39,8 +50,7 @@ test.describe("Visual Regression", () => {
 	test("savings page", async ({ page }) => {
 		await page.goto("/savings");
 		await page.waitForLoadState("networkidle");
-
-		await hideDynamicElements(page);
+		await normalizeScrollbars(page);
 
 		await expect(page).toHaveScreenshot("savings.png", {
 			fullPage: true,
@@ -51,8 +61,7 @@ test.describe("Visual Regression", () => {
 	test("equity page", async ({ page }) => {
 		await page.goto("/equity");
 		await page.waitForLoadState("networkidle");
-
-		await hideDynamicElements(page);
+		await normalizeScrollbars(page);
 
 		await expect(page).toHaveScreenshot("equity.png", {
 			fullPage: true,
@@ -63,8 +72,7 @@ test.describe("Visual Regression", () => {
 	test("governance page", async ({ page }) => {
 		await page.goto("/governance");
 		await page.waitForLoadState("networkidle");
-
-		await hideDynamicElements(page);
+		await normalizeScrollbars(page);
 
 		await expect(page).toHaveScreenshot("governance.png", {
 			fullPage: true,
@@ -75,8 +83,7 @@ test.describe("Visual Regression", () => {
 	test("challenges page", async ({ page }) => {
 		await page.goto("/challenges");
 		await page.waitForLoadState("networkidle");
-
-		await hideDynamicElements(page);
+		await normalizeScrollbars(page);
 
 		await expect(page).toHaveScreenshot("challenges.png", {
 			fullPage: true,
@@ -87,8 +94,7 @@ test.describe("Visual Regression", () => {
 	test("swap page", async ({ page }) => {
 		await page.goto("/swap");
 		await page.waitForLoadState("networkidle");
-
-		await hideDynamicElements(page);
+		await normalizeScrollbars(page);
 
 		await expect(page).toHaveScreenshot("swap.png", {
 			fullPage: true,
@@ -99,8 +105,7 @@ test.describe("Visual Regression", () => {
 	test("referrals page", async ({ page }) => {
 		await page.goto("/referrals");
 		await page.waitForLoadState("networkidle");
-
-		await hideDynamicElements(page);
+		await normalizeScrollbars(page);
 
 		await expect(page).toHaveScreenshot("referrals.png", {
 			fullPage: true,
@@ -112,8 +117,7 @@ test.describe("Visual Regression", () => {
 		await page.setViewportSize({ width: 375, height: 667 });
 		await page.goto("/dashboard");
 		await page.waitForLoadState("networkidle");
-
-		await hideDynamicElements(page);
+		await normalizeScrollbars(page);
 
 		await expect(page).toHaveScreenshot("dashboard-mobile.png", {
 			fullPage: true,
@@ -125,8 +129,7 @@ test.describe("Visual Regression", () => {
 		await page.setViewportSize({ width: 768, height: 1024 });
 		await page.goto("/dashboard");
 		await page.waitForLoadState("networkidle");
-
-		await hideDynamicElements(page);
+		await normalizeScrollbars(page);
 
 		await expect(page).toHaveScreenshot("dashboard-tablet.png", {
 			fullPage: true,
@@ -134,30 +137,3 @@ test.describe("Visual Regression", () => {
 		});
 	});
 });
-
-/**
- * Hide elements that change dynamically between test runs
- * (timestamps, prices, block numbers, etc.)
- */
-async function hideDynamicElements(page: import("@playwright/test").Page) {
-	await page.evaluate(() => {
-		// Hide elements with dynamic content
-		const selectors = [
-			'[data-testid="block-number"]',
-			'[data-testid="timestamp"]',
-			'[data-testid="price"]',
-			'[class*="loading"]',
-			'[class*="spinner"]',
-			// Add more selectors as needed for dynamic content
-		];
-
-		selectors.forEach((selector) => {
-			document.querySelectorAll(selector).forEach((el) => {
-				(el as HTMLElement).style.visibility = "hidden";
-			});
-		});
-	});
-
-	// Wait a bit for any animations to settle
-	await page.waitForTimeout(500);
-}
