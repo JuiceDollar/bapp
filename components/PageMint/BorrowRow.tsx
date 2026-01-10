@@ -61,11 +61,11 @@ export default function BorrowRow({ headers, position, tab }: Props) {
 			</div>
 
 			<div className="flex flex-col gap-2 text-base sm:font-medium leading-tight">
-				<div className="col-span-2 text-md">{formatCurrency(effectiveLTV, 2, 2)}%</div>
+				<div className="col-span-2 text-md">{formatCurrency(effectiveLTV, 0, 2)}%</div>
 			</div>
 
 			<div className="flex flex-col gap-2 text-base sm:font-medium leading-tight">
-				<div className="col-span-2 text-md">{formatCurrency(effectiveInterest, 2, 2)}%</div>
+				<div className="col-span-2 text-md">{formatCurrency(effectiveInterest, 0, 2)}%</div>
 			</div>
 
 			<div className="flex flex-col gap-2 text-base sm:font-medium leading-tight">

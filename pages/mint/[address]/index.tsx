@@ -345,7 +345,7 @@ export default function PositionBorrow({}) {
 										<span>{t("mint.retained_reserve")}</span>
 									</div>
 									<div className="text-right">
-										<span className="text-xs mr-3">{formatCurrency(position.reserveContribution / 10000, 2, 2)}%</span>
+										<span className="text-xs mr-3">{formatCurrency(position.reserveContribution / 10000, 0, 2)}%</span>
 										<span>
 											{formatCurrency(formatUnits(borrowersReserveContribution, 18), 2, 2)} {TOKEN_SYMBOL}
 										</span>
