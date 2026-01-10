@@ -4,9 +4,93 @@ import { prepareExtension } from "@synthetixio/synpress-cache";
 
 const SEED_PHRASE = process.env.WALLET_SEED_PHRASE || "";
 const WALLET_PASSWORD = process.env.WALLET_PASSWORD || "";
+const WALLET_ADDRESS = process.env.WALLET_ADDRESS || "";
+
+// Citreascan API configuration
+const CITREASCAN_API = "https://testnet.citreascan.com/api/v2";
+const CONFIRMATION_TIMEOUT_MS = 10000;
+const POLL_INTERVAL_MS = 1000;
+
+interface CitreascanTransaction {
+	hash: string;
+	status: string;
+	result: string;
+	timestamp: string;
+	from: { hash: string };
+	to: { hash: string };
+	value: string;
+}
+
+interface CitreascanResponse {
+	items: CitreascanTransaction[];
+}
+
+/**
+ * Verify transaction is confirmed on Citreascan within timeout
+ * @param walletAddress - The wallet address to check transactions for
+ * @param beforeTimestamp - Only consider transactions after this timestamp
+ * @param timeoutMs - Maximum time to wait for confirmation (default: 10s)
+ * @returns The confirmed transaction or throws error
+ */
+async function verifyTransactionOnCitreascan(
+	walletAddress: string,
+	beforeTimestamp: Date,
+	timeoutMs: number = CONFIRMATION_TIMEOUT_MS
+): Promise<CitreascanTransaction> {
+	const startTime = Date.now();
+	let lastError: Error | null = null;
+
+	console.log(`   Checking Citreascan for wallet: ${walletAddress}`);
+	console.log(`   Looking for transactions after: ${beforeTimestamp.toISOString()}`);
+
+	while (Date.now() - startTime < timeoutMs) {
+		try {
+			const response = await fetch(`${CITREASCAN_API}/addresses/${walletAddress}/transactions`);
+
+			if (!response.ok) {
+				throw new Error(`Citreascan API error: ${response.status}`);
+			}
+
+			const data: CitreascanResponse = await response.json();
+
+			if (data.items && data.items.length > 0) {
+				// Find the most recent transaction that occurred after our beforeTimestamp
+				const recentTx = data.items.find((tx) => {
+					const txTime = new Date(tx.timestamp);
+					return txTime > beforeTimestamp;
+				});
+
+				if (recentTx) {
+					if (recentTx.status === "ok" && recentTx.result === "success") {
+						const elapsed = Date.now() - startTime;
+						console.log(`   ✅ Transaction confirmed on blockchain in ${elapsed}ms`);
+						console.log(`   TX Hash: ${recentTx.hash}`);
+						console.log(`   Status: ${recentTx.status}, Result: ${recentTx.result}`);
+						return recentTx;
+					} else if (recentTx.status === "error" || recentTx.result === "error") {
+						throw new Error(`Transaction failed on blockchain: ${recentTx.hash}`);
+					}
+				}
+			}
+		} catch (error) {
+			lastError = error as Error;
+		}
+
+		// Wait before next poll
+		await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+	}
+
+	throw new Error(
+		`Transaction not confirmed on Citreascan within ${timeoutMs}ms. ` + `Last error: ${lastError?.message || "No transaction found"}`
+	);
+}
 
 if (!SEED_PHRASE || !WALLET_PASSWORD) {
 	throw new Error("WALLET_SEED_PHRASE and WALLET_PASSWORD must be set in environment variables");
+}
+
+if (!WALLET_ADDRESS) {
+	throw new Error("WALLET_ADDRESS must be set in environment variables for blockchain verification");
 }
 
 // Citrea Testnet configuration
@@ -156,6 +240,9 @@ test.describe("Loan Creation", () => {
 			return;
 		}
 
+		// Record timestamp before transaction for blockchain verification
+		const txStartTime = new Date();
+
 		await borrowButton.click();
 		console.log("   Clicked borrow button");
 
@@ -172,28 +259,25 @@ test.describe("Loan Creation", () => {
 			throw error;
 		}
 
-		// Step 13: Wait for transaction success
-		console.log("📍 Step 13: Wait for transaction confirmation");
+		// Step 13: Verify transaction on blockchain (MANDATORY - must confirm within 10s)
+		console.log("📍 Step 13: Verify transaction on Citreascan (10s timeout)");
+		const confirmedTx = await verifyTransactionOnCitreascan(WALLET_ADDRESS, txStartTime, CONFIRMATION_TIMEOUT_MS);
+		expect(confirmedTx.status).toBe("ok");
+		expect(confirmedTx.result).toBe("success");
 
-		// Look for success indicators
+		// Step 14: Wait for UI success indicator
+		console.log("📍 Step 14: Wait for UI confirmation");
 		try {
-			// Option 1: Success modal with checkmark or success message
 			const successIndicator = page.locator('text=/success|confirmed|minted/i').first();
-			await expect(successIndicator).toBeVisible({ timeout: 60000 });
-			console.log("✅ Transaction successful!");
+			await expect(successIndicator).toBeVisible({ timeout: 10000 });
+			console.log("✅ UI shows transaction successful!");
 		} catch {
-			// Option 2: Toast notification
-			try {
-				const toastSuccess = page.locator('[class*="toast"], [class*="Toast"]').filter({ hasText: /success/i });
-				await expect(toastSuccess).toBeVisible({ timeout: 30000 });
-				console.log("✅ Transaction successful (toast notification)!");
-			} catch {
-				console.log("⚠️  Could not detect success indicator, but transaction may have succeeded");
-			}
+			// UI indicator is optional since we already verified on blockchain
+			console.log("   UI indicator not found, but blockchain confirmed");
 		}
 
-		// Step 14: Take screenshot of final state
-		console.log("📍 Step 14: Capture final state");
+		// Step 15: Take screenshot of final state
+		console.log("📍 Step 15: Capture final state");
 		await page.waitForTimeout(2000);
 		await expect(page).toHaveScreenshot("loan-created-success.png", {
 			maxDiffPixelRatio: 0.1,
@@ -332,6 +416,9 @@ test.describe("Loan Creation", () => {
 			return;
 		}
 
+		// Record timestamp before transaction for blockchain verification
+		const txStartTime = new Date();
+
 		await borrowButton.click();
 		console.log("   Clicked borrow button");
 
@@ -348,25 +435,25 @@ test.describe("Loan Creation", () => {
 			throw error;
 		}
 
-		// Step 15: Wait for transaction success
-		console.log("📍 Step 15: Wait for transaction confirmation");
+		// Step 15: Verify transaction on blockchain (MANDATORY - must confirm within 10s)
+		console.log("📍 Step 15: Verify transaction on Citreascan (10s timeout)");
+		const confirmedTx = await verifyTransactionOnCitreascan(WALLET_ADDRESS, txStartTime, CONFIRMATION_TIMEOUT_MS);
+		expect(confirmedTx.status).toBe("ok");
+		expect(confirmedTx.result).toBe("success");
 
+		// Step 16: Wait for UI success indicator
+		console.log("📍 Step 16: Wait for UI confirmation");
 		try {
 			const successIndicator = page.locator('text=/success|confirmed|minted/i').first();
-			await expect(successIndicator).toBeVisible({ timeout: 60000 });
-			console.log("✅ Transaction successful!");
+			await expect(successIndicator).toBeVisible({ timeout: 10000 });
+			console.log("✅ UI shows transaction successful!");
 		} catch {
-			try {
-				const toastSuccess = page.locator('[class*="toast"], [class*="Toast"]').filter({ hasText: /success/i });
-				await expect(toastSuccess).toBeVisible({ timeout: 30000 });
-				console.log("✅ Transaction successful (toast notification)!");
-			} catch {
-				console.log("⚠️  Could not detect success indicator, but transaction may have succeeded");
-			}
+			// UI indicator is optional since we already verified on blockchain
+			console.log("   UI indicator not found, but blockchain confirmed");
 		}
 
-		// Step 16: Capture final state
-		console.log("📍 Step 16: Capture final state");
+		// Step 17: Capture final state
+		console.log("📍 Step 17: Capture final state");
 		await page.waitForTimeout(2000);
 		await expect(page).toHaveScreenshot("loan-custom-params-success.png", {
 			maxDiffPixelRatio: 0.1,
