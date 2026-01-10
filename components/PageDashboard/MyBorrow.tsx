@@ -175,7 +175,7 @@ export const MyBorrow = () => {
 				return {
 					position: position.position as `0x${string}`,
 					symbol: normalizeTokenSymbol(collateralSymbol),
-					collateralAmount: formatCurrency(formatUnits(BigInt(collateralBalance), collateralDecimals) as string, 0, 5),
+					collateralAmount: formatCurrency(formatUnits(BigInt(collateralBalance), collateralDecimals) as string, 3, 3),
 					collateralization: collateralizationPercentage.toString(),
 					loanDueIn: formatCurrency(Math.round((position.expiration * 1000 - Date.now()) / 1000 / 60 / 60 / 24)) as string,
 					amountBorrowed,

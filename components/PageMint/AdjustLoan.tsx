@@ -291,7 +291,7 @@ export const AdjustLoan = ({
 								</Tooltip>
 							</div>
 							<span className="font-medium text-text-title">
-								{formatCurrency(formatUnits(outcome.deltaCollateral, collateralDecimals), 0, 6)} {collateralSymbol}
+								{formatCurrency(formatUnits(outcome.deltaCollateral, collateralDecimals), 3, 3)} {collateralSymbol}
 							</span>
 						</div>
 					)}
@@ -324,7 +324,7 @@ export const AdjustLoan = ({
 							<div className="flex justify-between text-sm">
 								<span className="text-text-muted2">{t("mint.collateral_returned")}</span>
 								<span className="font-medium text-green-600 dark:text-green-400">
-									+{formatCurrency(formatUnits(collateralBalance, collateralDecimals), 0, 6)} {collateralSymbol}
+									+{formatCurrency(formatUnits(collateralBalance, collateralDecimals), 3, 3)} {collateralSymbol}
 								</span>
 							</div>
 						)}

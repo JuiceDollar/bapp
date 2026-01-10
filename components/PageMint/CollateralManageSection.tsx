@@ -190,7 +190,7 @@ export const CollateralManageSection = () => {
 				{
 					title: t("common.txs.amount"),
 					value:
-						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) +
+						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals), 3, 3) +
 						" " +
 						normalizeTokenSymbol(position.collateralSymbol),
 				},
@@ -250,7 +250,7 @@ export const CollateralManageSection = () => {
 				{
 					title: t("common.txs.amount"),
 					value:
-						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) +
+						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals), 3, 3) +
 						` ${normalizeTokenSymbol(position.collateralSymbol)}`,
 				},
 				{
@@ -293,7 +293,7 @@ export const CollateralManageSection = () => {
 				{
 					title: t("common.txs.amount"),
 					value:
-						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals)) +
+						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals), 3, 3) +
 						` ${normalizeTokenSymbol(position.collateralSymbol)}`,
 				},
 				{
@@ -331,7 +331,7 @@ export const CollateralManageSection = () => {
 						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} />
 						<div className="flex flex-col">
 							<span className="text-base font-extrabold leading-tight">
-								<span className="">{formatCurrency(formatUnits(balanceOf, position.collateralDecimals), 0, 5)}</span>{" "}
+								<span className="">{formatCurrency(formatUnits(balanceOf, position.collateralDecimals), 3, 3)}</span>{" "}
 								{normalizeTokenSymbol(position.collateralSymbol)}
 							</span>
 							<span className="text-xs font-medium text-text-muted2 leading-[1rem]">

@@ -233,16 +233,16 @@ export default function YourReferralsTable() {
 							sortedData.slice(0, isShowMore ? sortedData.length : 3).map((row, i) => (
 								<TableRow key={i} headers={headers} tab={tab} colSpan={5}>
 									<div className="text-base sm:font-medium leading-tight text-left">
-										{formatCurrency(formatUnits(BigInt(row.volume), 18), 0, 5)}
+										{formatCurrency(formatUnits(BigInt(row.volume), 18), 2, 2)}
 									</div>
 									<div className="text-base sm:font-medium leading-tight">
-										{formatCurrency(formatUnits(BigInt(row.interest), 18), 0, 5)}
+										{formatCurrency(formatUnits(BigInt(row.interest), 18), 2, 2)}
 									</div>
 									<div className="text-base sm:font-medium leading-tight">
-										{formatCurrency(formatUnits(BigInt(row.interestPaid), 18), 0, 5)}
+										{formatCurrency(formatUnits(BigInt(row.interestPaid), 18), 2, 2)}
 									</div>
 									<div className="text-base sm:font-medium leading-tight">
-										{formatCurrency(formatUnits(BigInt(row.bonus), 18), 0, 5)}
+										{formatCurrency(formatUnits(BigInt(row.bonus), 18), 2, 2)}
 									</div>
 									<div>
 										<Link

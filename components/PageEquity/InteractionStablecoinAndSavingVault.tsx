@@ -163,7 +163,6 @@ export default function InteractionStablecoinAndSavingVault({
 	const result = (direction ? amountInShares : amountInAssets) || 0n;
 	const fromSymbol = direction ? TOKEN_SYMBOL : SAVINGS_VAULT_SYMBOL;
 
-
 	const onChangeAmount = (value: string) => {
 		const valueBigInt = BigInt(value);
 		setAmount(valueBigInt);

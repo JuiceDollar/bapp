@@ -161,9 +161,7 @@ export default function MypositionsRow({ headers, subHeaders, position, tab }: P
 				<span className={liquidationPct < 110 ? `text-md font-bold text-text-warning` : "text-md "}>
 					{formatCurrency(liquidationDEURO, 2, 2)} {TOKEN_SYMBOL}
 				</span>
-				<span className="text-sm text-text-subheader">
-					{formatCurrency(collTokenPrice, 2, 2)} USD
-				</span>
+				<span className="text-sm text-text-subheader">{formatCurrency(collTokenPrice, 2, 2)} USD</span>
 			</div>
 
 			{/* Loan Value */}

@@ -377,8 +377,8 @@ export default function PositionCreate({}) {
 							adornamentRow={
 								<div className="self-stretch justify-start items-center inline-flex">
 									<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
-									<div className="text-input-label text-xs font-medium leading-none">${collateralUsdValue}</div>
-								</div>
+										<div className="text-input-label text-xs font-medium leading-none">${collateralUsdValue}</div>
+									</div>
 									<div className="h-7 justify-end items-center gap-2.5 flex">
 										{selectedBalance && selectedPosition && (
 											<>
