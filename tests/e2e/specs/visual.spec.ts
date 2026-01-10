@@ -353,6 +353,21 @@ test.describe("Visual Regression", () => {
 		});
 	});
 
+	test("mint position manage collateral - click remove tab", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage/collateral`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		// Click "Remove" tab
+		await page.getByText("Remove").click();
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage-collateral-remove-tab.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
 	test("mint position manage expiration page", async ({ page }) => {
 		await page.goto(`/mint/${testData.position}/manage/expiration`);
 		await normalizeScrollbars(page);
