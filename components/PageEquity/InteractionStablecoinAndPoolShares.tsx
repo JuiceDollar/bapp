@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { usePoolStats } from "@hooks";
-import { formatBigInt, formatCurrency, formatDuration, POOL_SHARE_TOKEN_SYMBOL, shortenAddress, TOKEN_SYMBOL } from "@utils";
+import { formatBigInt, formatCurrency, POOL_SHARE_TOKEN_SYMBOL, shortenAddress, TOKEN_SYMBOL } from "@utils";
 import { useAccount, useChainId, useReadContract } from "wagmi";
 import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
 import { erc20Abi, formatUnits, zeroAddress } from "viem";
@@ -172,9 +172,6 @@ export default function InteractionStablecoinAndPoolShares({
 	const fromBalance = direction ? poolStats.deuroBalance : poolStats.equityBalance;
 	const result = (direction ? nativePSResult : deuroResult) || 0n;
 	const fromSymbol = direction ? TOKEN_SYMBOL : POOL_SHARE_TOKEN_SYMBOL;
-	const unlocked =
-		poolStats.equityUserVotes > 86_400 * 90 && poolStats.equityUserVotes < 86_400 * 365 * 30 && poolStats.equityUserVotes > 0n;
-	const redeemLeft = 86400n * 90n - (poolStats.equityBalance ? poolStats.equityUserVotes / poolStats.equityBalance / 2n ** 20n : 0n);
 
 	const onChangeAmount = (value: string) => {
 		const valueBigInt = BigInt(value);
@@ -371,19 +368,6 @@ export default function InteractionStablecoinAndPoolShares({
 							</Button>
 						)}
 					</GuardToAllowedChainBtn>
-				</div>
-			</div>
-
-			<div className="border-t border-borders-dividerLight grid grid-cols-1 md:grid-cols-2 gap-2">
-				<div className="flex flex-col gap-2 p-4">
-					<div className="text-text-muted2 text-base font-medium leading-tight">{t("equity.holding_duration")}</div>
-					<div className="text-base font-medium leading-tight">
-						{poolStats.equityBalance > 0 ? formatDuration(poolStats.equityHoldingDuration) : "--"}
-					</div>
-				</div>
-				<div className="flex flex-col gap-2 p-4">
-					<div className="text-text-muted2 text-base font-medium leading-tight">{t("equity.can_redeem_after_symbol")}</div>
-					<div className="text-base font-medium leading-tight">--</div>
 				</div>
 			</div>
 		</div>
