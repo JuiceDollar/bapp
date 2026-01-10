@@ -140,9 +140,10 @@ WALLET_SEED_PHRASE="your twelve word seed phrase here" yarn test:e2e:wallet
 ```
 
 **Requirements:**
-- Node.js 18+
-- pnpm (will be installed automatically if missing)
-- Chrome browser
+
+-   Node.js 18+
+-   pnpm (will be installed automatically if missing)
+-   Chrome browser
 
 **Note:** The setup script clones a patched version of Synpress that supports MetaMask 13 (required for Chrome 127+). This takes a few minutes on first run.
 
