@@ -117,9 +117,9 @@ NEXT_PUBLIC_WAGMI_ID=<dein-walletconnect-project-id>
 NEXT_PUBLIC_CHAIN_NAME=testnet
 NEXT_PUBLIC_RPC_URL_TESTNET=https://rpc.testnet.juiceswap.com/
 
-# E2E Testing Variablen
-WALLET_SEED_PHRASE=deine zwölf wörter seed phrase hier eintragen
-WALLET_PASSWORD=DeinSicheresTestPasswort123!
+# E2E Testing Variablen (PFLICHT - kein Fallback!)
+WALLET_SEED_PHRASE=<deine-12-wort-seed-phrase>
+WALLET_PASSWORD=<dein-metamask-passwort>
 PLAYWRIGHT_BASE_URL=http://localhost:3000
 ```
 
@@ -210,8 +210,8 @@ npx playwright test navigation.spec.ts
 # Nur UI-Tests
 npx playwright test ui.spec.ts
 
-# Nur Wallet-Verbindungs-Tests (erfordert Cache)
-npx playwright test tests/e2e/specs/wallet/connect-wallet.spec.ts
+# Nur Wallet-Verbindungs-Tests
+npx playwright test tests/e2e/specs/wallet/connect.spec.ts
 ```
 
 ### Einzelne Tests ausführen
@@ -256,8 +256,7 @@ tests/
         ├── ui.spec.ts               # UI-Element-Tests (ohne MetaMask)
         ├── visual.spec.ts           # Visual Regression Tests
         └── wallet/                  # Wallet-Tests (mit MetaMask)
-            ├── connect-wallet.spec.ts
-            └── dashboard.spec.ts
+            └── connect.spec.ts       # Wallet-Verbindung mit Visual Baselines
 ```
 
 ### Vorhandene Tests
@@ -288,16 +287,12 @@ tests/
 
 #### Wallet-Tests (mit MetaMask)
 
-**wallet/connect-wallet.spec.ts**
+**wallet/connect.spec.ts**
 
 -   Testet MetaMask-Verbindung zur dApp
--   Verifiziert Netzwerk-Wechsel zu Citrea Testnet
-
-**wallet/dashboard.spec.ts**
-
--   Dashboard nach Wallet-Verbindung
--   Portfolio-Informationen laden
--   Navigation zu Mint/Savings-Seite
+-   Verifiziert effektive Wallet-Verbindung (Adresse sichtbar, Connect-Button verschwunden)
+-   Prüft dass nur eine Adress-Instanz im DOM existiert
+-   5 Visual Baseline Screenshots für Regression Testing
 
 ---
 
