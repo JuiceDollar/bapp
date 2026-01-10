@@ -380,11 +380,7 @@ export default function Swap() {
 								}
 								adornamentRow={
 									<div className="self-stretch justify-start items-center inline-flex">
-										<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
-											<div className="text-text-muted3 text-xs font-medium leading-none">
-												${formatCurrency(formatUnits(amount, Number(fromTokenMeta.decimals)), 2, 2)}
-											</div>
-										</div>
+										<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden" />
 										<div className="h-7 justify-end items-center gap-2.5 flex">
 											<div className="text-text-muted3 text-xs font-medium leading-none">
 												{t("common.balance_label")}{" "}
@@ -424,16 +420,7 @@ export default function Swap() {
 								onChange={() => {}}
 								adornamentRow={
 									<div className="self-stretch justify-start items-center inline-flex">
-										<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
-											<div className="text-text-muted3 text-xs font-medium leading-none">
-												$
-												{formatCurrency(
-													formatUnits(BigInt(rebasedOutputAmount), Number(toTokenMeta.decimals)),
-													2,
-													2
-												)}
-											</div>
-										</div>
+										<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden" />
 										<div className="h-7 justify-end items-center gap-2.5 flex">
 											<div className="text-text-muted3 text-xs font-medium leading-none">
 												{t("common.balance_label")}{" "}
