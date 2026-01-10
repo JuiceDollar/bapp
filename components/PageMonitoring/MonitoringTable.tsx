@@ -94,7 +94,7 @@ function sortPositions(
 		list.sort((a, b) => {
 			const calc = function (p: PositionQuery) {
 				const size: number = parseFloat(formatUnits(BigInt(p.collateralBalance), p.collateralDecimals));
-				const price: number = prices[p.collateral.toLowerCase() as Address]?.price?.eur || 1;
+				const price: number = prices[p.collateral.toLowerCase() as Address]?.price?.usd || 1;
 				return size * price;
 			};
 			return calc(b) - calc(a);
@@ -112,7 +112,7 @@ function sortPositions(
 		list.sort((a, b) => {
 			const calc = function (p: PositionQuery) {
 				const collBalancePosition: number = Math.round((parseInt(p.collateralBalance) / 10 ** p.collateralDecimals) * 100) / 100;
-				const collTokenPriceMarket = prices[p.collateral.toLowerCase() as Address]?.price?.eur || 0;
+				const collTokenPriceMarket = prices[p.collateral.toLowerCase() as Address]?.price?.usd || 0;
 				const collTokenPricePosition: number =
 					Math.round((parseInt(p.virtualPrice || p.price) / 10 ** (36 - p.collateralDecimals)) * 100) / 100;
 				const marketValueCollateral: number = collBalancePosition * collTokenPriceMarket;

@@ -96,7 +96,7 @@ export default function BonusHistoryTable() {
 							visibleData.map((row, i) => (
 								<TableRow key={i} headers={headers} tab={tab}>
 									<div className="text-base sm:font-medium leading-tight text-left">
-										{formatCurrency(formatUnits(BigInt(row.payout), 18))}
+										{formatCurrency(formatUnits(BigInt(row.payout), 18), 2, 2)}
 									</div>
 									<div className="text-base sm:font-medium leading-tight">{row.source}</div>
 									<div className="text-base sm:font-medium leading-tight">{row.date}</div>

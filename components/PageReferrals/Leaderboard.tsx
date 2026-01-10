@@ -102,10 +102,10 @@ export default function Leaderboard() {
 								<TableRow key={i} headers={headers} tab={tab}>
 									<div className="text-base sm:font-medium leading-tight text-left">{row.refCode}</div>
 									<div className="text-base sm:font-medium leading-tight">{row.referrals}</div>
-									<div className="text-base sm:font-medium leading-tight">{formatCurrency(row.loansVolume)}</div>
-									<div className="text-base sm:font-medium leading-tight">{formatCurrency(row.investVolume)}</div>
-									<div className="text-base sm:font-medium leading-tight">{formatCurrency(row.savingsVolume)}</div>
-									<div className="text-base sm:font-medium leading-tight">{formatCurrency(row.totalVolume)}</div>
+									<div className="text-base sm:font-medium leading-tight">{formatCurrency(row.loansVolume, 2, 2)}</div>
+									<div className="text-base sm:font-medium leading-tight">{formatCurrency(row.investVolume, 2, 2)}</div>
+									<div className="text-base sm:font-medium leading-tight">{formatCurrency(row.savingsVolume, 2, 2)}</div>
+									<div className="text-base sm:font-medium leading-tight">{formatCurrency(row.totalVolume, 2, 2)}</div>
 								</TableRow>
 							))
 						)}
