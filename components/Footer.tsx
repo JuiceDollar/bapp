@@ -1,12 +1,8 @@
-import Link from "next/link";
 import { DEFAULT_FRONTEND_CODE, shortenHash, SOCIAL, ZERO_FRONTEND_CODE } from "@utils";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { IconProp } from "@fortawesome/fontawesome-svg-core";
-import { faBook, faBookmark, faComments, faCodeCommit } from "@fortawesome/free-solid-svg-icons";
-import { faGithub, faTelegram, faXTwitter, faTwitter } from "@fortawesome/free-brands-svg-icons";
-import { SubmitIssue } from "./LoadingScreen";
+import { faBook } from "@fortawesome/free-solid-svg-icons";
+import { faGithub, faTelegram, faXTwitter } from "@fortawesome/free-brands-svg-icons";
+import { SubmitIssue, FooterButton } from "./LoadingScreen";
 import { usePathname } from "next/navigation";
-import { useIsMainnet } from "@hooks";
 import { useFrontendCode } from "../hooks/useFrontendCode";
 import { useTranslation } from "next-i18next";
 
@@ -30,7 +26,6 @@ const DynamicDocs = (): string => {
 };
 
 export default function Footer() {
-	const isMainnet = useIsMainnet();
 	const { t } = useTranslation();
 	const { marketingCode, frontendCode } = useFrontendCode();
 	const parsedFrontendCode =
@@ -65,17 +60,3 @@ export default function Footer() {
 		</footer>
 	);
 }
-
-interface ButtonProps {
-	link: string;
-	text: string;
-	icon: IconProp;
-}
-
-const FooterButton = ({ link, text, icon }: ButtonProps) => {
-	return (
-		<Link href={link} target="_blank" rel="noreferrer" className="flex gap-1 hover:text-layout-secondary transition-colors">
-			<FontAwesomeIcon icon={icon} className="w-6 h-6" />
-		</Link>
-	);
-};

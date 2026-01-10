@@ -43,17 +43,17 @@ export function SubmitIssue() {
 	);
 }
 
-interface ButtonProps {
+interface FooterButtonProps {
 	link: string;
-	text: string;
+	text?: string;
 	icon: IconProp;
 }
 
-const FooterButton = ({ link, text, icon }: ButtonProps) => {
+export const FooterButton = ({ link, text, icon }: FooterButtonProps) => {
 	return (
 		<Link href={link} target="_blank" rel="noreferrer" className="flex gap-2 hover:text-layout-secondary transition-colors">
 			<FontAwesomeIcon icon={icon} className="w-6 h-6" />
-			<div className="font-semibold">{text}</div>
+			{text && <div className="font-semibold">{text}</div>}
 		</Link>
 	);
 };
