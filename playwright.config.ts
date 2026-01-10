@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const isLocalhost = BASE_URL.includes("localhost") || BASE_URL.includes("127.0.0.1");
+
 /**
  * Playwright configuration for JuiceDollar bApp E2E tests
  * Uses Synpress for MetaMask integration
@@ -25,7 +28,7 @@ export default defineConfig({
 	/* Shared settings for all the projects below */
 	use: {
 		/* Base URL to use in actions like `await page.goto('/')` */
-		baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
+		baseURL: BASE_URL,
 
 		/* Collect trace when retrying the failed test */
 		trace: "on-first-retry",
@@ -49,13 +52,15 @@ export default defineConfig({
 		},
 	],
 
-	/* Run your local dev server before starting the tests */
-	webServer: {
-		command: "yarn dev",
-		url: "http://localhost:3000",
-		reuseExistingServer: !process.env.CI,
-		timeout: 120 * 1000, // 2 minutes to start
-	},
+	/* Run your local dev server before starting the tests (only for localhost) */
+	webServer: isLocalhost
+		? {
+				command: "yarn dev",
+				url: BASE_URL,
+				reuseExistingServer: !process.env.CI,
+				timeout: 120 * 1000, // 2 minutes to start
+		  }
+		: undefined,
 
 	/* Global timeout for each test */
 	timeout: 60 * 1000, // 60 seconds per test
