@@ -379,8 +379,7 @@ export default function Swap() {
 									fromTokenMeta.symbol
 								}
 								adornamentRow={
-									<div className="self-stretch justify-start items-center inline-flex">
-										<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden" />
+									<div className="self-stretch justify-end items-center inline-flex">
 										<div className="h-7 justify-end items-center gap-2.5 flex">
 											<div className="text-text-muted3 text-xs font-medium leading-none">
 												{t("common.balance_label")}{" "}
@@ -419,8 +418,7 @@ export default function Swap() {
 								value={rebasedOutputAmount.toString()}
 								onChange={() => {}}
 								adornamentRow={
-									<div className="self-stretch justify-start items-center inline-flex">
-										<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden" />
+									<div className="self-stretch justify-end items-center inline-flex">
 										<div className="h-7 justify-end items-center gap-2.5 flex">
 											<div className="text-text-muted3 text-xs font-medium leading-none">
 												{t("common.balance_label")}{" "}

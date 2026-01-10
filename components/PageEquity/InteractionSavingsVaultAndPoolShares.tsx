@@ -308,8 +308,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 					isError={Boolean(error)}
 					errorMessage={error}
 					adornamentRow={
-						<div className="self-stretch justify-start items-center inline-flex">
-							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden"></div>
+						<div className="self-stretch justify-end items-center inline-flex">
 							<div className="h-7 justify-end items-center gap-2.5 flex">
 								{selectedFromToken && (
 									<>
@@ -348,8 +347,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 					value={result.toString()}
 					onChange={() => {}}
 					adornamentRow={
-						<div className="self-stretch justify-start items-center inline-flex">
-							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden"></div>
+						<div className="self-stretch justify-end items-center inline-flex">
 							<div className="h-7 justify-end items-center gap-2.5 flex">
 								{selectedToToken && (
 									<>
