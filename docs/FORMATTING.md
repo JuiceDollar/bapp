@@ -1,8 +1,17 @@
 # Formatting Rules
 
-## Decimal Places
+## Important: Display vs Input
 
-Use `formatCurrency(value, minDecimals, maxDecimals)` with these rules:
+| Context | Rule |
+|---------|------|
+| **Display (read-only)** | Apply decimal formatting rules below |
+| **Input fields (editable)** | **NO restrictions** - users must be able to enter any number with full precision |
+
+**Critical**: Input fields must never restrict the number of decimal places a user can enter. The formatting rules only apply to displaying values, not to user input.
+
+## Display Decimal Places
+
+Use `formatCurrency(value, minDecimals, maxDecimals)` for **display only**:
 
 | Type | Decimals | Example |
 |------|----------|---------|
@@ -12,7 +21,7 @@ Use `formatCurrency(value, minDecimals, maxDecimals)` with these rules:
 
 ## Helper Functions
 
-For dynamic token handling, use the `getDisplayPrecision` helper:
+For dynamic token handling in **display contexts**, use the `getDisplayPrecision` helper:
 
 ```tsx
 const getDisplayPrecision = (symbol?: string): [number, number] => {
@@ -21,16 +30,19 @@ const getDisplayPrecision = (symbol?: string): [number, number] => {
   return [3, 3];
 };
 
-// Usage
+// Usage for DISPLAY only
 formatCurrency(value, ...getDisplayPrecision(symbol))
 ```
 
 ## Components
 
-### DisplayAmount
+### Display Components
 
-The `DisplayAmount` component automatically applies these rules based on the `currency` prop.
+- **DisplayAmount**: Automatically applies formatting rules based on the `currency` prop
+- **Balance displays**: Use `getDisplayPrecision` for showing wallet balances
 
-### TokenInput / TokenInputSelect
+### Input Components
 
-These components use `getDisplayPrecision` internally to format balance displays.
+- **TokenInput / TokenInputSelect / BigNumberInput**: Must accept any decimal precision
+- **Never restrict** decimal places in input fields
+- Formatting rules only apply to the balance display within these components, not to the input value itself
