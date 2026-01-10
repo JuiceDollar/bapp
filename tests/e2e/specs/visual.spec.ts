@@ -5,6 +5,41 @@ import { test, expect, Page } from "@playwright/test";
  * Run `yarn test:e2e:visual:update` to update baseline images
  */
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://dev.api.testnet.juicedollar.com";
+
+interface TestData {
+	position: string;
+	challengeIndex: string;
+}
+
+/**
+ * Fetch test data dynamically from the API
+ */
+async function fetchTestData(): Promise<TestData> {
+	// Get first open position
+	const positionsRes = await fetch(`${API_URL}/positions/list`);
+	const positionsData = await positionsRes.json();
+	const openPosition = positionsData.list.find((p: { closed: boolean }) => !p.closed);
+
+	if (!openPosition) {
+		throw new Error("No open position found for testing");
+	}
+
+	// Get first active challenge
+	const challengesRes = await fetch(`${API_URL}/challenges/list`);
+	const challengesData = await challengesRes.json();
+	const activeChallenge = challengesData.list.find((c: { status: string }) => c.status === "Active");
+
+	if (!activeChallenge) {
+		throw new Error("No active challenge found for testing");
+	}
+
+	return {
+		position: openPosition.position,
+		challengeIndex: activeChallenge.number,
+	};
+}
+
 /**
  * Normalize scrollbars for consistent screenshot dimensions across platforms.
  * Must be called early (before waiting for content) to ensure consistent rendering.
@@ -190,14 +225,15 @@ test.describe("Visual Regression", () => {
 		});
 	});
 
-	// Dynamic pages with real testnet data
-	// Position source: https://dev.api.testnet.juicedollar.com/positions/list
-	const TEST_POSITION = "0xDd37e2Bdbcf01000fa2C744f95dCc653f1660EAE";
-	// Challenge source: https://dev.api.testnet.juicedollar.com/challenges/list (position: 0x9A1FEAE477748c57bC5bf9d07f6b7427C3f26879)
-	const TEST_CHALLENGE_INDEX = "3";
+	// Dynamic pages with real testnet data fetched from API
+	let testData: TestData;
+
+	test.beforeAll(async () => {
+		testData = await fetchTestData();
+	});
 
 	test("mint position detail page", async ({ page }) => {
-		await page.goto(`/mint/${TEST_POSITION}`);
+		await page.goto(`/mint/${testData.position}`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
@@ -208,7 +244,7 @@ test.describe("Visual Regression", () => {
 	});
 
 	test("mint position manage page", async ({ page }) => {
-		await page.goto(`/mint/${TEST_POSITION}/manage`);
+		await page.goto(`/mint/${testData.position}/manage`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
@@ -219,7 +255,7 @@ test.describe("Visual Regression", () => {
 	});
 
 	test("mint position manage collateral page", async ({ page }) => {
-		await page.goto(`/mint/${TEST_POSITION}/manage/collateral`);
+		await page.goto(`/mint/${testData.position}/manage/collateral`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
@@ -230,7 +266,7 @@ test.describe("Visual Regression", () => {
 	});
 
 	test("mint position manage expiration page", async ({ page }) => {
-		await page.goto(`/mint/${TEST_POSITION}/manage/expiration`);
+		await page.goto(`/mint/${testData.position}/manage/expiration`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
@@ -241,7 +277,7 @@ test.describe("Visual Regression", () => {
 	});
 
 	test("mint position manage liquidation-price page", async ({ page }) => {
-		await page.goto(`/mint/${TEST_POSITION}/manage/liquidation-price`);
+		await page.goto(`/mint/${testData.position}/manage/liquidation-price`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
@@ -252,7 +288,7 @@ test.describe("Visual Regression", () => {
 	});
 
 	test("mint position manage loan page", async ({ page }) => {
-		await page.goto(`/mint/${TEST_POSITION}/manage/loan`);
+		await page.goto(`/mint/${testData.position}/manage/loan`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
@@ -263,7 +299,7 @@ test.describe("Visual Regression", () => {
 	});
 
 	test("monitoring position detail page", async ({ page }) => {
-		await page.goto(`/monitoring/${TEST_POSITION}`);
+		await page.goto(`/monitoring/${testData.position}`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
@@ -274,7 +310,7 @@ test.describe("Visual Regression", () => {
 	});
 
 	test("monitoring position challenge page", async ({ page }) => {
-		await page.goto(`/monitoring/${TEST_POSITION}/challenge`);
+		await page.goto(`/monitoring/${testData.position}/challenge`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
@@ -285,7 +321,7 @@ test.describe("Visual Regression", () => {
 	});
 
 	test("monitoring position forceSell page", async ({ page }) => {
-		await page.goto(`/monitoring/${TEST_POSITION}/forceSell`);
+		await page.goto(`/monitoring/${testData.position}/forceSell`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
@@ -296,7 +332,7 @@ test.describe("Visual Regression", () => {
 	});
 
 	test("mypositions adjust page", async ({ page }) => {
-		await page.goto(`/mypositions/${TEST_POSITION}/adjust`);
+		await page.goto(`/mypositions/${testData.position}/adjust`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
@@ -307,7 +343,7 @@ test.describe("Visual Regression", () => {
 	});
 
 	test("challenges bid page", async ({ page }) => {
-		await page.goto(`/challenges/${TEST_CHALLENGE_INDEX}/bid`);
+		await page.goto(`/challenges/${testData.challengeIndex}/bid`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
