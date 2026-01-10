@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const isLocalhost = BASE_URL.includes("localhost") || BASE_URL.includes("127.0.0.1");
 
 /**
  * Playwright configuration for JuiceDollar bApp E2E tests
@@ -51,13 +52,15 @@ export default defineConfig({
 		},
 	],
 
-	/* Run your local dev server before starting the tests */
-	webServer: {
-		command: "yarn dev",
-		url: BASE_URL,
-		reuseExistingServer: !process.env.CI,
-		timeout: 120 * 1000, // 2 minutes to start
-	},
+	/* Run your local dev server before starting the tests (only for localhost) */
+	webServer: isLocalhost
+		? {
+				command: "yarn dev",
+				url: BASE_URL,
+				reuseExistingServer: !process.env.CI,
+				timeout: 120 * 1000, // 2 minutes to start
+			}
+		: undefined,
 
 	/* Global timeout for each test */
 	timeout: 60 * 1000, // 60 seconds per test
