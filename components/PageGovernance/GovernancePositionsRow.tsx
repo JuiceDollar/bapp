@@ -71,7 +71,7 @@ export default function GovernancePositionsRow({ headers, subHeaders, position, 
 			</div>
 
 			<div className="flex flex-col">
-				<div className="">{formatCurrency(position.annualInterestPPM / 10_000)}%</div>
+				<div className="">{formatCurrency(position.annualInterestPPM / 10_000, 0, 2)}%</div>
 				<span className="text-sm text-text-subheader">{formatCurrency(maturity, 1, 1, FormatType.us)} months</span>
 			</div>
 
