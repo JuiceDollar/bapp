@@ -304,15 +304,15 @@ tests/
 Erstelle eine neue Datei in `tests/e2e/specs/`. Für Tests ohne Wallet-Verbindung:
 
 ```typescript
-// tests/e2e/specs/mein-feature.spec.ts
+// tests/e2e/specs/my-feature.spec.ts
 
 import { test, expect } from "@playwright/test";
 
-test.describe("Mein Feature", () => {
-	test("sollte etwas tun", async ({ page }) => {
-		await page.goto("/meine-seite");
+test.describe("My Feature", () => {
+	test("should do something", async ({ page }) => {
+		await page.goto("/my-page");
 
-		// Dein Test-Code hier
+		// Your test code here
 		await expect(page.locator("h1")).toBeVisible();
 	});
 });
@@ -323,7 +323,7 @@ test.describe("Mein Feature", () => {
 Für Tests mit MetaMask-Integration, siehe das Beispiel in `tests/e2e/specs/wallet/connect.spec.ts`:
 
 ```typescript
-// tests/e2e/specs/wallet/mein-wallet-test.spec.ts
+// tests/e2e/specs/wallet/my-wallet-test.spec.ts
 
 import { test, expect, chromium, type BrowserContext } from "@playwright/test";
 import { MetaMask, getExtensionId } from "@synthetixio/synpress-metamask/playwright";
@@ -336,7 +336,7 @@ if (!SEED_PHRASE || !WALLET_PASSWORD) {
 	throw new Error("WALLET_SEED_PHRASE and WALLET_PASSWORD must be set");
 }
 
-test.describe("Mein Wallet Feature", () => {
+test.describe("My Wallet Feature", () => {
 	let context: BrowserContext;
 	let metamask: MetaMask;
 
@@ -361,16 +361,16 @@ test.describe("Mein Wallet Feature", () => {
 		await context?.close();
 	});
 
-	test("sollte mit Wallet funktionieren", async () => {
+	test("should work with connected wallet", async () => {
 		const page = await context.newPage();
 		await page.goto("/");
 
-		// Wallet verbinden
+		// Connect wallet
 		await page.getByRole("button", { name: /connect/i }).click();
 		await page.getByText(/metamask/i).first().click();
 		await metamask.connectToDapp();
 
-		// Jetzt ist die Wallet verbunden - teste dein Feature
+		// Wallet is now connected - test your feature
 		await page.goto("/mint");
 		// ...
 
@@ -382,19 +382,19 @@ test.describe("Mein Wallet Feature", () => {
 ### Häufig verwendete MetaMask-Aktionen
 
 ```typescript
-// Wallet verbinden
+// Connect wallet
 await metamask.connectToDapp();
 
-// Transaktion bestätigen
+// Confirm transaction
 await metamask.confirmTransaction();
 
-// Signatur bestätigen
+// Confirm signature
 await metamask.confirmSignature();
 
-// Netzwerk wechseln
+// Switch network
 await metamask.switchNetwork("Citrea Testnet");
 
-// Token hinzufügen
+// Add token
 await metamask.addToken("0x...");
 ```
 
