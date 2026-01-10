@@ -367,7 +367,10 @@ test.describe("My Wallet Feature", () => {
 
 		// Connect wallet
 		await page.getByRole("button", { name: /connect/i }).click();
-		await page.getByText(/metamask/i).first().click();
+		await page
+			.getByText(/metamask/i)
+			.first()
+			.click();
 		await metamask.connectToDapp();
 
 		// Wallet is now connected - test your feature
