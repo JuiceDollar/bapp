@@ -13,12 +13,12 @@
 		"test:e2e:visual": "playwright test tests/e2e/specs/visual.spec.ts",
 		"test:e2e:visual:update": "playwright test tests/e2e/specs/visual.spec.ts --update-snapshots",
 		"test:e2e:wallet": "playwright test tests/e2e/specs/wallet/",
+		"setup:synpress": "bash scripts/setup-synpress.sh",
 		"test:e2e:all": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:headed": "playwright test --headed",
 		"test:e2e:debug": "playwright test --debug",
 		"test:e2e:report": "playwright show-report",
-		"synpress:cache": "synpress",
 		"eject": "react-scripts eject",
 		"lint": "next lint",
 		"lint:check": "prettier --check .",
@@ -45,7 +45,7 @@
 		"@web3modal/wagmi": "^4.2.3",
 		"abitype": "^0.9.6",
 		"apexcharts": "^3.44.0",
-		"axios": "^1.6.2",
+		"axios": "^1.13.2",
 		"coingecko-api-v3": "^0.0.29",
 		"dayjs": "^1.11.9",
 		"eslint": "8.29.0",
@@ -69,7 +69,7 @@
 	},
 	"devDependencies": {
 		"@babel/core": "^7.20.5",
-		"@playwright/test": "^1.57.0",
+		"@playwright/test": "1.48.2",
 		"@synthetixio/synpress": "^4.1.1",
 		"@types/react-datepicker": "^6.2.0",
 		"autoprefixer": "^10.4.14",
@@ -77,17 +77,24 @@
 		"flowbite": "^2.3.0",
 		"flowbite-datepicker": "^1.2.6",
 		"flowbite-react": "^0.7.3",
+		"fs-extra": "^11.3.3",
 		"gh-pages": "^6.0.0",
+		"node-fetch": "^3.3.2",
+		"playwright-core": "1.48.2",
 		"postcss": "^8.4.19",
 		"prettier": "^2.8.1",
 		"tailwindcss": "^3.3.3",
 		"ts-loader": "^9.5.1",
-		"typescript": "^5.1.6"
+		"typescript": "^5.1.6",
+		"unzipper": "^0.12.3"
 	},
 	"resolutions": {
 		"@types/react": "^18.3.0",
 		"@types/react-dom": "18.3.0",
-		"ox": "0.6.7"
+		"ox": "0.6.7",
+		"@playwright/test": "1.48.2",
+		"playwright": "1.48.2",
+		"playwright-core": "1.48.2"
 	},
 	"packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
