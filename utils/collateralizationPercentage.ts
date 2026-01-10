@@ -18,6 +18,11 @@ export function calculateCollateralizationPercentage(position: PositionQuery, pr
 	// 1 JUSD = 1 USD, so no conversion needed
 	const liquidationPrice = collTokenPricePosition;
 
+	// Prevent division by zero
+	if (liquidationPrice === 0) {
+		return 0;
+	}
+
 	const marketValueCollateral = collBalancePosition * collTokenPriceMarket;
 	const positionValueCollateral = collBalancePosition * liquidationPrice;
 

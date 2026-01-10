@@ -40,7 +40,7 @@ export default function MonitoringRow({ headers, position, tab }: Props) {
 	const positionChallengesActive = positionChallenges.filter((ch: ChallengesQueryItem) => ch.status == "Active") ?? [];
 	const positionChallengesActiveCollateral =
 		positionChallengesActive.reduce<number>((acc, c) => {
-			return acc + parseInt(formatUnits(c.size, digits - 2)) - parseInt(formatUnits(c.filledSize, digits - 2));
+			return acc + parseFloat(formatUnits(c.size, digits - 2)) - parseFloat(formatUnits(c.filledSize, digits - 2));
 		}, 0) / 100;
 	const collateralBalanceNumber: number = parseFloat(formatUnits(BigInt(position.collateralBalance), digits));
 	const challengesRatioPct: number = Math.round((positionChallengesActiveCollateral / collateralBalanceNumber) * 100);
