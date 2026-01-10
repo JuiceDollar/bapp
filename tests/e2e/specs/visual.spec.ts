@@ -113,6 +113,22 @@ test.describe("Visual Regression", () => {
 		});
 	});
 
+	test("savings page - click withdraw tab", async ({ page }) => {
+		await page.goto("/savings");
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+		await waitForCharts(page);
+
+		// Click "Withdraw" tab
+		await page.getByText("Withdraw").click();
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("savings-withdraw-tab.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
 	test("equity page", async ({ page }) => {
 		await page.goto("/equity");
 		await normalizeScrollbars(page);
@@ -337,6 +353,21 @@ test.describe("Visual Regression", () => {
 		});
 	});
 
+	test("mint position manage collateral - click remove tab", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage/collateral`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		// Click "Remove" tab
+		await page.getByText("Remove").click();
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage-collateral-remove-tab.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
 	test("mint position manage expiration page", async ({ page }) => {
 		await page.goto(`/mint/${testData.position}/manage/expiration`);
 		await normalizeScrollbars(page);
@@ -370,12 +401,63 @@ test.describe("Visual Regression", () => {
 		});
 	});
 
+	test("mint position manage loan - click repay tab", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage/loan`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		// Click "Repay Loan" tab
+		await page.getByText("Repay Loan").click();
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage-loan-repay-tab.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
 	test("monitoring position detail page", async ({ page }) => {
 		await page.goto(`/monitoring/${testData.position}`);
 		await normalizeScrollbars(page);
 		await page.waitForLoadState("networkidle");
 
 		await expect(page).toHaveScreenshot("monitoring-position-detail.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("monitoring position - click manage button", async ({ page }) => {
+		await page.goto(`/monitoring/${testData.position}`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		// Click "Manage" button
+		await page.locator("button", { hasText: "Manage" }).click();
+		await page.waitForLoadState("networkidle");
+
+		// Verify navigation to manage page
+		await expect(page).toHaveURL(/\/manage/);
+
+		await expect(page).toHaveScreenshot("monitoring-position-manage-via-button.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("monitoring position - click challenge button", async ({ page }) => {
+		await page.goto(`/monitoring/${testData.position}`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		// Click "Challenge" button (or "Force Sell" depending on maturity)
+		await page.locator("a", { hasText: /Challenge|Force Sell/ }).click();
+		await page.waitForLoadState("networkidle");
+
+		// Verify navigation to challenge or forceSell page
+		await expect(page).toHaveURL(/\/(challenge|forceSell)/);
+
+		await expect(page).toHaveScreenshot("monitoring-position-challenge-via-button.png", {
 			fullPage: true,
 			maxDiffPixelRatio: 0.01,
 		});
