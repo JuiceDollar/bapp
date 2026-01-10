@@ -115,7 +115,7 @@ NEXT_PUBLIC_API_URL=https://dev.api.testnet.juicedollar.com/
 NEXT_PUBLIC_PONDER_URL=https://dev.ponder.testnet.juicedollar.com
 NEXT_PUBLIC_WAGMI_ID=<dein-walletconnect-project-id>
 NEXT_PUBLIC_CHAIN_NAME=testnet
-NEXT_PUBLIC_RPC_URL_TESTNET=https://rpc.testnet.juiceswap.com/
+NEXT_PUBLIC_RPC_URL_TESTNET=https://rpc.testnet.citreascan.com/
 
 # E2E Testing Variablen (PFLICHT - kein Fallback!)
 WALLET_SEED_PHRASE=<deine-12-wort-seed-phrase>
@@ -470,7 +470,7 @@ Falls dein Test das Netzwerk wechseln muss, füge es nach dem Wallet-Import hinz
 ```typescript
 await metamask.addNetwork({
 	name: "Citrea Testnet",
-	rpcUrl: "https://rpc.testnet.citrea.xyz",
+	rpcUrl: "https://rpc.testnet.citreascan.com",
 	chainId: 5115,
 	symbol: "cBTC",
 });
