@@ -52,7 +52,7 @@ test.describe("Wallet Connect", () => {
 	test("should connect MetaMask to the dApp", async () => {
 		const page = await context.newPage();
 
-		await page.goto("http://localhost:3000/");
+		await page.goto("/");
 		await page.waitForLoadState("networkidle");
 
 		// Click connect wallet button
