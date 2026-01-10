@@ -2,8 +2,12 @@ import { test, expect, chromium, type BrowserContext } from "@playwright/test";
 import { MetaMask, getExtensionId } from "@synthetixio/synpress-metamask/playwright";
 import { prepareExtension } from "@synthetixio/synpress-cache";
 
-const SEED_PHRASE = "test test test test test test test test test test test junk";
-const WALLET_PASSWORD = "TestPassword123!";
+const SEED_PHRASE = process.env.WALLET_SEED_PHRASE || "";
+const WALLET_PASSWORD = process.env.WALLET_PASSWORD || "";
+
+if (!SEED_PHRASE || !WALLET_PASSWORD) {
+	throw new Error("WALLET_SEED_PHRASE and WALLET_PASSWORD must be set in environment variables");
+}
 
 test.describe("Wallet Connect", () => {
 	let context: BrowserContext;
@@ -74,7 +78,7 @@ test.describe("Wallet Connect", () => {
 		// Step 9: Screenshot homepage with connected wallet
 		await expect(page).toHaveScreenshot("05-homepage-wallet-connected.png");
 
-		// Step 8: Count addresses (should be 1)
+		// Step 10: Count addresses (should be 1)
 		const count = await page.evaluate(() => {
 			let c = 0;
 			document.querySelectorAll("div,span").forEach((el) => {
