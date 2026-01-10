@@ -134,6 +134,187 @@ test.describe("Visual Regression", () => {
 		});
 	});
 
+	test("ecosystem page", async ({ page }) => {
+		await page.goto("/ecosystem");
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+		await waitForCharts(page);
+
+		await expect(page).toHaveScreenshot("ecosystem.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("monitoring page", async ({ page }) => {
+		await page.goto("/monitoring");
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("monitoring.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mypositions page", async ({ page }) => {
+		await page.goto("/mypositions");
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mypositions.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint create page", async ({ page }) => {
+		await page.goto("/mint/create");
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-create.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("404 page", async ({ page }) => {
+		await page.goto("/nonexistent-page-for-404-test");
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("404.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	// Dynamic pages with real position data
+	const TEST_POSITION = "0xDd37e2Bdbcf01000fa2C744f95dCc653f1660EAE";
+	const TEST_CHALLENGE_INDEX = "3";
+
+	test("mint position detail page", async ({ page }) => {
+		await page.goto(`/mint/${TEST_POSITION}`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-detail.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage page", async ({ page }) => {
+		await page.goto(`/mint/${TEST_POSITION}/manage`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage collateral page", async ({ page }) => {
+		await page.goto(`/mint/${TEST_POSITION}/manage/collateral`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage-collateral.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage expiration page", async ({ page }) => {
+		await page.goto(`/mint/${TEST_POSITION}/manage/expiration`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage-expiration.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage liquidation-price page", async ({ page }) => {
+		await page.goto(`/mint/${TEST_POSITION}/manage/liquidation-price`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage-liqprice.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage loan page", async ({ page }) => {
+		await page.goto(`/mint/${TEST_POSITION}/manage/loan`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage-loan.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("monitoring position detail page", async ({ page }) => {
+		await page.goto(`/monitoring/${TEST_POSITION}`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("monitoring-position-detail.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("monitoring position challenge page", async ({ page }) => {
+		await page.goto(`/monitoring/${TEST_POSITION}/challenge`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("monitoring-position-challenge.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("monitoring position forceSell page", async ({ page }) => {
+		await page.goto(`/monitoring/${TEST_POSITION}/forceSell`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("monitoring-position-forcesell.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mypositions adjust page", async ({ page }) => {
+		await page.goto(`/mypositions/${TEST_POSITION}/adjust`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mypositions-adjust.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("challenges bid page", async ({ page }) => {
+		await page.goto(`/challenges/${TEST_CHALLENGE_INDEX}/bid`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("challenges-bid.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
 	test("mobile viewport - dashboard", async ({ page }) => {
 		await page.setViewportSize({ width: 375, height: 667 });
 		await page.goto("/dashboard");
