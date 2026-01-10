@@ -123,7 +123,7 @@ export default function YourReferralsTable() {
 		};
 
 		fetchAccruedInterests();
-	}, [addressesKey, chainId]);
+	}, [addressesKey, chainId, referredAddresses]);
 
 	// Query savings data for all referred addresses
 	const { data: savingsData } = useQuery(

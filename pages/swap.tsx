@@ -92,7 +92,7 @@ export default function Swap() {
 					return noTokenMeta;
 			}
 		},
-		[swapStats, getSelectedStablecoinSymbol]
+		[swapStats]
 	);
 
 	const onChangeAmount = useCallback(
