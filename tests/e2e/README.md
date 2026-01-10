@@ -243,13 +243,14 @@ Dies öffnet den Playwright Inspector, wo du:
 tests/
 └── e2e/
     ├── README.md                    # Diese Dokumentation
-    ├── wallet-setup/
-    │   └── basic.setup.ts           # MetaMask Wallet-Konfiguration
     ├── snapshots/                   # Baseline-Screenshots für Visual Tests
-    │   └── specs/
-    │       └── visual.spec.ts/      # Screenshots pro Test-Datei
-    │           ├── dashboard.png
-    │           ├── mint.png
+    │   ├── specs/
+    │   │   └── visual.spec.ts/      # Screenshots pro Test-Datei
+    │   │       ├── dashboard.png
+    │   │       └── ...
+    │   └── wallet/
+    │       └── connect.spec.ts/     # Wallet-Test Screenshots
+    │           ├── 01-homepage-before-connect.png
     │           └── ...
     └── specs/
         ├── navigation.spec.ts       # Navigations-Tests (ohne MetaMask)
@@ -300,17 +301,12 @@ tests/
 
 ### Test-Datei erstellen
 
-Erstelle eine neue Datei in `tests/e2e/specs/`:
+Erstelle eine neue Datei in `tests/e2e/specs/`. Für Tests ohne Wallet-Verbindung:
 
 ```typescript
 // tests/e2e/specs/mein-feature.spec.ts
 
-import { testWithSynpress } from "@synthetixio/synpress";
-import { MetaMask, metaMaskFixtures } from "@synthetixio/synpress/playwright";
-import basicSetup from "../wallet-setup/basic.setup";
-
-const test = testWithSynpress(metaMaskFixtures(basicSetup));
-const { expect } = test;
+import { test, expect } from "@playwright/test";
 
 test.describe("Mein Feature", () => {
 	test("sollte etwas tun", async ({ page }) => {
@@ -324,24 +320,62 @@ test.describe("Mein Feature", () => {
 
 ### Test mit Wallet-Verbindung
 
+Für Tests mit MetaMask-Integration, siehe das Beispiel in `tests/e2e/specs/wallet/connect.spec.ts`:
+
 ```typescript
-test("sollte mit verbundener Wallet funktionieren", async ({ context, page, metamaskPage, extensionId }) => {
-	// MetaMask-Instanz erstellen
-	const metamask = new MetaMask(context, metamaskPage, basicSetup.walletPassword, extensionId);
+// tests/e2e/specs/wallet/mein-wallet-test.spec.ts
 
-	await page.goto("/");
+import { test, expect, chromium, type BrowserContext } from "@playwright/test";
+import { MetaMask, getExtensionId } from "@synthetixio/synpress-metamask/playwright";
+import { prepareExtension } from "@synthetixio/synpress-cache";
 
-	// Wallet verbinden
-	await page.getByRole("button", { name: /connect/i }).click();
-	await page
-		.getByText(/metamask/i)
-		.first()
-		.click();
-	await metamask.connectToDapp();
+const SEED_PHRASE = process.env.WALLET_SEED_PHRASE || "";
+const WALLET_PASSWORD = process.env.WALLET_PASSWORD || "";
 
-	// Jetzt ist die Wallet verbunden - teste dein Feature
-	await page.goto("/mint");
-	// ...
+if (!SEED_PHRASE || !WALLET_PASSWORD) {
+	throw new Error("WALLET_SEED_PHRASE and WALLET_PASSWORD must be set");
+}
+
+test.describe("Mein Wallet Feature", () => {
+	let context: BrowserContext;
+	let metamask: MetaMask;
+
+	test.beforeAll(async () => {
+		const extensionPath = await prepareExtension();
+		context = await chromium.launchPersistentContext("", {
+			headless: false,
+			args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
+		});
+
+		const extensionId = await getExtensionId(context, "MetaMask");
+		await new Promise((r) => setTimeout(r, 2000));
+		const pages = context.pages();
+		const metamaskPage = pages.find((p) => p.url().includes("chrome-extension://"));
+		if (!metamaskPage) throw new Error("MetaMask not found");
+
+		metamask = new MetaMask(context, metamaskPage, WALLET_PASSWORD, extensionId);
+		await metamask.importWallet(SEED_PHRASE);
+	});
+
+	test.afterAll(async () => {
+		await context?.close();
+	});
+
+	test("sollte mit Wallet funktionieren", async () => {
+		const page = await context.newPage();
+		await page.goto("/");
+
+		// Wallet verbinden
+		await page.getByRole("button", { name: /connect/i }).click();
+		await page.getByText(/metamask/i).first().click();
+		await metamask.connectToDapp();
+
+		// Jetzt ist die Wallet verbunden - teste dein Feature
+		await page.goto("/mint");
+		// ...
+
+		await page.close();
+	});
 });
 ```
 
@@ -428,7 +462,7 @@ yarn test:e2e:debug
 ### Problem: "Network not found"
 
 **Lösung:**
-Stelle sicher, dass das Citrea Testnet korrekt konfiguriert ist in `wallet-setup/basic.setup.ts`:
+Falls dein Test das Netzwerk wechseln muss, füge es nach dem Wallet-Import hinzu:
 
 ```typescript
 await metamask.addNetwork({
@@ -437,6 +471,7 @@ await metamask.addNetwork({
 	chainId: 5115,
 	symbol: "cBTC",
 });
+await metamask.switchNetwork("Citrea Testnet");
 ```
 
 ### Problem: Tests laufen zu langsam
