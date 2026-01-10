@@ -333,7 +333,7 @@ export default function PositionBorrow({}) {
 										<span>{t("mint.sent_to_your_wallet")}</span>
 									</div>
 									<div className="text-right">
-										<span className="text-xs mr-3">{formatCurrency(paidOutToWalletPct)}%</span>
+										<span className="text-xs mr-3">{formatCurrency(paidOutToWalletPct, 0, 2)}%</span>
 										<span>
 											{formatCurrency(formatUnits(paidOutToWallet, 18), 2, 2)} {TOKEN_SYMBOL}
 										</span>
@@ -345,7 +345,7 @@ export default function PositionBorrow({}) {
 										<span>{t("mint.retained_reserve")}</span>
 									</div>
 									<div className="text-right">
-										<span className="text-xs mr-3">{formatCurrency(position.reserveContribution / 10000, 2, 2)}%</span>
+										<span className="text-xs mr-3">{formatCurrency(position.reserveContribution / 10000, 0, 2)}%</span>
 										<span>
 											{formatCurrency(formatUnits(borrowersReserveContribution, 18), 2, 2)} {TOKEN_SYMBOL}
 										</span>
@@ -372,7 +372,7 @@ export default function PositionBorrow({}) {
 							<div className="flex-1 mt-4">
 								<div className="mt-2 flex">
 									<div className="flex-1">{t("mint.effective_annual_interest")}</div>
-									<div className="">{formatCurrency(effectiveInterest * 100)}%</div>
+									<div className="">{formatCurrency(effectiveInterest * 100, 0, 2)}%</div>
 								</div>
 
 								<div className="mt-2 flex">
@@ -385,12 +385,12 @@ export default function PositionBorrow({}) {
 
 								<div className="mt-2 flex">
 									<div className="flex-1">{t("mint.market_price")}</div>
-									<div className="">{formatCurrency(collateralPriceUsd)} USD</div>
+									<div className="">{formatCurrency(collateralPriceUsd, 2, 2)} USD</div>
 								</div>
 
 								<div className="mt-2 flex">
 									<div className="flex-1">{t("mint.loan_to_value")}</div>
-									<div className="">{formatCurrency(effectiveLTV * 100)}%</div>
+									<div className="">{formatCurrency(effectiveLTV * 100, 0, 2)}%</div>
 								</div>
 
 								<div className="mt-2 flex">

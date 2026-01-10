@@ -107,7 +107,7 @@ export default function MonitoringRow({ headers, position, tab }: Props) {
 			{/* Coll. */}
 			<div className="flex flex-col gap-2">
 				<div className={`col-span-2 text-md ${collateralizationPercentage < 110 ? "text-text-warning font-bold" : ""}`}>
-					{!isNaN(collateralizationPercentage) ? formatCurrency(collateralizationPercentage) : "-.--"}%
+					{!isNaN(collateralizationPercentage) ? formatCurrency(collateralizationPercentage, 0, 2) : "-.--"}%
 				</div>
 			</div>
 

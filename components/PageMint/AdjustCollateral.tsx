@@ -346,7 +346,7 @@ export const AdjustCollateral = ({
 		if (delta === 0n) return isIncrease ? t("common.add") : t("common.remove");
 		const formattedDelta = formatCurrency(formatUnits(delta, collateralDecimals), 3, 3);
 		if (strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n) {
-			const formattedRepay = formatCurrency(formatUnits(calculatedRepayAmount, 18), 0, 2);
+			const formattedRepay = formatCurrency(formatUnits(calculatedRepayAmount, 18), 2, 2);
 			if (isClosingPosition) {
 				return `${t("mint.repay")} ${formattedRepay} ${position.stablecoinSymbol}, ${t("common.remove")} & ${t(
 					"mint.close_position"
@@ -461,7 +461,7 @@ export const AdjustCollateral = ({
 							</Tooltip>
 						</div>
 						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(calculatedRepayAmount, 18), 0, 2)} {position.stablecoinSymbol}
+							{formatCurrency(formatUnits(calculatedRepayAmount, 18), 2, 2)} {position.stablecoinSymbol}
 						</span>
 					</div>
 				)}

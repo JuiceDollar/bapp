@@ -72,7 +72,7 @@ export function DetailsExpandablePanel({
 			<div className="py-1.5 flex justify-between">
 				<span className="text-base leading-tight">{t("mint.effective_annual_interest")}</span>
 				<span className="text-right text-sm font-extrabold leading-none tracking-tight">
-					{formatCurrency(loanDetails.effectiveInterest)}%
+					{formatCurrency(loanDetails.effectiveInterest, 0, 2)}%
 				</span>
 			</div>
 			<div className="py-1.5 flex justify-between">
@@ -83,7 +83,7 @@ export function DetailsExpandablePanel({
 			</div>
 			<div className="py-1.5 flex justify-between">
 				<span className="text-base leading-tight">{t("mint.loan_to_value")}</span>
-				<span className="text-right text-sm font-extrabold leading-none tracking-tight">{formatCurrency(effectiveLTV)}%</span>
+				<span className="text-right text-sm font-extrabold leading-none tracking-tight">{formatCurrency(effectiveLTV, 0, 2)}%</span>
 			</div>
 			{extraRows}
 		</ExpandablePanel>

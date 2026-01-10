@@ -201,7 +201,7 @@ export const PriceManageSection = () => {
 		<div className="flex flex-col gap-y-3">
 			<div className="flex flex-row gap-x-1.5 pl-3">
 				<div className="text-lg font-extrabold leading-[1.4375rem]">{t("mint.current_price")}</div>
-				<div className="text-base font-medium">{formatCurrency(formatUnits(currentPrice, priceDecimals))} USD</div>
+				<div className="text-base font-medium">{formatCurrency(formatUnits(currentPrice, priceDecimals), 2, 2)} USD</div>
 			</div>
 
 			{isMintingExhausted && minPrice === maxPrice && (

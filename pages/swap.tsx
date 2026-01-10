@@ -483,7 +483,9 @@ export default function Swap() {
 						currency="$"
 						symbol={swapStats.startUSD.symbol}
 						price={formatCurrency(formatUnits(swapStats.startUSD.userBal, Number(swapStats.startUSD.decimals)), 2, 2) as string}
-						balance={formatCurrency(formatUnits(swapStats.startUSD.userBal, Number(swapStats.startUSD.decimals))) as string}
+						balance={
+							formatCurrency(formatUnits(swapStats.startUSD.userBal, Number(swapStats.startUSD.decimals)), 2, 2) as string
+						}
 						name={swapStats.startUSD.symbol}
 						onClick={() => handleSelectToken(swapStats.startUSD.symbol)}
 					/>
