@@ -38,11 +38,11 @@ export default function Footer() {
 	const code = marketingCode || parsedFrontendCode;
 
 	return (
-		<footer className="md:flex max-md:grid-rows-2 max-md:justify-items-center md:px-12 pb-12 pt-6 bg-layout-footer text-layout-primary mt-auto">
+		<footer className="md:flex max-md:grid-rows-2 max-md:justify-items-center md:px-12 pb-12 pt-6 bg-transparent border-t border-borders-primary text-text-primary mt-auto">
 			<div className="flex-1 justify-start text-center md:text-left">
 				<SubmitIssue />
 				{code && (
-					<div className="mt-4 text-sm text-layout-primary">
+					<div className="mt-4 text-sm text-text-primary">
 						{t("common.using_referral_code")}: <span className="font-bold">{code}</span>
 					</div>
 				)}
@@ -74,7 +74,7 @@ interface ButtonProps {
 
 const FooterButton = ({ link, text, icon }: ButtonProps) => {
 	return (
-		<Link href={link} target="_blank" rel="noreferrer" className="flex gap-1 hover:opacity-70">
+		<Link href={link} target="_blank" rel="noreferrer" className="flex gap-1 hover:text-layout-secondary transition-colors">
 			<FontAwesomeIcon icon={icon} className="w-6 h-6" />
 		</Link>
 	);

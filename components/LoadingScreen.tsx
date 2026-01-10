@@ -19,7 +19,7 @@ export default function LoadingScreen() {
 						</picture>
 						<h1>JUSD is loading...</h1>
 					</div>
-					<div className="absolute bottom-0 bg-layout-footer w-full pb-8 pt-8 justify-items-center">
+					<div className="absolute bottom-0 w-full pb-8 pt-8 justify-items-center border-t border-borders-primary">
 						<SubmitIssue />
 					</div>
 				</div>
@@ -32,7 +32,7 @@ export function SubmitIssue() {
 	const isMainnet = useIsMainnet();
 
 	return (
-		<ul className="flex justify-center sm:justify-start items-center gap-8 text-layout-primary">
+		<ul className="flex justify-center sm:justify-start items-center gap-8 text-text-primary">
 			<li>
 				<FooterButton link={SOCIAL.Github_dapp_new_issue} text="Submit an Issue" icon={faGithub} />
 			</li>
@@ -51,7 +51,7 @@ interface ButtonProps {
 
 const FooterButton = ({ link, text, icon }: ButtonProps) => {
 	return (
-		<Link href={link} target="_blank" rel="noreferrer" className="flex gap-2 hover:opacity-70">
+		<Link href={link} target="_blank" rel="noreferrer" className="flex gap-2 hover:text-layout-secondary transition-colors">
 			<FontAwesomeIcon icon={icon} className="w-6 h-6" />
 			<div className="font-semibold">{text}</div>
 		</Link>
