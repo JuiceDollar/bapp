@@ -59,7 +59,7 @@ export default defineConfig({
 				url: BASE_URL,
 				reuseExistingServer: !process.env.CI,
 				timeout: 120 * 1000, // 2 minutes to start
-			}
+		  }
 		: undefined,
 
 	/* Global timeout for each test */
