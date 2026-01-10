@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { Address, formatUnits, zeroAddress } from "viem";
 import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
@@ -44,6 +44,16 @@ import { useFrontendCode } from "../../hooks/useFrontendCode";
 import { MaxButton } from "@components/Input/MaxButton";
 import Link from "next/link";
 
+const getMaxCollateralFromMintLimit = (availableForClones: bigint, liqPrice: bigint) => {
+	if (!availableForClones || liqPrice === 0n) return 0n;
+	return (availableForClones * BigInt(1e18)) / liqPrice;
+};
+
+const getMaxCollateralAmount = (balance: bigint, availableForClones: bigint, liqPrice: bigint) => {
+	const maxFromLimit = getMaxCollateralFromMintLimit(availableForClones, liqPrice);
+	return maxFromLimit > 0n && balance > maxFromLimit ? maxFromLimit : balance;
+};
+
 export default function PositionCreate({}) {
 	const [selectedCollateral, setSelectedCollateral] = useState<TokenBalance | null | undefined>(null);
 	const [selectedPosition, setSelectedPosition] = useState<PositionQuery | null | undefined>(null);
@@ -63,16 +73,6 @@ export default function PositionCreate({}) {
 	const chainId = useChainId();
 	const { address } = useAccount();
 
-	const getMaxCollateralFromMintLimit = (availableForClones: bigint, liqPrice: bigint) => {
-		if (!availableForClones || liqPrice === 0n) return 0n;
-		return (availableForClones * BigInt(1e18)) / liqPrice;
-	};
-
-	const getMaxCollateralAmount = (balance: bigint, availableForClones: bigint, liqPrice: bigint) => {
-		const maxFromLimit = getMaxCollateralFromMintLimit(availableForClones, liqPrice);
-		return maxFromLimit > 0n && balance > maxFromLimit ? maxFromLimit : balance;
-	};
-
 	const collateralTokenList = useMemo(() => {
 		if (!defaultPosition) return [];
 
@@ -91,6 +91,37 @@ export default function PositionCreate({}) {
 	const collateralSelectorOptions = selectedCollateral ? [selectedCollateral] : [];
 	const { frontendCode } = useFrontendCode();
 	const { t } = useTranslation();
+
+	const handleOnSelectedToken = useCallback(
+		(token: TokenBalance, positionOverride?: PositionQuery) => {
+			const position = positionOverride ?? defaultPosition;
+			if (!token || !position) return;
+			setSelectedCollateral(token);
+
+			const liqPrice = BigInt(position.price);
+
+			setSelectedPosition(position);
+
+			const tokenBalance = balancesByAddress[token.address]?.balanceOf || 0n;
+			const maxAmount = getMaxCollateralAmount(tokenBalance, BigInt(position.availableForClones), liqPrice);
+			const defaultAmount = maxAmount > BigInt(position.minimumCollateral) ? maxAmount.toString() : position.minimumCollateral;
+
+			setCollateralAmount(defaultAmount);
+			setExpirationDate(toDate(position.expiration));
+			setLiquidationPrice(liqPrice.toString());
+
+			const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
+				position,
+				BigInt(maxAmount),
+				liqPrice,
+				toDate(position.expiration)
+			);
+
+			setLoanDetails(loanDetails);
+			setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
+		},
+		[defaultPosition, balancesByAddress]
+	);
 
 	useEffect(() => {
 		const loadDefaultPosition = async () => {
@@ -120,7 +151,7 @@ export default function PositionCreate({}) {
 		};
 
 		loadDefaultPosition();
-	}, []);
+	}, [handleOnSelectedToken]);
 
 	useEffect(() => {
 		if (!selectedPosition || !selectedCollateral) return;
@@ -161,7 +192,7 @@ export default function PositionCreate({}) {
 			});
 			setCollateralError(limitExceeded);
 		}
-	}, [collateralAmount, balancesByAddress, address, selectedPosition, liquidationPrice]);
+	}, [collateralAmount, balancesByAddress, address, selectedPosition, liquidationPrice, selectedCollateral, t]);
 
 	const prices = useSelector((state: RootState) => state.prices.coingecko || {});
 	const eurPrice = useSelector((state: RootState) => state.prices.eur?.usd);
@@ -193,36 +224,6 @@ export default function PositionCreate({}) {
 		2,
 		2
 	)?.toString();
-
-	const handleOnSelectedToken = (token: TokenBalance, positionOverride?: PositionQuery) => {
-		const position = positionOverride ?? defaultPosition;
-		if (!token || !position) return;
-		setSelectedCollateral(token);
-
-		const liqPrice = BigInt(position.price);
-
-		setSelectedPosition(position);
-
-		// Calculate max collateral respecting minting limit
-		// For ETH, we use the special zero address balance, for others use normal address
-		const tokenBalance = balancesByAddress[token.address]?.balanceOf || 0n;
-		const maxAmount = getMaxCollateralAmount(tokenBalance, BigInt(position.availableForClones), liqPrice);
-		const defaultAmount = maxAmount > BigInt(position.minimumCollateral) ? maxAmount.toString() : position.minimumCollateral;
-
-		setCollateralAmount(defaultAmount);
-		setExpirationDate(toDate(position.expiration));
-		setLiquidationPrice(liqPrice.toString());
-
-		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
-			position,
-			BigInt(maxAmount),
-			liqPrice,
-			toDate(position.expiration)
-		);
-
-		setLoanDetails(loanDetails);
-		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
-	};
 
 	const onAmountCollateralChange = (value: string) => {
 		setCollateralAmount(value);
@@ -280,7 +281,7 @@ export default function PositionCreate({}) {
 		);
 		setLoanDetails(loanDetails);
 		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
-	}, [expirationDate]);
+	}, [expirationDate, collateralAmount, liquidationPrice, selectedPosition]);
 
 	const handleMaxExpirationDate = () => {
 		if (selectedPosition?.expiration) {
