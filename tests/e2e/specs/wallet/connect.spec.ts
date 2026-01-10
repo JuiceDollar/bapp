@@ -79,14 +79,25 @@ test.describe("Wallet Connect", () => {
 		await expect(page).toHaveScreenshot("05-homepage-wallet-connected.png");
 
 		// Step 10: Count addresses (should be 1)
-		const count = await page.evaluate(() => {
+		// Dynamically get the connected address from the header button
+		const addressButton = page.locator("header button:has-text('0x')").first();
+		const buttonText = await addressButton.textContent();
+		const addressMatch = buttonText?.match(/0x[a-fA-F0-9]{4}/);
+
+		if (!addressMatch) throw new Error("No wallet address found in header");
+
+		const shortAddress = addressMatch[0];
+
+		// Count how many times this address appears in the DOM
+		const count = await page.evaluate((addr) => {
 			let c = 0;
 			document.querySelectorAll("div,span").forEach((el) => {
-				if (!el.children.length && el.textContent?.includes("0xf39F")) c++;
+				if (!el.children.length && el.textContent?.includes(addr)) c++;
 			});
 			return c;
-		});
-		console.log(`\n✓ Address count: ${count} (expected: 1)`);
+		}, shortAddress);
+
+		console.log(`\n✓ Address ${shortAddress}... count: ${count} (expected: 1)`);
 		expect(count).toBe(1);
 
 		await page.close();
