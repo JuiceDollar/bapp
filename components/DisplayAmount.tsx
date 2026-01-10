@@ -23,8 +23,8 @@ interface Props {
 }
 
 const getDefaultPrecision = (currency?: string): [number, number] => {
-	const stablecoins = ["JUSD", "DEURO", "USD"];
-	if (currency && stablecoins.includes(currency.toUpperCase())) return [2, 2];
+	const protocolTokens = ["JUSD", "USD", "JUICE", "SVJUSD"];
+	if (currency && protocolTokens.includes(currency.toUpperCase())) return [2, 2];
 	if (currency === "%") return [0, 2];
 	return [3, 3]; // Collateral default
 };

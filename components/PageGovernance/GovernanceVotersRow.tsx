@@ -104,7 +104,7 @@ export default function GovernanceVotersRow({ headers, voter, votesTotal, connec
 				</div>
 
 				<div className="flex flex-col">
-					{formatCurrency(formatUnits(voter.nativePS, 18), 3, 3)} {POOL_SHARE_TOKEN_SYMBOL}
+					{formatCurrency(formatUnits(voter.nativePS, 18), 2, 2)} {POOL_SHARE_TOKEN_SYMBOL}
 				</div>
 				<div className={`flex flex-col`}>{formatCurrency(voter.votingPowerRatio * 100, 0, 2)}%</div>
 			</TableRow>
@@ -124,7 +124,7 @@ export default function GovernanceVotersRow({ headers, voter, votesTotal, connec
 				>
 					<AddressLabelSimple className="text-left" address={delegatee} label="Delegate address" showLink />
 					<div className="flex flex-col">
-						{formatCurrency(formatUnits(isDelegateeVotes?.nativePS || 0n, 18), 3, 3)} {POOL_SHARE_TOKEN_SYMBOL}
+						{formatCurrency(formatUnits(isDelegateeVotes?.nativePS || 0n, 18), 2, 2)} {POOL_SHARE_TOKEN_SYMBOL}
 					</div>
 					<div className={`flex flex-col`}>{formatCurrency((isDelegateeVotes?.votingPowerRatio || 0) * 100, 0, 2)}%</div>
 				</TableRow>

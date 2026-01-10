@@ -61,7 +61,7 @@ export const MyEquity = () => {
 	const equityData = [
 		{
 			symbol: POOL_SHARE_TOKEN_SYMBOL,
-			currentInvestment: formatCurrency(formatUnits(balancesByAddress[ADDRESS[chainId].equity]?.balanceOf || 0n, 18), 3, 3) as string,
+			currentInvestment: formatCurrency(formatUnits(balancesByAddress[ADDRESS[chainId].equity]?.balanceOf || 0n, 18), 2, 2) as string,
 			amount: formatCurrency(formatUnits(deuroNative, 18), 2, 2) as string,
 		},
 	];
