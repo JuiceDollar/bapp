@@ -392,7 +392,7 @@
 		"target_position": "Posición Objetivo",
 		"how_it_works": "¿Cómo funciona?",
 		"challenge_description_how_it_works": "Un desafío se divide en dos fases:",
-		"challenge_description_how_it_works_phase_1": "Durante la fase de precio fijo, cualquiera puede comprar los {{symbol}} que proporcionaste al precio de liquidación de {{price}} {{symbol}} cada uno.",
+		"challenge_description_how_it_works_phase_1": "Durante la fase de precio fijo, cualquiera puede comprar los {{symbol}} que proporcionaste al precio de liquidación de {{price}} {{token}} cada uno.",
 		"challenge_description_how_it_works_phase_2": "Si quedan {{symbol}} después de que finaliza la fase de precio fijo, recuperas los {{symbol}} restantes y el precio comienza a descender hacia cero. En esta fase, los postores ya no compran al que lanzó el desafío, sino al propietario de la posición. Recibirás el 2% de los ingresos por ventas como recompensa.",
 		"error": {
 			"not_enough_collateral": "Fondos insuficientes de {{symbol}} en tu monedero para cubrir los costes esperados.",
