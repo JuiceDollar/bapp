@@ -5,7 +5,7 @@ import { useEffect } from "react";
 export const useLanguageSelector = () => {
 	const { i18n } = useTranslation();
 	const router = useRouter();
-	const options = [{ value: "en" }, { value: "de" }, { value: "es" }, { value: "fr" }, { value: "it" }];
+	const options = [{ value: "en" }, { value: "de" }, { value: "es" }, { value: "fr" }, { value: "it" , disabled: false }];
 
 	const handleLanguageChange = (locale: string) => {
 		const { pathname, asPath, query } = router;
