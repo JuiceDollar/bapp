@@ -198,7 +198,7 @@ test.describe("Loan Creation", () => {
 		// Step 8: Check wallet balance
 		console.log("📍 Step 8: Check wallet balance");
 		// The balance is shown near the MAX button
-		const balanceText = await page.locator('text=/\\d+\\.?\\d*\\s*cBTC/').first().textContent({ timeout: 10000 });
+		const balanceText = await page.locator("text=/\\d+\\.?\\d*\\s*cBTC/").first().textContent({ timeout: 10000 });
 		console.log(`   Wallet balance: ${balanceText}`);
 
 		// Extract the balance value
@@ -233,7 +233,10 @@ test.describe("Loan Creation", () => {
 		if (isDisabled) {
 			console.log("⚠️  Borrow button is disabled. Checking for errors...");
 			// Check for error messages
-			const errorText = await page.locator('[class*="error"], [class*="Error"]').textContent().catch(() => "");
+			const errorText = await page
+				.locator('[class*="error"], [class*="Error"]')
+				.textContent()
+				.catch(() => "");
 			console.log(`   Error: ${errorText || "Unknown error"}`);
 			await page.close();
 			test.skip();
@@ -268,7 +271,7 @@ test.describe("Loan Creation", () => {
 		// Step 14: Wait for UI success indicator
 		console.log("📍 Step 14: Wait for UI confirmation");
 		try {
-			const successIndicator = page.locator('text=/success|confirmed|minted/i').first();
+			const successIndicator = page.locator("text=/success|confirmed|minted/i").first();
 			await expect(successIndicator).toBeVisible({ timeout: 10000 });
 			console.log("✅ UI shows transaction successful!");
 		} catch {
@@ -344,7 +347,7 @@ test.describe("Loan Creation", () => {
 
 		// Step 8: Check wallet balance
 		console.log("📍 Step 8: Check wallet balance");
-		const balanceText = await page.locator('text=/\\d+\\.?\\d*\\s*cBTC/').first().textContent({ timeout: 10000 });
+		const balanceText = await page.locator("text=/\\d+\\.?\\d*\\s*cBTC/").first().textContent({ timeout: 10000 });
 		console.log(`   Wallet balance: ${balanceText}`);
 
 		const balanceMatch = balanceText?.match(/([\d.]+)\s*cBTC/);
@@ -409,7 +412,10 @@ test.describe("Loan Creation", () => {
 		const isDisabled = await borrowButton.isDisabled();
 		if (isDisabled) {
 			console.log("⚠️  Borrow button is disabled. Checking for errors...");
-			const errorText = await page.locator('[class*="error"], [class*="Error"]').textContent().catch(() => "");
+			const errorText = await page
+				.locator('[class*="error"], [class*="Error"]')
+				.textContent()
+				.catch(() => "");
 			console.log(`   Error: ${errorText || "Unknown error"}`);
 			await page.close();
 			test.skip();
@@ -444,7 +450,7 @@ test.describe("Loan Creation", () => {
 		// Step 16: Wait for UI success indicator
 		console.log("📍 Step 16: Wait for UI confirmation");
 		try {
-			const successIndicator = page.locator('text=/success|confirmed|minted/i').first();
+			const successIndicator = page.locator("text=/success|confirmed|minted/i").first();
 			await expect(successIndicator).toBeVisible({ timeout: 10000 });
 			console.log("✅ UI shows transaction successful!");
 		} catch {
