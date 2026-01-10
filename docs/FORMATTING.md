@@ -13,11 +13,11 @@
 
 Use `formatCurrency(value, minDecimals, maxDecimals)` for **display only**:
 
-| Type                                           | Decimals | Example                       |
-| ---------------------------------------------- | -------- | ----------------------------- |
-| **Protocol tokens** (JUSD, JUICE, svJUSD, USD) | `(2, 2)` | `150.00 JUSD`, `100.00 JUICE` |
-| **Collateral** (cBTC, WcBTC, ETH, etc.)        | `(3, 3)` | `0.500 cBTC`                  |
-| **Percent**                                    | `(0, 2)` | `5%`, `5.5%`, `5.55%`         |
+| Type                                                 | Decimals | Example                       |
+| ---------------------------------------------------- | -------- | ----------------------------- |
+| **Protocol tokens** (JUSD, JUICE, svJUSD, SUSD, USD) | `(2, 2)` | `150.00 JUSD`, `100.00 JUICE` |
+| **Collateral** (cBTC, WcBTC, ETH, etc.)              | `(3, 3)` | `0.500 cBTC`                  |
+| **Percent**                                          | `(0, 2)` | `5%`, `5.5%`, `5.55%`         |
 
 ## Helper Functions
 
@@ -25,7 +25,7 @@ For dynamic token handling in **display contexts**, use the `getDisplayPrecision
 
 ```tsx
 const getDisplayPrecision = (symbol?: string): [number, number] => {
-	const protocolTokens = ["JUSD", "USD", "JUICE", "SVJUSD"];
+	const protocolTokens = ["JUSD", "USD", "JUICE", "SVJUSD", "SUSD"];
 	if (symbol && protocolTokens.includes(symbol.toUpperCase())) return [2, 2];
 	return [3, 3];
 };
