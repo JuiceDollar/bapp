@@ -1,5 +1,9 @@
 {
 	"common": {
+		"404": {
+			"title": "You seem to be in the wrong place",
+			"telegram_link": "Ping us on Telegram if you think this is a bug"
+		},
 		"receive": "Receive",
 		"send": "Send",
 		"approve": "Approve",

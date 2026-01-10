@@ -1,5 +1,9 @@
 {
 	"common": {
+		"404": {
+			"title": "Du scheinst am falschen Ort zu sein",
+			"telegram_link": "Kontaktiere uns auf Telegram, wenn du denkst, dass dies ein Fehler ist"
+		},
 		"receive": "Empfangen",
 		"send": "Senden",
 		"approve": "Genehmigen",
