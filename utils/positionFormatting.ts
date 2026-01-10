@@ -3,14 +3,14 @@ import { formatCurrency } from "./format";
 
 // For INPUT fields - allows precise entry (8 decimals for collateral)
 export const getDisplayDecimals = (unit: string): number => {
-	const stablecoins = ["JUSD", "DEURO"];
-	return stablecoins.includes(unit.toUpperCase()) ? 2 : 8;
+	const protocolTokens = ["JUSD", "USD", "JUICE", "SVJUSD", "SUSD"];
+	return protocolTokens.includes(unit.toUpperCase()) ? 2 : 8;
 };
 
 // For DISPLAY only - Collateral: 3 decimals, JUSD/USD: 2 decimals
 export const getDisplayDecimalsForDisplay = (unit: string): number => {
-	const stablecoins = ["JUSD", "DEURO", "USD"];
-	return stablecoins.includes(unit.toUpperCase()) ? 2 : 3;
+	const protocolTokens = ["JUSD", "USD", "JUICE", "SVJUSD", "SUSD"];
+	return protocolTokens.includes(unit.toUpperCase()) ? 2 : 3;
 };
 
 export const formatPositionValue = (value: bigint, decimals: number, unit: string): string => {
