@@ -190,8 +190,10 @@ test.describe("Visual Regression", () => {
 		});
 	});
 
-	// Dynamic pages with real position data
+	// Dynamic pages with real testnet data
+	// Position source: https://dev.api.testnet.juicedollar.com/positions/list
 	const TEST_POSITION = "0xDd37e2Bdbcf01000fa2C744f95dCc653f1660EAE";
+	// Challenge source: https://dev.api.testnet.juicedollar.com/challenges/list (position: 0x9A1FEAE477748c57bC5bf9d07f6b7427C3f26879)
 	const TEST_CHALLENGE_INDEX = "3";
 
 	test("mint position detail page", async ({ page }) => {
