@@ -92,33 +92,36 @@ export default function PositionCreate({}) {
 	const { frontendCode } = useFrontendCode();
 	const { t } = useTranslation();
 
-	const handleOnSelectedToken = useCallback((token: TokenBalance, positionOverride?: PositionQuery) => {
-		const position = positionOverride ?? defaultPosition;
-		if (!token || !position) return;
-		setSelectedCollateral(token);
+	const handleOnSelectedToken = useCallback(
+		(token: TokenBalance, positionOverride?: PositionQuery) => {
+			const position = positionOverride ?? defaultPosition;
+			if (!token || !position) return;
+			setSelectedCollateral(token);
 
-		const liqPrice = BigInt(position.price);
+			const liqPrice = BigInt(position.price);
 
-		setSelectedPosition(position);
+			setSelectedPosition(position);
 
-		const tokenBalance = balancesByAddress[token.address]?.balanceOf || 0n;
-		const maxAmount = getMaxCollateralAmount(tokenBalance, BigInt(position.availableForClones), liqPrice);
-		const defaultAmount = maxAmount > BigInt(position.minimumCollateral) ? maxAmount.toString() : position.minimumCollateral;
+			const tokenBalance = balancesByAddress[token.address]?.balanceOf || 0n;
+			const maxAmount = getMaxCollateralAmount(tokenBalance, BigInt(position.availableForClones), liqPrice);
+			const defaultAmount = maxAmount > BigInt(position.minimumCollateral) ? maxAmount.toString() : position.minimumCollateral;
 
-		setCollateralAmount(defaultAmount);
-		setExpirationDate(toDate(position.expiration));
-		setLiquidationPrice(liqPrice.toString());
+			setCollateralAmount(defaultAmount);
+			setExpirationDate(toDate(position.expiration));
+			setLiquidationPrice(liqPrice.toString());
 
-		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
-			position,
-			BigInt(maxAmount),
-			liqPrice,
-			toDate(position.expiration)
-		);
+			const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
+				position,
+				BigInt(maxAmount),
+				liqPrice,
+				toDate(position.expiration)
+			);
 
-		setLoanDetails(loanDetails);
-		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
-	}, [defaultPosition, balancesByAddress]);
+			setLoanDetails(loanDetails);
+			setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
+		},
+		[defaultPosition, balancesByAddress]
+	);
 
 	useEffect(() => {
 		const loadDefaultPosition = async () => {

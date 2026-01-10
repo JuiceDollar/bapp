@@ -158,7 +158,7 @@ export const AdjustLoan = ({
 			setOutcome(null);
 		}
 	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, collateralBalance, liqPrice, position.price]);
-	
+
 	const repayAmount = useMemo(() => (!outcome || outcome.deltaDebt >= 0n ? 0n : -outcome.deltaDebt), [outcome]);
 
 	useEffect(() => {
