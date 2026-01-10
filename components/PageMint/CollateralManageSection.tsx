@@ -335,7 +335,7 @@ export const CollateralManageSection = () => {
 								{normalizeTokenSymbol(position.collateralSymbol)}
 							</span>
 							<span className="text-xs font-medium text-text-muted2 leading-[1rem]">
-								{formatCurrency(collateralValuation)} {TOKEN_SYMBOL}
+								{formatCurrency(collateralValuation, 2, 2)} {TOKEN_SYMBOL}
 							</span>
 						</div>
 					</div>
