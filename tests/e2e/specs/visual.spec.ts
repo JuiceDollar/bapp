@@ -5,6 +5,41 @@ import { test, expect, Page } from "@playwright/test";
  * Run `yarn test:e2e:visual:update` to update baseline images
  */
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://dev.api.testnet.juicedollar.com";
+
+interface TestData {
+	position: string;
+	challengeIndex: string;
+}
+
+/**
+ * Fetch test data dynamically from the API
+ */
+async function fetchTestData(): Promise<TestData> {
+	// Get first open position
+	const positionsRes = await fetch(`${API_URL}/positions/list`);
+	const positionsData = await positionsRes.json();
+	const openPosition = positionsData.list.find((p: { closed: boolean }) => !p.closed);
+
+	if (!openPosition) {
+		throw new Error("No open position found for testing");
+	}
+
+	// Get first active challenge
+	const challengesRes = await fetch(`${API_URL}/challenges/list`);
+	const challengesData = await challengesRes.json();
+	const activeChallenge = challengesData.list.find((c: { status: string }) => c.status === "Active");
+
+	if (!activeChallenge) {
+		throw new Error("No active challenge found for testing");
+	}
+
+	return {
+		position: openPosition.position,
+		challengeIndex: activeChallenge.number,
+	};
+}
+
 /**
  * Normalize scrollbars for consistent screenshot dimensions across platforms.
  * Must be called early (before waiting for content) to ensure consistent rendering.
@@ -129,6 +164,190 @@ test.describe("Visual Regression", () => {
 		await page.waitForLoadState("networkidle");
 
 		await expect(page).toHaveScreenshot("referrals.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("ecosystem page", async ({ page }) => {
+		await page.goto("/ecosystem");
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+		await waitForCharts(page);
+
+		await expect(page).toHaveScreenshot("ecosystem.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("monitoring page", async ({ page }) => {
+		await page.goto("/monitoring");
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("monitoring.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mypositions page", async ({ page }) => {
+		await page.goto("/mypositions");
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mypositions.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint create page", async ({ page }) => {
+		await page.goto("/mint/create");
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-create.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("404 page", async ({ page }) => {
+		await page.goto("/nonexistent-page-for-404-test");
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("404.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	// Dynamic pages with real testnet data fetched from API
+	let testData: TestData;
+
+	test.beforeAll(async () => {
+		testData = await fetchTestData();
+	});
+
+	test("mint position detail page", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-detail.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage page", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage collateral page", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage/collateral`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage-collateral.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage expiration page", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage/expiration`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage-expiration.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage liquidation-price page", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage/liquidation-price`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage-liqprice.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage loan page", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage/loan`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mint-position-manage-loan.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("monitoring position detail page", async ({ page }) => {
+		await page.goto(`/monitoring/${testData.position}`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("monitoring-position-detail.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("monitoring position challenge page", async ({ page }) => {
+		await page.goto(`/monitoring/${testData.position}/challenge`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("monitoring-position-challenge.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("monitoring position forceSell page", async ({ page }) => {
+		await page.goto(`/monitoring/${testData.position}/forceSell`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("monitoring-position-forcesell.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mypositions adjust page", async ({ page }) => {
+		await page.goto(`/mypositions/${testData.position}/adjust`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("mypositions-adjust.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("challenges bid page", async ({ page }) => {
+		await page.goto(`/challenges/${testData.challengeIndex}/bid`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		await expect(page).toHaveScreenshot("challenges-bid.png", {
 			fullPage: true,
 			maxDiffPixelRatio: 0.01,
 		});
