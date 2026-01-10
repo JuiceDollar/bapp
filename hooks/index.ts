@@ -17,3 +17,5 @@ export * from "./useFrontendCode";
 export * from "./useTotalSavingsQuery";
 export * from "./useWalletBalances";
 export * from "./useSavingsInterest";
+export * from "./useExtensionTarget";
+export * from "./useReferencePosition";

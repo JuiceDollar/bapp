@@ -2,3 +2,7 @@
 build
 coverage
 .next
+
+# Test artifacts
+playwright-report
+test-results
