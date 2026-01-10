@@ -45,16 +45,16 @@ export default function Footer() {
 
 			<ul className="flex justify-end gap-8 max-md:pt-12">
 				<li>
-					<FooterButton link={DynamicDocs()} text="Doc" icon={faBook} />
+					<FooterButton link={DynamicDocs()} icon={faBook} />
 				</li>
 				<li>
-					<FooterButton link={SOCIAL.Github_organization} text="Github" icon={faGithub} />
+					<FooterButton link={SOCIAL.Github_organization} icon={faGithub} />
 				</li>
 				<li>
-					<FooterButton link={SOCIAL.Telegram} text="Telegram" icon={faTelegram} />
+					<FooterButton link={SOCIAL.Telegram} icon={faTelegram} />
 				</li>
 				<li>
-					<FooterButton link={SOCIAL.Twitter} text="Twitter" icon={faXTwitter} />
+					<FooterButton link={SOCIAL.Twitter} icon={faXTwitter} />
 				</li>
 			</ul>
 		</footer>
