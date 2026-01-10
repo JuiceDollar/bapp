@@ -65,7 +65,7 @@ export default function GovernancePositionsRow({ headers, subHeaders, position, 
 
 			<div className="flex flex-col">
 				<span className="">
-					{formatCurrency(limit)} <span className="">{TOKEN_SYMBOL}</span>
+					{formatCurrency(limit, 2, 2)} <span className="">{TOKEN_SYMBOL}</span>
 				</span>
 				<div className="text-sm text-text-subheader">{formatCurrency(position.reserveContribution / 10_000, 0, 0, 0)}%</div>
 			</div>

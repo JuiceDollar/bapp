@@ -165,7 +165,9 @@ export const MyBorrow = () => {
 					formatUnits(
 						BigInt(principal) - (BigInt(principal) * BigInt(reserveContribution)) / 1_000_000n,
 						position.stablecoinDecimals
-					)
+					),
+					2,
+					2
 				) as string;
 
 				const calculatedPercentage = calculateCollateralizationPercentage(position, prices);
@@ -207,7 +209,7 @@ export const MyBorrow = () => {
 				<div className="flex flex-row items-center w-full">
 					<span className="text-text-primary pr-4 text-base font-extrabold leading-[1.25rem]">{t("dashboard.total_owed")}</span>
 					<span className="text-text-primary text-base font-medium leading-[1.25rem]">
-						{formatCurrency(formatUnits(totalOwed, 18)) as string} {TOKEN_SYMBOL}
+						{formatCurrency(formatUnits(totalOwed, 18), 2, 2) as string} {TOKEN_SYMBOL}
 					</span>
 				</div>
 			</div>
