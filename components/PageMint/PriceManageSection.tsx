@@ -219,11 +219,7 @@ export const PriceManageSection = () => {
 				isError={Boolean(error)}
 				errorMessage={error ?? undefined}
 				disabled={minPrice > maxPrice}
-				usdPrice={formatCurrency(
-					parseFloat(formatUnits(BigInt(newPrice || "0"), priceDecimals)),
-					2,
-					2
-				)?.toString()}
+				usdPrice={formatCurrency(parseFloat(formatUnits(BigInt(newPrice || "0"), priceDecimals)), 2, 2)?.toString()}
 			/>
 
 			<div className="w-full mt-1.5 px-4 py-2 rounded-xl bg-[#FDF2E2] flex flex-row justify-between items-center text-base font-extrabold text-[#272B38]">
