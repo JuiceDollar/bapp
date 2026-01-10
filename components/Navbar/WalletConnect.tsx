@@ -38,7 +38,7 @@ export default function WalletConnect() {
 	const carryOnQueryParams = toQueryString(getCarryOnQueryParams(router));
 
 	return (
-		<div className="h-9 md:pl-2 pr-0.5 md:bg-menu-wallet-bg rounded-full md:border md:border-menu-wallet-border justify-start items-center gap-4 inline-flex">
+		<div className="inline-flex md:h-9 md:pl-2 md:pr-0.5 md:bg-menu-wallet-bg md:rounded-full md:border md:border-menu-wallet-border justify-start items-center md:gap-4">
 			<Link
 				href={`/referrals${carryOnQueryParams}`}
 				className="justify-start items-center gap-2 hidden md:flex !hover:text-button-text-hover-text group"
