@@ -78,7 +78,7 @@ export function DetailsExpandablePanel({
 			<div className="py-1.5 flex justify-between">
 				<span className="text-base leading-tight">{t("mint.market_price")}</span>
 				<span className="text-right text-sm font-extrabold leading-none tracking-tight">
-					{formatCurrency(collateralPriceUsd, 2, 2)} {TOKEN_SYMBOL}
+					{formatCurrency(collateralPriceUsd, 2, 2)} USD
 				</span>
 			</div>
 			<div className="py-1.5 flex justify-between">

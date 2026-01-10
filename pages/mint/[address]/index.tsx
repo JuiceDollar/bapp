@@ -386,7 +386,7 @@ export default function PositionBorrow({}) {
 								<div className="mt-2 flex">
 									<div className="flex-1">{t("mint.market_price")}</div>
 									<div className="">
-										{formatCurrency(collateralPriceUsd)} {TOKEN_SYMBOL}
+										{formatCurrency(collateralPriceUsd)} USD
 									</div>
 								</div>
 
