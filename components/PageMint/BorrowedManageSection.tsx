@@ -105,7 +105,7 @@ export const BorrowedManageSection = () => {
 
 	const { reserveContribution } = position || {};
 
-	const collateralPrice = prices[position?.collateral?.toLowerCase() as Address]?.price?.eur || 0;
+	const collateralPrice = prices[position?.collateral?.toLowerCase() as Address]?.price?.usd || 0;
 	const principal = data?.[0]?.result || 0n;
 	const price = data?.[1]?.result || 1n;
 	const balanceOf = data?.[2]?.result || 0n;
@@ -418,7 +418,7 @@ export const BorrowedManageSection = () => {
 				loanDetails={loanDetails}
 				startingLiquidationPrice={BigInt(price)}
 				collateralDecimals={position.collateralDecimals}
-				collateralPriceDeuro={collateralPrice}
+				collateralPriceUsd={collateralPrice}
 				extraRows={
 					<div className="py-1.5 flex justify-between">
 						<span className="text-base leading-tight">{t("common.position")}</span>

@@ -105,7 +105,7 @@ export const CollateralManageSection = () => {
 	const balanceOf = data?.[2]?.result || 0n; // collateral reserve
 	const debt = data?.[3]?.result || 0n;
 	const collateralRequirement = data?.[4]?.result || 0n;
-	const collateralPrice = prices[position?.collateral?.toLowerCase() as Address]?.price?.eur || 0;
+	const collateralPrice = prices[position?.collateral?.toLowerCase() as Address]?.price?.usd || 0;
 	const collateralValuation = collateralPrice * Number(formatUnits(balanceOf, position?.collateralDecimals || 18));
 
 	// Use native balance for native wrapped positions, otherwise use ERC20 balance
@@ -400,7 +400,7 @@ export const CollateralManageSection = () => {
 			)}
 			<DetailsExpandablePanel
 				loanDetails={loanDetails}
-				collateralPriceDeuro={collateralPrice}
+				collateralPriceUsd={collateralPrice}
 				collateralDecimals={position.collateralDecimals}
 				startingLiquidationPrice={BigInt(position.price)}
 				extraRows={

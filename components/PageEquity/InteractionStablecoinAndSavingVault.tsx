@@ -18,8 +18,6 @@ import { InputTitle } from "@components/Input/InputTitle";
 import { MaxButton } from "@components/Input/MaxButton";
 import { TokenBalance } from "../../hooks/useWalletBalances";
 import { TokenInteractionSide } from "./EquityInteractionCard";
-import { RootState } from "../../redux/redux.store";
-import { useSelector } from "react-redux";
 interface Props {
 	openSelector: (tokenInteractionSide: TokenInteractionSide) => void;
 	selectedFromToken: TokenBalance | undefined;
@@ -44,7 +42,6 @@ export default function InteractionStablecoinAndSavingVault({
 	const { address } = useAccount();
 	const chainId = useChainId();
 	const poolStats = usePoolStats();
-	const eurPrice = useSelector((state: RootState) => state.prices.eur?.usd);
 	const account = address || zeroAddress;
 	const direction: boolean = selectedFromToken?.symbol === TOKEN_SYMBOL;
 
@@ -167,9 +164,8 @@ export default function InteractionStablecoinAndSavingVault({
 	const fromSymbol = direction ? TOKEN_SYMBOL : SAVINGS_VAULT_SYMBOL;
 
 	const collateralValue = direction ? amount : amountInAssets;
-	const collateralEurValue = formatBigInt(collateralValue);
-	const collateralUsdValue =
-		eurPrice && collateralValue ? formatBigInt((BigInt(Math.floor(eurPrice * 10000)) * collateralValue) / 10000n) : formatBigInt(0n);
+	// 1 JUSD = 1 USD, so value is directly in USD
+	const collateralUsdValue = formatBigInt(collateralValue);
 
 	const onChangeAmount = (value: string) => {
 		const valueBigInt = BigInt(value);
@@ -241,13 +237,7 @@ export default function InteractionStablecoinAndSavingVault({
 					adornamentRow={
 						<div className="self-stretch justify-start items-center inline-flex">
 							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
-								<div className="text-text-muted3 text-xs font-medium leading-none">€{collateralEurValue}</div>
-								{eurPrice && (
-									<>
-										<div className="h-4 w-0.5 border-l border-input-placeholder"></div>
-										<div className="text-text-muted3 text-xs font-medium leading-none">${collateralUsdValue}</div>
-									</>
-								)}
+								<div className="text-text-muted3 text-xs font-medium leading-none">${collateralUsdValue}</div>
 							</div>
 							<div className="h-7 justify-end items-center gap-2.5 flex">
 								{selectedFromToken && (
@@ -288,13 +278,7 @@ export default function InteractionStablecoinAndSavingVault({
 					adornamentRow={
 						<div className="self-stretch justify-start items-center inline-flex">
 							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
-								<div className="text-text-muted2 text-xs font-medium leading-none">€{collateralEurValue}</div>
-								{eurPrice && (
-									<>
-										<div className="h-4 w-0.5 border-l border-input-placeholder"></div>
-										<div className="text-text-muted2 text-xs font-medium leading-none">${collateralUsdValue}</div>
-									</>
-								)}
+								<div className="text-text-muted2 text-xs font-medium leading-none">${collateralUsdValue}</div>
 							</div>
 							<div className="h-7 justify-end items-center gap-2.5 flex">
 								{selectedToToken && (

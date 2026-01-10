@@ -33,7 +33,6 @@ export const PriceManageSection = () => {
 	const positions = useSelector((state: RootState) => state.positions.list?.list || []);
 	const position = positions.find((p) => p.position == addressQuery);
 	const prices = useSelector((state: RootState) => state.prices.coingecko || {});
-	const eurPrice = useSelector((state: RootState) => state.prices.eur?.usd);
 	const url = useContractUrl(position?.position || (zeroAddress as Address));
 
 	const { data, refetch: refetchReadContracts } = useReadContracts({
@@ -81,7 +80,7 @@ export const PriceManageSection = () => {
 	const collateralRequirement = data?.[4]?.result || 0n;
 	const availableForMinting = BigInt(position?.availableForMinting || "0");
 
-	const collateralPrice = prices[position?.collateral?.toLowerCase() as Address]?.price?.eur || 0;
+	const collateralPrice = prices[position?.collateral?.toLowerCase() as Address]?.price?.usd || 0;
 	const priceDecimals = 36 - (position?.collateralDecimals || 18);
 
 	// Calculate price bounds for validation (will be 0 if position is undefined)
@@ -202,7 +201,7 @@ export const PriceManageSection = () => {
 		<div className="flex flex-col gap-y-3">
 			<div className="flex flex-row gap-x-1.5 pl-3">
 				<div className="text-lg font-extrabold leading-[1.4375rem]">{t("mint.current_price")}</div>
-				<div className="text-base font-medium">{formatCurrency(formatUnits(currentPrice, priceDecimals))} EUR</div>
+				<div className="text-base font-medium">{formatCurrency(formatUnits(currentPrice, priceDecimals))} USD</div>
 			</div>
 
 			{isMintingExhausted && minPrice === maxPrice && (
@@ -221,7 +220,7 @@ export const PriceManageSection = () => {
 				errorMessage={error ?? undefined}
 				disabled={minPrice > maxPrice}
 				usdPrice={formatCurrency(
-					parseFloat(formatUnits(BigInt(newPrice || "0"), priceDecimals)) * (eurPrice || 0),
+					parseFloat(formatUnits(BigInt(newPrice || "0"), priceDecimals)),
 					2,
 					2
 				)?.toString()}
@@ -243,7 +242,7 @@ export const PriceManageSection = () => {
 
 			<DetailsExpandablePanel
 				loanDetails={loanDetails}
-				collateralPriceDeuro={collateralPrice}
+				collateralPriceUsd={collateralPrice}
 				collateralDecimals={position.collateralDecimals}
 				startingLiquidationPrice={BigInt(newPrice || currentPrice.toString())}
 				extraRows={

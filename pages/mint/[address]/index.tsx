@@ -93,10 +93,10 @@ export default function PositionBorrow({}) {
 	if (!position) return null;
 
 	const price: number = parseFloat(formatUnits(BigInt(position.price), 36 - position.collateralDecimals));
-	const collateralPriceDeuro: number = prices[position.collateral.toLowerCase() as Address]?.price?.eur || 1;
+	const collateralPriceUsd: number = prices[position.collateral.toLowerCase() as Address]?.price?.usd || 1;
 	const interest: number = position.annualInterestPPM / 10 ** 6 + position.fixedAnnualRatePPM / 10 ** 6;
 	const reserve: number = position.reserveContribution / 10 ** 6;
-	const effectiveLTV: number = (price * (1 - reserve)) / collateralPriceDeuro;
+	const effectiveLTV: number = (price * (1 - reserve)) / collateralPriceUsd;
 	const effectiveInterest: number = interest / (1 - reserve);
 
 	const requiredColl =
@@ -386,7 +386,7 @@ export default function PositionBorrow({}) {
 								<div className="mt-2 flex">
 									<div className="flex-1">{t("mint.market_price")}</div>
 									<div className="">
-										{formatCurrency(collateralPriceDeuro)} {TOKEN_SYMBOL}
+										{formatCurrency(collateralPriceUsd)} {TOKEN_SYMBOL}
 									</div>
 								</div>
 
