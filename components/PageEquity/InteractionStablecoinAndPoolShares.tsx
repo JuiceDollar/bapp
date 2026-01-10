@@ -48,8 +48,8 @@ export default function InteractionStablecoinAndPoolShares({
 	const direction: boolean = selectedFromToken?.symbol === TOKEN_SYMBOL;
 
 	const getDisplayPrecision = (symbol?: string): [number, number] => {
-		const stablecoins = ["JUSD", "USD"];
-		if (symbol && stablecoins.includes(symbol.toUpperCase())) return [2, 2];
+		const protocolTokens = ["JUSD", "USD", "JUICE", "SVJUSD", "SUSD"];
+		if (symbol && protocolTokens.includes(symbol.toUpperCase())) return [2, 2];
 		return [3, 3];
 	};
 

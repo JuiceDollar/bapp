@@ -4,8 +4,8 @@ import { TokenModalRowButton, TokenSelectModal } from "@components/TokenSelectMo
 import { TokenBalance } from "../../hooks/useWalletBalances";
 
 const getDisplayPrecision = (symbol?: string): [number, number] => {
-	const stablecoins = ["JUSD", "DEURO", "USD", "SJUSD"];
-	if (symbol && stablecoins.includes(symbol.toUpperCase())) return [2, 2];
+	const protocolTokens = ["JUSD", "USD", "JUICE", "SVJUSD", "SUSD"];
+	if (symbol && protocolTokens.includes(symbol.toUpperCase())) return [2, 2];
 	return [3, 3]; // Token default (JPS, etc.)
 };
 

@@ -9,8 +9,8 @@ import { useTranslation } from "next-i18next";
 const TokenLogo = dynamic(() => import("../TokenLogo"), { ssr: false });
 
 const getDisplayPrecision = (symbol?: string): [number, number] => {
-	const stablecoins = ["JUSD", "DEURO", "USD"];
-	if (symbol && stablecoins.includes(symbol.toUpperCase())) return [2, 2];
+	const protocolTokens = ["JUSD", "USD", "JUICE", "SVJUSD", "SUSD"];
+	if (symbol && protocolTokens.includes(symbol.toUpperCase())) return [2, 2];
 	return [3, 3]; // Collateral default
 };
 
