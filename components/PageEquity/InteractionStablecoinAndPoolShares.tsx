@@ -176,9 +176,6 @@ export default function InteractionStablecoinAndPoolShares({
 		poolStats.equityUserVotes > 86_400 * 90 && poolStats.equityUserVotes < 86_400 * 365 * 30 && poolStats.equityUserVotes > 0n;
 	const redeemLeft = 86400n * 90n - (poolStats.equityBalance ? poolStats.equityUserVotes / poolStats.equityBalance / 2n ** 20n : 0n);
 
-	const collateralValue = direction ? amount : deuroResult;
-	// 1 JUSD = 1 USD, so value is directly in USD
-	const collateralUsdValue = formatBigInt(collateralValue);
 
 	const onChangeAmount = (value: string) => {
 		const valueBigInt = BigInt(value);
@@ -295,9 +292,7 @@ export default function InteractionStablecoinAndPoolShares({
 					errorMessage={error}
 					adornamentRow={
 						<div className="self-stretch justify-start items-center inline-flex">
-							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
-								<div className="text-text-muted3 text-xs font-medium leading-none">${collateralUsdValue}</div>
-							</div>
+							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden"></div>
 							<div className="h-7 justify-end items-center gap-2.5 flex">
 								{selectedFromToken && (
 									<>
@@ -336,9 +331,7 @@ export default function InteractionStablecoinAndPoolShares({
 					onChange={() => {}}
 					adornamentRow={
 						<div className="self-stretch justify-start items-center inline-flex">
-							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
-								<div className="text-text-muted2 text-xs font-medium leading-none">${collateralUsdValue}</div>
-							</div>
+							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden"></div>
 							<div className="h-7 justify-end items-center gap-2.5 flex">
 								{selectedToToken && (
 									<>

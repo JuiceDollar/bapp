@@ -196,9 +196,6 @@ export default function InteractionSavingsVaultAndPoolShares({
 	const result = (direction ? stablecoinInEquity : stablecoinInVaultSharesResult) || 0n;
 	const fromSymbol = direction ? SAVINGS_VAULT_SYMBOL : POOL_SHARE_TOKEN_SYMBOL;
 
-	const collateralValue = direction ? amount : stablecoinInVaultSharesResult;
-	// 1 JUSD = 1 USD, so value is directly in USD
-	const collateralUsdValue = formatBigInt(collateralValue);
 
 	const onChangeAmount = (value: string) => {
 		const valueBigInt = BigInt(value);
@@ -315,9 +312,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 					errorMessage={error}
 					adornamentRow={
 						<div className="self-stretch justify-start items-center inline-flex">
-							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
-								<div className="text-text-muted3 text-xs font-medium leading-none">${collateralUsdValue}</div>
-							</div>
+							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden"></div>
 							<div className="h-7 justify-end items-center gap-2.5 flex">
 								{selectedFromToken && (
 									<>
@@ -356,9 +351,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 					onChange={() => {}}
 					adornamentRow={
 						<div className="self-stretch justify-start items-center inline-flex">
-							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
-								<div className="text-text-muted2 text-xs font-medium leading-none">${collateralUsdValue}</div>
-							</div>
+							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden"></div>
 							<div className="h-7 justify-end items-center gap-2.5 flex">
 								{selectedToToken && (
 									<>
