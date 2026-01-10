@@ -254,6 +254,78 @@ test.describe("Visual Regression", () => {
 		});
 	});
 
+	test("mint position manage - click loan button", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		// Click "Adjust Loan Amount" button
+		await page.locator("button", { hasText: "Adjust Loan Amount" }).click();
+		await page.waitForLoadState("networkidle");
+
+		// Verify navigation succeeded
+		await expect(page).toHaveURL(/\/manage\/loan/);
+
+		await expect(page).toHaveScreenshot("mint-position-manage-loan-via-button.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage - click collateral button", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		// Click "Adjust Collateral" button
+		await page.locator("button", { hasText: "Adjust Collateral" }).click();
+		await page.waitForLoadState("networkidle");
+
+		// Verify navigation succeeded
+		await expect(page).toHaveURL(/\/manage\/collateral/);
+
+		await expect(page).toHaveScreenshot("mint-position-manage-collateral-via-button.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage - click liquidation price button", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		// Click "Adjust Liquidation Price" button
+		await page.locator("button", { hasText: "Adjust Liquidation Price" }).click();
+		await page.waitForLoadState("networkidle");
+
+		// Verify navigation succeeded
+		await expect(page).toHaveURL(/\/manage\/liquidation-price/);
+
+		await expect(page).toHaveScreenshot("mint-position-manage-liqprice-via-button.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
+	test("mint position manage - click expiration button", async ({ page }) => {
+		await page.goto(`/mint/${testData.position}/manage`);
+		await normalizeScrollbars(page);
+		await page.waitForLoadState("networkidle");
+
+		// Click "Adjust Expiration" button
+		await page.locator("button", { hasText: "Adjust Expiration" }).click();
+		await page.waitForLoadState("networkidle");
+
+		// Verify navigation succeeded
+		await expect(page).toHaveURL(/\/manage\/expiration/);
+
+		await expect(page).toHaveScreenshot("mint-position-manage-expiration-via-button.png", {
+			fullPage: true,
+			maxDiffPixelRatio: 0.01,
+		});
+	});
+
 	test("mint position manage collateral page", async ({ page }) => {
 		await page.goto(`/mint/${testData.position}/manage/collateral`);
 		await normalizeScrollbars(page);
