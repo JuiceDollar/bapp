@@ -333,7 +333,7 @@ export default function PositionBorrow({}) {
 										<span>{t("mint.sent_to_your_wallet")}</span>
 									</div>
 									<div className="text-right">
-										<span className="text-xs mr-3">{formatCurrency(paidOutToWalletPct)}%</span>
+										<span className="text-xs mr-3">{formatCurrency(paidOutToWalletPct, 0, 2)}%</span>
 										<span>
 											{formatCurrency(formatUnits(paidOutToWallet, 18), 2, 2)} {TOKEN_SYMBOL}
 										</span>

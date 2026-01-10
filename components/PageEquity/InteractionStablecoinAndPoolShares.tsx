@@ -47,6 +47,12 @@ export default function InteractionStablecoinAndPoolShares({
 	const account = address || zeroAddress;
 	const direction: boolean = selectedFromToken?.symbol === TOKEN_SYMBOL;
 
+	const getDisplayPrecision = (symbol?: string): [number, number] => {
+		const stablecoins = ["JUSD", "USD"];
+		if (symbol && stablecoins.includes(symbol.toUpperCase())) return [2, 2];
+		return [3, 3];
+	};
+
 	const { data: frontendDeuroAllowanceData, refetch: refetchFrontendDeuroAllowance } = useReadContract({
 		address: ADDRESS[chainId].juiceDollar,
 		abi: JuiceDollarABI,
@@ -295,7 +301,8 @@ export default function InteractionStablecoinAndPoolShares({
 										<div className="text-text-muted3 text-xs font-medium leading-none">
 											{t("common.balance_label")}{" "}
 											{formatCurrency(
-												formatUnits(selectedFromToken?.balanceOf || 0n, selectedFromToken?.decimals || 18)
+												formatUnits(selectedFromToken?.balanceOf || 0n, selectedFromToken?.decimals || 18),
+												...getDisplayPrecision(selectedFromToken?.symbol)
 											)}{" "}
 											{selectedFromToken?.symbol}
 										</div>

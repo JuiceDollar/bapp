@@ -504,7 +504,7 @@ export default function PositionCreate({}) {
 									? t("mint.your_liquidation_price_is_too_high")
 									: t("common.receive") +
 									  " " +
-									  formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2) +
+									  formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2, 2) +
 									  " " +
 									  TOKEN_SYMBOL}
 							</Button>
@@ -513,9 +513,10 @@ export default function PositionCreate({}) {
 					<BorrowingDEUROModal
 						isOpen={isOpenBorrowingDEUROModal}
 						setIsOpen={setIsOpenBorrowingDEUROModal}
-						youGet={formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2)}
+						youGet={formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2, 2)}
 						liquidationPrice={formatCurrency(
 							formatUnits(BigInt(liquidationPrice), 36 - (selectedPosition?.collateralDecimals || 0)),
+							2,
 							2
 						)}
 						expiration={expirationDate}
