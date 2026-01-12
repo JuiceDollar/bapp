@@ -171,7 +171,7 @@ export default function PositionCreate({}) {
 		} else if (collateralAmount === "" || !address) {
 			return;
 		} else if (BigInt(collateralAmount) < BigInt(selectedPosition.minimumCollateral)) {
-			const minColl = formatBigInt(BigInt(selectedPosition?.minimumCollateral || 0n), selectedPosition?.collateralDecimals || 0);
+			const minColl = formatBigInt(BigInt(selectedPosition?.minimumCollateral || 0n), selectedPosition?.collateralDecimals || 0, 4);
 			const notTheMinimum = `${t("mint.error.must_be_at_least_the_minimum_amount")} (${minColl} ${normalizeTokenSymbol(
 				selectedPosition?.collateralSymbol || ""
 			)})`;
@@ -182,7 +182,7 @@ export default function PositionCreate({}) {
 			});
 			setCollateralError(notEnoughBalance);
 		} else if (maxFromLimit > 0n && BigInt(collateralAmount) > maxFromLimit) {
-			const maxColl = formatBigInt(maxFromLimit, selectedPosition?.collateralDecimals || 0);
+			const maxColl = formatBigInt(maxFromLimit, selectedPosition?.collateralDecimals || 0, 4);
 			const availableToMint = formatBigInt(BigInt(selectedPosition.availableForClones), 18);
 			const limitExceeded = t("mint.error.global_minting_limit_exceeded", {
 				maxCollateral: maxColl,
@@ -195,17 +195,7 @@ export default function PositionCreate({}) {
 	}, [collateralAmount, balancesByAddress, address, selectedPosition, liquidationPrice, selectedCollateral, t]);
 
 	const prices = useSelector((state: RootState) => state.prices.coingecko || {});
-	const eurPrice = useSelector((state: RootState) => state.prices.eur?.usd);
-	const collateralPriceDeuro = prices[selectedPosition?.collateral.toLowerCase() as Address]?.price?.eur || 0;
-
 	const collateralPriceUsd = prices[selectedPosition?.collateral.toLowerCase() as Address]?.price?.usd || 0;
-	const collateralEurValue = selectedPosition
-		? formatCurrency(
-				collateralPriceDeuro * parseFloat(formatUnits(BigInt(collateralAmount), selectedPosition.collateralDecimals)),
-				2,
-				2
-		  )
-		: 0;
 	const collateralUsdValue = selectedPosition
 		? formatCurrency(collateralPriceUsd * parseFloat(formatUnits(BigInt(collateralAmount), selectedPosition.collateralDecimals)), 2, 2)
 		: 0;
@@ -219,8 +209,9 @@ export default function PositionCreate({}) {
 
 	const userBalance = collateralUserBalance?.balanceOf || 0n;
 	const selectedBalance = Boolean(selectedCollateral) ? balancesByAddress[selectedCollateral?.address as Address] : null;
+	// 1 JUSD = 1 USD, so liquidation price is already in USD
 	const usdLiquidationPrice = formatCurrency(
-		parseFloat(formatUnits(BigInt(liquidationPrice), 36 - (selectedPosition?.collateralDecimals || 0))) * (eurPrice || 0),
+		parseFloat(formatUnits(BigInt(liquidationPrice), 36 - (selectedPosition?.collateralDecimals || 0))),
 		2,
 		2
 	)?.toString();
@@ -338,7 +329,7 @@ export default function PositionCreate({}) {
 				},
 				{
 					title: t("common.txs.collateral"),
-					value: formatBigInt(BigInt(collateralAmount), 18) + " cBTC",
+					value: formatBigInt(BigInt(collateralAmount), 18, 4) + " cBTC",
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -436,7 +427,8 @@ export default function PositionCreate({}) {
 										symbol: TOKEN_SYMBOL,
 										minCollateral: formatBigInt(
 											BigInt(selectedPosition.minimumCollateral),
-											selectedPosition.collateralDecimals
+											selectedPosition.collateralDecimals,
+											4
 										),
 										collateralSymbol: normalizeTokenSymbol(selectedPosition.collateralSymbol),
 									})}
@@ -477,7 +469,7 @@ export default function PositionCreate({}) {
 							loanDetails={loanDetails}
 							startingLiquidationPrice={BigInt(liquidationPrice)}
 							collateralDecimals={selectedPosition?.collateralDecimals || 0}
-							collateralPriceDeuro={collateralPriceDeuro}
+							collateralPriceUsd={collateralPriceUsd}
 							extraRows={
 								<div className="py-1.5 flex justify-between">
 									<span className="text-base leading-tight">{t("mint.original_position")}</span>
@@ -514,7 +506,7 @@ export default function PositionCreate({}) {
 									? t("mint.your_liquidation_price_is_too_high")
 									: t("common.receive") +
 									  " " +
-									  formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2) +
+									  formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2, 2) +
 									  " " +
 									  TOKEN_SYMBOL}
 							</Button>
@@ -523,9 +515,10 @@ export default function PositionCreate({}) {
 					<BorrowingDEUROModal
 						isOpen={isOpenBorrowingDEUROModal}
 						setIsOpen={setIsOpenBorrowingDEUROModal}
-						youGet={formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2)}
+						youGet={formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2, 2)}
 						liquidationPrice={formatCurrency(
 							formatUnits(BigInt(liquidationPrice), 36 - (selectedPosition?.collateralDecimals || 0)),
+							2,
 							2
 						)}
 						expiration={expirationDate}
@@ -533,10 +526,9 @@ export default function PositionCreate({}) {
 							BigInt(collateralAmount),
 							selectedPosition?.collateralDecimals || 0
 						)} ${normalizeTokenSymbol(selectedPosition?.collateralSymbol || "")}`}
-						collateralPriceDeuro={collateralEurValue || "0"}
+						collateralPriceUsd={collateralUsdValue?.toString() || "0"}
 						isSuccess={isCloneSuccess}
 						isLoading={isCloneLoading}
-						usdLiquidationPrice={usdLiquidationPrice}
 					/>
 				</AppCard>
 			</div>
