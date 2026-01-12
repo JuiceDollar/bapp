@@ -232,14 +232,16 @@ export const AdjustCollateral = ({
 				});
 			} else {
 				// Calculate the new principal for the adjust() call
-				// - If closing position (newCollateral === 0n): set principal to 0 to repay all debt
-				// - If using REPAY_LOAN strategy: reduce principal by repay amount
-				// - Otherwise: keep current debt level
+				// The smart contract's adjust() function calculates debt to repay as: currentDebt - newPrincipal
+				// Therefore newPrincipal should represent the TARGET debt after the operation:
+				// - If closing position: 0 (repay all debt)
+				// - If using REPAY_LOAN strategy: currentDebt - calculatedRepayAmount (the remaining debt)
+				// - Otherwise: keep current principal (no debt change)
 				const isFullClose = newCollateral === 0n && principal > 0n;
 				const newPrincipal = isFullClose
 					? 0n
 					: strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n
-					? principal - calculatedRepayAmount
+					? currentDebt - calculatedRepayAmount
 					: principal;
 
 				const isWithinDelta = delta <= maxRemovableWithoutAdjustment;

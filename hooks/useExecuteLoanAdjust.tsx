@@ -29,7 +29,17 @@ export const executeLoanAdjust = async ({
 	const posAddr = position.position as Address;
 	const depositAmount = outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
 	const isWithdrawing = outcome.deltaCollateral < 0n;
-	const newPrincipal = outcome.next.debt === 0n ? 0n : principal + outcome.deltaDebt;
+	// The smart contract's adjust() function handles newPrincipal differently for repay vs borrow:
+	// - Repay: _payDownDebt(currentDebt - newPrincipal) → newPrincipal should be TARGET DEBT
+	// - Borrow: _mint(newPrincipal - principal) → newPrincipal should be NEW PRINCIPAL
+	//
+	// Therefore the correct formula depends on the operation:
+	// - Borrow (deltaDebt >= 0): newPrincipal = principal + deltaDebt (amount to add to principal)
+	// - Repay (deltaDebt < 0): newPrincipal = outcome.next.debt (target debt after repayment)
+	const newPrincipal =
+		outcome.deltaDebt >= 0n
+			? principal + outcome.deltaDebt // Borrow: add deltaDebt to current principal
+			: outcome.next.debt; // Repay: target debt = currentDebt - repayAmount
 	const LiqPrice = BigInt(position.price);
 
 	// Check if this is a full close (repay all debt and withdraw all collateral)
