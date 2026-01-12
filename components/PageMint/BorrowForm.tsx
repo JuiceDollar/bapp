@@ -140,7 +140,7 @@ export default function PositionCreate({}) {
 		} else if (collateralAmount === "" || !address) {
 			return;
 		} else if (BigInt(collateralAmount) < BigInt(selectedPosition.minimumCollateral)) {
-			const minColl = formatBigInt(BigInt(selectedPosition?.minimumCollateral || 0n), selectedPosition?.collateralDecimals || 0);
+			const minColl = formatBigInt(BigInt(selectedPosition?.minimumCollateral || 0n), selectedPosition?.collateralDecimals || 0, 4);
 			const notTheMinimum = `${t("mint.error.must_be_at_least_the_minimum_amount")} (${minColl} ${normalizeTokenSymbol(
 				selectedPosition?.collateralSymbol || ""
 			)})`;
@@ -426,7 +426,8 @@ export default function PositionCreate({}) {
 										symbol: TOKEN_SYMBOL,
 										minCollateral: formatBigInt(
 											BigInt(selectedPosition.minimumCollateral),
-											selectedPosition.collateralDecimals
+											selectedPosition.collateralDecimals,
+											4
 										),
 										collateralSymbol: normalizeTokenSymbol(selectedPosition.collateralSymbol),
 									})}
