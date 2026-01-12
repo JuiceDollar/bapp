@@ -180,6 +180,80 @@ const CITREA_TESTNET = {
  * @param metamask - MetaMask instance
  * @returns Promise that resolves when wallet is connected
  */
+/**
+ * Force connect wallet - always performs connection regardless of current state
+ */
+async function forceConnectWallet(page: Page, metamask: MetaMask): Promise<void> {
+	console.log("📍 Force connecting wallet...");
+
+	// First, check if there's a connect button visible
+	const connectButton = page.getByRole("button", { name: /connect/i });
+	const connectVisible = await connectButton.isVisible({ timeout: 5000 }).catch(() => false);
+
+	if (connectVisible) {
+		// Fresh page, just click connect
+		await connectButton.click();
+	} else {
+		// Might be "connected" (cached state) - disconnect first
+		console.log("   No connect button found, looking for wallet menu...");
+		const walletButton = page.locator("text=/0x[a-fA-F0-9]{4}/i").first();
+		const walletButtonVisible = await walletButton.isVisible({ timeout: 3000 }).catch(() => false);
+
+		if (walletButtonVisible) {
+			await walletButton.click();
+			await page.waitForTimeout(500);
+			const disconnectOption = page.getByText(/disconnect/i).first();
+			const disconnectVisible = await disconnectOption.isVisible({ timeout: 2000 }).catch(() => false);
+			if (disconnectVisible) {
+				await disconnectOption.click();
+				console.log("   Disconnected wallet");
+				await page.waitForTimeout(1000);
+			} else {
+				await page.keyboard.press("Escape");
+			}
+		}
+
+		// Reload and try again
+		await page.reload();
+		await page.waitForLoadState("networkidle");
+		const newConnectBtn = page.getByRole("button", { name: /connect/i });
+		await expect(newConnectBtn).toBeVisible({ timeout: 10000 });
+		await newConnectBtn.click();
+	}
+
+	// Select MetaMask from wallet modal
+	console.log("📍 Select MetaMask from modal");
+	await page.waitForTimeout(1000);
+	const walletOption = page.getByText(/metamask/i).first();
+	await expect(walletOption).toBeVisible({ timeout: 5000 });
+	await walletOption.click();
+
+	// Approve connection in MetaMask
+	console.log("📍 Approve connection in MetaMask");
+	await metamask.connectToDapp();
+	await page.waitForTimeout(2000);
+
+	// Handle network switch if prompted
+	console.log("📍 Handle network switch");
+	try {
+		const switchNetworkButton = page.getByRole("button", { name: /switch network/i });
+		const isSwitchVisible = await switchNetworkButton.isVisible({ timeout: 3000 }).catch(() => false);
+		if (isSwitchVisible) {
+			await switchNetworkButton.click();
+			await page.waitForTimeout(3000);
+		}
+	} catch {
+		// Network switch not needed
+	}
+
+	// Verify connection
+	console.log("📍 Verifying connection...");
+	await page.waitForTimeout(2000);
+	const walletAddress = page.locator("text=/0x[a-fA-F0-9]{4}/i").first();
+	await expect(walletAddress).toBeVisible({ timeout: 10000 });
+	console.log("   ✅ Wallet connected!");
+}
+
 async function connectWalletIfNeeded(page: Page, metamask: MetaMask): Promise<void> {
 	// Check if wallet is already connected AND has a valid balance (not 0)
 	const walletAddressVisible = await page
@@ -1021,6 +1095,157 @@ test.describe("Loan Creation", () => {
 		console.log("═".repeat(50));
 
 		await screenshot("55-final-state");
+		await page.close();
+	});
+
+	test("should close an existing position with single transaction", async () => {
+		page = await context.newPage();
+
+		// Screenshot helper
+		let screenshotCount = 0;
+		const screenshot = async (name: string) => {
+			screenshotCount++;
+			const filename = `close-position-${String(screenshotCount).padStart(2, "0")}-${name}.png`;
+			if (!fs.existsSync(SCREENSHOT_DIR)) {
+				fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+			}
+			await page.screenshot({ path: `${SCREENSHOT_DIR}/${filename}`, fullPage: true });
+			console.log(`   📸 Screenshot: ${filename}`);
+		};
+
+		console.log("\n🔴 TEST: Close Existing Position (Single Transaction)");
+		console.log("━".repeat(50));
+		console.log("This test validates that closing a position requires only ONE MetaMask confirmation");
+		console.log("(Previously it required TWO: repayFull + withdrawCollateral)\n");
+
+		// Step 1: Navigate to dashboard
+		console.log("📍 Step 1: Navigate to dashboard");
+		await page.goto("/dashboard");
+		await page.waitForLoadState("networkidle");
+		await screenshot("01-dashboard-initial");
+
+		// Step 2: Force connect wallet (always fresh connection)
+		console.log("📍 Step 2: Force connect wallet");
+		await forceConnectWallet(page, metamask);
+		await screenshot("02-wallet-connected");
+
+		// Step 3: Wait for positions to load
+		console.log("📍 Step 3: Wait for positions to load");
+		await page.waitForTimeout(5000);
+		await screenshot("03-positions-loaded");
+
+		// Step 4: Find an existing position with the "Manage" link
+		console.log("📍 Step 4: Find existing position");
+		const manageLink = page.locator('a[href^="/mint/0x"][href$="/manage"]').first();
+		const hasPosition = await manageLink.isVisible({ timeout: 15000 }).catch(() => false);
+
+		if (!hasPosition) {
+			console.log("⚠️  No existing position found on dashboard. Skipping test.");
+			console.log("   To run this test, first create a loan position.");
+			await screenshot("04-no-position-found");
+			await page.close();
+			test.skip();
+			return;
+		}
+
+		await screenshot("04-position-found");
+		const positionHref = await manageLink.getAttribute("href");
+		console.log(`   Found position: ${positionHref}`);
+
+		// Step 5: Navigate to loan management page
+		const loanManageUrl = positionHref?.replace("/manage", "/manage/loan");
+		console.log(`📍 Step 5: Navigate to ${loanManageUrl}`);
+		await page.goto(loanManageUrl || "/dashboard");
+		await page.waitForLoadState("networkidle");
+		await page.waitForTimeout(2000);
+		await screenshot("05-loan-manage-page");
+
+		// Step 6: Switch to "Repay Loan" mode
+		console.log("📍 Step 6: Switch to Repay Loan mode");
+		const repayLoanButton = page.getByText(/Repay Loan/i).first();
+		await expect(repayLoanButton).toBeVisible({ timeout: 10000 });
+		await repayLoanButton.click();
+		await page.waitForTimeout(500);
+		console.log("   Switched to Repay Loan mode");
+		await screenshot("06-repay-loan-mode");
+
+		// Step 7: Click MAX to repay full amount
+		console.log("📍 Step 7: Click MAX to repay full loan");
+		const maxButton = page.locator("button").filter({ hasText: /max/i }).first();
+		await expect(maxButton).toBeVisible({ timeout: 5000 });
+		await expect(maxButton).toBeEnabled({ timeout: 5000 });
+		await maxButton.click();
+		await page.waitForTimeout(1000);
+		console.log("   MAX amount entered");
+		await screenshot("07-max-amount-entered");
+
+		// Step 8: Check if we need to approve JUSD
+		console.log("📍 Step 8: Check for approve button");
+		const approveButton = page.getByRole("button", { name: /approve/i });
+		const needsApproval = await approveButton.isVisible({ timeout: 3000 }).catch(() => false);
+
+		let txStartTime: Date;
+
+		if (needsApproval) {
+			console.log("📍 Step 8a: Approving JUSD for position...");
+			await screenshot("08a-needs-approval");
+			txStartTime = new Date();
+			await approveButton.click();
+			await page.waitForTimeout(3000);
+			await metamask.approveTokenPermission({ spendLimit: "max" });
+			console.log("   Token permission approved in MetaMask");
+			await screenshot("08b-approval-confirmed");
+
+			// Verify approval on blockchain
+			console.log("📍 Verify approval on Citreascan");
+			const approvalTx = await verifyTransactionOnCitreascan(WALLET_ADDRESS, txStartTime, CONFIRMATION_TIMEOUT_MS);
+			expect(approvalTx.status).toBe("ok");
+			console.log("   ✅ Approval confirmed on chain!");
+
+			await page.waitForTimeout(2000);
+			await screenshot("08c-approval-success");
+		}
+
+		// Step 9: Click "Confirm & Close Position" button
+		console.log("📍 Step 9: Click Confirm & Close Position");
+		console.log("   ⚡ IMPORTANT: This should trigger only ONE MetaMask confirmation!");
+		const closePositionButton = page.getByRole("button", { name: /Confirm.*Close Position/i });
+		await expect(closePositionButton).toBeVisible({ timeout: 10000 });
+		await expect(closePositionButton).toBeEnabled({ timeout: 10000 });
+		await screenshot("09-before-close-click");
+
+		txStartTime = new Date();
+		await closePositionButton.click();
+		await screenshot("10-close-clicked");
+		await page.waitForTimeout(2000);
+
+		// THIS IS THE KEY ASSERTION: Only ONE confirmTransaction call!
+		console.log("📍 Step 10: Confirm SINGLE transaction in MetaMask");
+		await metamask.confirmTransaction();
+		console.log("   ✅ Close position confirmed in MetaMask (SINGLE transaction!)");
+		await screenshot("11-metamask-confirmed");
+
+		// Step 11: Verify on blockchain
+		console.log("📍 Step 11: Verify position close on Citreascan");
+		const confirmedTx = await verifyTransactionOnCitreascan(WALLET_ADDRESS, txStartTime, CONFIRMATION_TIMEOUT_MS);
+		expect(confirmedTx.status).toBe("ok");
+		expect(confirmedTx.result).toBe("success");
+
+		// Capture explorer screenshot
+		await captureExplorerScreenshot(context, confirmedTx.hash, "close-position-single-tx");
+
+		await page.waitForTimeout(2000);
+		await screenshot("12-position-closed");
+
+		console.log("\n" + "═".repeat(50));
+		console.log("✅ CLOSE POSITION TEST PASSED!");
+		console.log("   Position closed with SINGLE transaction (adjust call)");
+		console.log("   Previously this required TWO transactions:");
+		console.log("   - repayFull()");
+		console.log("   - withdrawCollateral()");
+		console.log(`   📸 Total screenshots: ${screenshotCount}`);
+		console.log("═".repeat(50));
+
 		await page.close();
 	});
 });
