@@ -1230,4 +1230,252 @@ test.describe("Loan Creation", () => {
 
 		await page.close();
 	});
+
+	test("should complete full lifecycle: open position, swap JUSD<->SUSD, close position", async () => {
+		page = await context.newPage();
+
+		console.log("\n🔵 TEST: Full Lifecycle (Open → Swap → Close)");
+		console.log("━".repeat(50));
+
+		// ═══════════════════════════════════════════════════
+		// PHASE 1: OPEN POSITION (copied from working test)
+		// ═══════════════════════════════════════════════════
+		console.log("PHASE 1: OPEN POSITION");
+
+		console.log("📍 Navigate to mint page");
+		await page.goto("/mint");
+		await page.waitForLoadState("networkidle");
+
+		await forceConnectWallet(page, metamask);
+
+		console.log("📍 Wait for borrow form to load");
+		const collateralLabel = page.getByText(/Select your collateral asset/i);
+		await expect(collateralLabel).toBeVisible({ timeout: 15000 });
+		const cbtcToken = page.getByText("cBTC").first();
+		await expect(cbtcToken).toBeVisible({ timeout: 15000 });
+
+		console.log("📍 Check wallet balance");
+		const balanceText = await page.locator("text=/\\d+\\.?\\d*\\s*cBTC/").first().textContent({ timeout: 10000 });
+		console.log(`   Wallet balance: ${balanceText}`);
+		const balanceMatch = balanceText?.match(/([\d.]+)\s*cBTC/);
+		const balance = balanceMatch ? parseFloat(balanceMatch[1]) : 0;
+
+		if (balance < 0.01) {
+			console.log("⚠️  Insufficient cBTC balance (need 0.01 minimum). Skipping.");
+			await page.close();
+			test.skip();
+			return;
+		}
+
+		console.log("📍 Enter collateral amount: 0.01 cBTC (minimum required)");
+		const allInputs = page.locator('input[placeholder="0"]');
+		const collateralInput = allInputs.first();
+		await expect(collateralInput).toBeVisible({ timeout: 10000 });
+		await collateralInput.click();
+		await collateralInput.press("Control+a");
+		await collateralInput.fill("0.01");
+		await page.waitForTimeout(1000);
+
+		console.log("📍 Click borrow button");
+		const borrowButton = page.getByRole("button", { name: /receive.*jusd/i });
+		await expect(borrowButton).toBeVisible({ timeout: 10000 });
+		await expect(borrowButton).toBeEnabled({ timeout: 10000 });
+
+		let txStartTime = new Date();
+		await borrowButton.click();
+		await page.waitForTimeout(2000);
+
+		console.log("📍 Confirm in MetaMask");
+		await metamask.confirmTransaction();
+		console.log("   ✅ Position opened");
+
+		const openTx = await verifyTransactionOnCitreascan(WALLET_ADDRESS, txStartTime, CONFIRMATION_TIMEOUT_MS);
+		expect(openTx.status).toBe("ok");
+		await captureExplorerScreenshot(context, openTx.hash, "lifecycle-01-open");
+
+		// ═══════════════════════════════════════════════════
+		// PHASE 2: SWAP 1 JUSD → SUSD
+		// ═══════════════════════════════════════════════════
+		console.log("\nPHASE 2: SWAP 1 JUSD → SUSD");
+
+		console.log("📍 Navigate to swap page");
+		await page.goto("/swap");
+		await page.waitForLoadState("networkidle");
+		await page.waitForTimeout(2000);
+
+		// Default is SUSD → JUSD, click direction button to switch
+		console.log("📍 Switch direction (JUSD → SUSD)");
+		const directionButton = page.locator("button.rounded-full").filter({ has: page.locator("svg") });
+		await directionButton.click();
+		await page.waitForTimeout(500);
+
+		console.log("📍 Enter amount: 1 JUSD");
+		// Swap page uses same input pattern
+		const swapInput = page.locator('input[placeholder="0"]').first();
+		await expect(swapInput).toBeVisible({ timeout: 5000 });
+		await swapInput.click();
+		await swapInput.fill("1"); // Human readable, component handles decimals
+		await page.waitForTimeout(1000);
+
+		// Check if approval is needed (same pattern as other tests)
+		console.log("📍 Check for approve button");
+		const approveBtn1 = page.getByRole("button", { name: /approve/i });
+		const needsApproval1 = await approveBtn1.isVisible({ timeout: 3000 }).catch(() => false);
+
+		if (needsApproval1) {
+			console.log("   Approving JUSD...");
+			txStartTime = new Date();
+			await approveBtn1.click();
+			await page.waitForTimeout(2000);
+			await metamask.approveTokenPermission({ spendLimit: "max" });
+			await verifyTransactionOnCitreascan(WALLET_ADDRESS, txStartTime, CONFIRMATION_TIMEOUT_MS);
+			console.log("   ✅ JUSD approved");
+			await page.waitForTimeout(2000);
+		}
+
+		console.log("📍 Click Swap button");
+		const swapButton1 = page.getByRole("button", { name: /^swap$/i });
+		await expect(swapButton1).toBeVisible({ timeout: 5000 });
+		await expect(swapButton1).toBeEnabled({ timeout: 5000 });
+
+		txStartTime = new Date();
+		await swapButton1.click();
+		await page.waitForTimeout(2000);
+
+		console.log("📍 Confirm in MetaMask");
+		await metamask.confirmTransaction();
+		console.log("   ✅ JUSD → SUSD swap confirmed");
+
+		const swap1Tx = await verifyTransactionOnCitreascan(WALLET_ADDRESS, txStartTime, CONFIRMATION_TIMEOUT_MS);
+		expect(swap1Tx.status).toBe("ok");
+		await captureExplorerScreenshot(context, swap1Tx.hash, "lifecycle-02-swap-jusd-susd");
+
+		// ═══════════════════════════════════════════════════
+		// PHASE 3: SWAP 1 SUSD → JUSD
+		// ═══════════════════════════════════════════════════
+		console.log("\nPHASE 3: SWAP 1 SUSD → JUSD");
+
+		console.log("📍 Reload swap page (default: SUSD → JUSD)");
+		await page.reload();
+		await page.waitForLoadState("networkidle");
+		await page.waitForTimeout(2000);
+
+		console.log("📍 Enter amount: 1 SUSD");
+		const swapInput2 = page.locator('input[placeholder="0"]').first();
+		await expect(swapInput2).toBeVisible({ timeout: 5000 });
+		await swapInput2.click();
+		await swapInput2.fill("1");
+		await page.waitForTimeout(1000);
+
+		console.log("📍 Check for approve button");
+		const approveBtn2 = page.getByRole("button", { name: /approve/i });
+		const needsApproval2 = await approveBtn2.isVisible({ timeout: 3000 }).catch(() => false);
+
+		if (needsApproval2) {
+			console.log("   Approving SUSD...");
+			txStartTime = new Date();
+			await approveBtn2.click();
+			await page.waitForTimeout(2000);
+			await metamask.approveTokenPermission({ spendLimit: "max" });
+			await verifyTransactionOnCitreascan(WALLET_ADDRESS, txStartTime, CONFIRMATION_TIMEOUT_MS);
+			console.log("   ✅ SUSD approved");
+			await page.waitForTimeout(2000);
+		}
+
+		console.log("📍 Click Swap button");
+		const swapButton2 = page.getByRole("button", { name: /^swap$/i });
+		await expect(swapButton2).toBeVisible({ timeout: 5000 });
+		await expect(swapButton2).toBeEnabled({ timeout: 5000 });
+
+		txStartTime = new Date();
+		await swapButton2.click();
+		await page.waitForTimeout(2000);
+
+		console.log("📍 Confirm in MetaMask");
+		await metamask.confirmTransaction();
+		console.log("   ✅ SUSD → JUSD swap confirmed");
+
+		const swap2Tx = await verifyTransactionOnCitreascan(WALLET_ADDRESS, txStartTime, CONFIRMATION_TIMEOUT_MS);
+		expect(swap2Tx.status).toBe("ok");
+		await captureExplorerScreenshot(context, swap2Tx.hash, "lifecycle-03-swap-susd-jusd");
+
+		// ═══════════════════════════════════════════════════
+		// PHASE 4: CLOSE POSITION (copied from working test)
+		// ═══════════════════════════════════════════════════
+		console.log("\nPHASE 4: CLOSE POSITION");
+
+		console.log("📍 Navigate to dashboard");
+		await page.goto("/dashboard");
+		await page.waitForLoadState("networkidle");
+		await page.waitForTimeout(3000);
+
+		console.log("📍 Find position");
+		const manageLink = page.locator('a[href^="/mint/0x"][href$="/manage"]').first();
+		await expect(manageLink).toBeVisible({ timeout: 15000 });
+		const positionHref = await manageLink.getAttribute("href");
+		console.log(`   Found position: ${positionHref}`);
+
+		console.log("📍 Navigate to loan management");
+		const loanManageUrl = positionHref?.replace("/manage", "/manage/loan");
+		await page.goto(loanManageUrl || "/dashboard");
+		await page.waitForLoadState("networkidle");
+		await page.waitForTimeout(2000);
+
+		console.log("📍 Switch to Repay Loan mode");
+		const repayLoanButton = page.getByText(/Repay Loan/i).first();
+		await expect(repayLoanButton).toBeVisible({ timeout: 10000 });
+		await repayLoanButton.click();
+		await page.waitForTimeout(500);
+
+		console.log("📍 Click MAX to repay full loan");
+		const maxButton = page.locator("button").filter({ hasText: /max/i }).first();
+		await expect(maxButton).toBeVisible({ timeout: 5000 });
+		await expect(maxButton).toBeEnabled({ timeout: 5000 });
+		await maxButton.click();
+		await page.waitForTimeout(1000);
+
+		console.log("📍 Check for approve button");
+		const approveBtn3 = page.getByRole("button", { name: /approve/i });
+		const needsApproval3 = await approveBtn3.isVisible({ timeout: 3000 }).catch(() => false);
+
+		if (needsApproval3) {
+			console.log("   Approving JUSD for position...");
+			txStartTime = new Date();
+			await approveBtn3.click();
+			await page.waitForTimeout(2000);
+			await metamask.approveTokenPermission({ spendLimit: "max" });
+			await verifyTransactionOnCitreascan(WALLET_ADDRESS, txStartTime, CONFIRMATION_TIMEOUT_MS);
+			console.log("   ✅ JUSD approved");
+			await page.waitForTimeout(2000);
+		}
+
+		console.log("📍 Click Confirm & Close Position");
+		const closePositionButton = page.getByRole("button", { name: /Confirm.*Close Position/i });
+		await expect(closePositionButton).toBeVisible({ timeout: 10000 });
+		await expect(closePositionButton).toBeEnabled({ timeout: 10000 });
+
+		txStartTime = new Date();
+		await closePositionButton.click();
+		await page.waitForTimeout(2000);
+
+		console.log("📍 Confirm in MetaMask (SINGLE transaction)");
+		await metamask.confirmTransaction();
+		console.log("   ✅ Position closed");
+
+		const closeTx = await verifyTransactionOnCitreascan(WALLET_ADDRESS, txStartTime, CONFIRMATION_TIMEOUT_MS);
+		expect(closeTx.status).toBe("ok");
+		expect(closeTx.result).toBe("success");
+		await captureExplorerScreenshot(context, closeTx.hash, "lifecycle-04-close");
+
+		// ═══════════════════════════════════════════════════
+		console.log("\n" + "═".repeat(50));
+		console.log("✅ FULL LIFECYCLE TEST PASSED!");
+		console.log("   ✓ Position opened (0.01 cBTC)");
+		console.log("   ✓ Swapped 1 JUSD → SUSD");
+		console.log("   ✓ Swapped 1 SUSD → JUSD");
+		console.log("   ✓ Position closed (single transaction)");
+		console.log("═".repeat(50));
+
+		await page.close();
+	});
 });
