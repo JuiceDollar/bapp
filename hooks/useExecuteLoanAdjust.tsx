@@ -29,17 +29,24 @@ export const executeLoanAdjust = async ({
 	const posAddr = position.position as Address;
 	const depositAmount = outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
 	const isWithdrawing = outcome.deltaCollateral < 0n;
-	// The smart contract's adjust() function handles newPrincipal differently for repay vs borrow:
-	// - Repay: _payDownDebt(currentDebt - newPrincipal) → newPrincipal should be TARGET DEBT
-	// - Borrow: _mint(newPrincipal - principal) → newPrincipal should be NEW PRINCIPAL
+	// The smart contract's adjust() function has two branches:
+	// - Repay: if (newPrincipal < principal) → _payDownDebt(currentDebt - newPrincipal)
+	// - Borrow: if (newPrincipal > principal) → _mint(newPrincipal - principal)
 	//
-	// Therefore the correct formula depends on the operation:
-	// - Borrow (deltaDebt >= 0): newPrincipal = principal + deltaDebt (amount to add to principal)
-	// - Repay (deltaDebt < 0): newPrincipal = outcome.next.debt (target debt after repayment)
+	// CRITICAL: For repay, newPrincipal must be < principal for the repay branch to execute!
+	// If repayAmount < interest, then outcome.next.debt > principal, and using it as newPrincipal
+	// would trigger the borrow branch instead, causing the user to RECEIVE tokens!
+	//
+	// Safe formula:
+	// - Borrow (deltaDebt >= 0): newPrincipal = principal + deltaDebt
+	// - Repay (deltaDebt < 0): newPrincipal = min(outcome.next.debt, principal)
+	//   If outcome.next.debt >= principal (repay only covers interest), keep principal unchanged
 	const newPrincipal =
 		outcome.deltaDebt >= 0n
 			? principal + outcome.deltaDebt // Borrow: add deltaDebt to current principal
-			: outcome.next.debt; // Repay: target debt = currentDebt - repayAmount
+			: outcome.next.debt < principal
+			? outcome.next.debt // Repay: target debt (only if it reduces principal)
+			: principal; // Repay only interest: keep principal, adjust() won't change debt
 	const LiqPrice = BigInt(position.price);
 
 	// Check if this is a full close (repay all debt and withdraw all collateral)
