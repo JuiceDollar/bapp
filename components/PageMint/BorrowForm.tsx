@@ -151,7 +151,7 @@ export default function PositionCreate({}) {
 			});
 			setCollateralError(notEnoughBalance);
 		} else if (maxFromLimit > 0n && BigInt(collateralAmount) > maxFromLimit) {
-			const maxColl = formatBigInt(maxFromLimit, selectedPosition?.collateralDecimals || 0);
+			const maxColl = formatBigInt(maxFromLimit, selectedPosition?.collateralDecimals || 0, 4);
 			const availableToMint = formatBigInt(BigInt(selectedPosition.availableForClones), 18);
 			const limitExceeded = t("mint.error.global_minting_limit_exceeded", {
 				maxCollateral: maxColl,
@@ -328,7 +328,7 @@ export default function PositionCreate({}) {
 				},
 				{
 					title: t("common.txs.collateral"),
-					value: formatBigInt(BigInt(collateralAmount), 18) + " cBTC",
+					value: formatBigInt(BigInt(collateralAmount), 18, 4) + " cBTC",
 				},
 				{
 					title: t("common.txs.transaction"),
