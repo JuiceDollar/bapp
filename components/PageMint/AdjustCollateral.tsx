@@ -231,63 +231,22 @@ export const AdjustCollateral = ({
 					success: { render: <TxToast title={t("mint.txs.adding_collateral_success")} rows={toastContent} /> },
 				});
 			} else {
-				if (newCollateral === 0n && principal > 0n && !strategies[StrategyKey.REPAY_LOAN]) {
-					const repayHash = await writeContract(WAGMI_CONFIG, {
-						address: position.position as Address,
-						abi: PositionV2ABI,
-						functionName: "repayFull",
-					});
-					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: repayHash, confirmations: 1 }), {
-						pending: {
-							render: (
-								<TxToast
-									title={t("mint.txs.pay_back", { symbol: position.stablecoinSymbol })}
-									rows={[{ title: t("common.txs.transaction"), hash: repayHash }]}
-								/>
-							),
-						},
-						success: {
-							render: (
-								<TxToast
-									title={t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol })}
-									rows={[{ title: t("common.txs.transaction"), hash: repayHash }]}
-								/>
-							),
-						},
-					});
-				}
-
-				if (strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n) {
-					const repayHash = await writeContract(WAGMI_CONFIG, {
-						address: position.position as Address,
-						abi: PositionV2ABI,
-						functionName: "repay",
-						args: [calculatedRepayAmount],
-					});
-					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: repayHash, confirmations: 1 }), {
-						pending: {
-							render: (
-								<TxToast
-									title={t("mint.txs.pay_back", { symbol: position.stablecoinSymbol })}
-									rows={[{ title: t("common.txs.transaction"), hash: repayHash }]}
-								/>
-							),
-						},
-						success: {
-							render: (
-								<TxToast
-									title={t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol })}
-									rows={[{ title: t("common.txs.transaction"), hash: repayHash }]}
-								/>
-							),
-						},
-					});
-				}
+				// Calculate the new principal for the adjust() call
+				// - If closing position (newCollateral === 0n): set principal to 0 to repay all debt
+				// - If using REPAY_LOAN strategy: reduce principal by repay amount
+				// - Otherwise: keep current debt level
+				const isFullClose = newCollateral === 0n && principal > 0n;
+				const newPrincipal = isFullClose
+					? 0n
+					: strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n
+					? principal - calculatedRepayAmount
+					: principal;
 
 				const isWithinDelta = delta <= maxRemovableWithoutAdjustment;
-				const adjustDebt = isWithinDelta ? currentDebt : newDebt;
 				const adjustPrice = isWithinDelta ? positionPrice : newPrice;
 
+				// Use single adjust() call for all operations including full close
+				// The adjust() function handles: repay debt, withdraw collateral, and price changes in one transaction
 				const publicClient = getPublicClient(WAGMI_CONFIG);
 				const estimatedGas =
 					(await publicClient
@@ -295,7 +254,7 @@ export const AdjustCollateral = ({
 							address: position.position as Address,
 							abi: PositionV2ABI,
 							functionName: "adjust",
-							args: [adjustDebt, newCollateral, adjustPrice, isNativeWrappedPosition],
+							args: [newPrincipal, newCollateral, adjustPrice, isNativeWrappedPosition],
 							account: userAddress,
 						})
 						.catch(() => 300_000n)) ?? 300_000n;
@@ -304,18 +263,31 @@ export const AdjustCollateral = ({
 					address: position.position as Address,
 					abi: PositionV2ABI,
 					functionName: "adjust",
-					args: [adjustDebt, newCollateral, adjustPrice, isNativeWrappedPosition],
+					args: [newPrincipal, newCollateral, adjustPrice, isNativeWrappedPosition],
 					gas: (estimatedGas * 150n) / 100n,
 				});
 
+				// Build toast content based on operation type
 				const toastContent = [
 					{ title: t("common.txs.amount"), value: formatValue(delta) },
 					{ title: t("common.txs.transaction"), hash: withdrawHash },
 				];
 
+				const txTitle = isFullClose
+					? t("mint.close_position")
+					: strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n
+					? t("mint.repay_and_withdraw")
+					: t("mint.txs.removing_collateral");
+
+				const txSuccessTitle = isFullClose
+					? t("mint.close_position")
+					: strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n
+					? t("mint.repay_and_withdraw")
+					: t("mint.txs.removing_collateral_success");
+
 				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
-					pending: { render: <TxToast title={t("mint.txs.removing_collateral")} rows={toastContent} /> },
-					success: { render: <TxToast title={t("mint.txs.removing_collateral_success")} rows={toastContent} /> },
+					pending: { render: <TxToast title={txTitle} rows={toastContent} /> },
+					success: { render: <TxToast title={txSuccessTitle} rows={toastContent} /> },
 				});
 			}
 
