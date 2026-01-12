@@ -18,6 +18,7 @@ export default function MonitoringTable() {
 		t("monitoring.collateral"),
 		t("dashboard.liquidation_price"),
 		t("monitoring.collateralization"),
+		t("my_positions.loan_amount"),
 		t("monitoring.expiration"),
 	];
 	const [tab, setTab] = useState<string>(headers[2]);
@@ -105,7 +106,12 @@ function sortPositions(
 			return calc(b) - calc(a);
 		});
 	} else if (tab === headers[3]) {
-		// sorft for Expiration
+		// sort for Loan Amount
+		list.sort((a, b) => {
+			return parseInt(b.principal) - parseInt(a.principal);
+		});
+	} else if (tab === headers[4]) {
+		// sort for Expiration
 		list.sort((a, b) => {
 			return b.expiration - a.expiration;
 		});
