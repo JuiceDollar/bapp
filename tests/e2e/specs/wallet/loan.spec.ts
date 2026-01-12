@@ -49,50 +49,32 @@ async function captureExplorerScreenshot(context: BrowserContext, txHash: string
 	console.log(`   URL: ${explorerUrl}`);
 
 	const explorerPage = await context.newPage();
-
-	// Bring the explorer tab to the front so it's visible
 	await explorerPage.bringToFront();
-	console.log("   🔍 Explorer tab opened and brought to front");
 
 	await explorerPage.goto(explorerUrl);
 	await explorerPage.waitForLoadState("networkidle");
-	console.log("   ✓ Page loaded");
 
-	// Wait 10 seconds before first screenshot
-	console.log("   ⏳ Waiting 10 seconds before screenshot...");
-	await explorerPage.waitForTimeout(10000);
+	// Wait for transaction details to render (Citreascan shows "Status and method" row with "Success")
+	// The success badge is a span with green background containing "Success" text
+	const successSelector = 'span:has-text("Success"), text="Success"';
 
-	// Take first screenshot
-	const screenshot1 = path.join(SCREENSHOT_DIR, `${screenshotPrefix}-explorer-1.png`);
-	await explorerPage.screenshot({ path: screenshot1, fullPage: true });
-	console.log(`   📸 Screenshot saved: ${screenshot1}`);
-
-	// Check if transaction is confirmed (look for success indicators on Citreascan)
-	// Citreascan shows "Success" in a badge or status field
-	const isConfirmed = await explorerPage
-		.locator('text=/Success|Confirmed|success/i, [data-status="ok"], .badge:has-text("Success")')
-		.first()
-		.isVisible({ timeout: 2000 })
-		.catch(() => false);
-
-	if (!isConfirmed) {
-		console.log("   ⏳ Transaction status not clearly visible, waiting 30 more seconds...");
-		await explorerPage.waitForTimeout(30000);
-
-		// Reload and take another screenshot
-		console.log("   🔄 Reloading page...");
+	try {
+		// Wait up to 5 seconds for Success status to appear
+		await explorerPage.locator(successSelector).first().waitFor({ state: "visible", timeout: 5000 });
+		console.log("   ✅ Transaction confirmed on explorer");
+	} catch {
+		// If not visible after 5s, wait 3 more seconds and reload once
+		console.log("   ⏳ Waiting for confirmation...");
+		await explorerPage.waitForTimeout(3000);
 		await explorerPage.reload();
 		await explorerPage.waitForLoadState("networkidle");
-		await explorerPage.waitForTimeout(2000);
-
-		const screenshot2 = path.join(SCREENSHOT_DIR, `${screenshotPrefix}-explorer-2.png`);
-		await explorerPage.screenshot({ path: screenshot2, fullPage: true });
-		console.log(`   📸 Screenshot after reload: ${screenshot2}`);
-	} else {
-		console.log("   ✅ Transaction already confirmed on explorer");
 	}
 
-	console.log("   🔒 Closing explorer tab\n");
+	// Take screenshot
+	const screenshot = path.join(SCREENSHOT_DIR, `${screenshotPrefix}-explorer.png`);
+	await explorerPage.screenshot({ path: screenshot, fullPage: true });
+	console.log(`   📸 Screenshot: ${screenshot}`);
+
 	await explorerPage.close();
 }
 
