@@ -44,7 +44,7 @@ export default function WalletConnect() {
 				href={`/referrals${carryOnQueryParams}`}
 				className="justify-start items-center gap-2 hidden md:flex !hover:text-button-text-hover-text group"
 			>
-				<img src="/icons/chest.svg" alt="Logo" width={24} height={24} />
+				<Image src="/icons/chest.svg" alt="Logo" width={24} height={24} />
 				<div className="text-menu-active-text text-base font-extrabold leading-tight whitespace-nowrap group-hover:text-button-text-hover-text">
 					{t("common.navbar.my_referrals")}
 				</div>
