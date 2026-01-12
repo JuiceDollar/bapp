@@ -12,9 +12,7 @@ import { SolverOutcome } from "../utils/positionSolver";
 interface ExecuteLoanAdjustParams {
 	outcome: SolverOutcome;
 	position: PositionQuery;
-	userAddress: Address;
 	principal: bigint;
-	collateralBalance: bigint;
 	isNativeWrappedPosition: boolean;
 	t: (key: string, params?: Record<string, string>) => string;
 	onSuccess: () => void;
@@ -23,9 +21,7 @@ interface ExecuteLoanAdjustParams {
 export const executeLoanAdjust = async ({
 	outcome,
 	position,
-	userAddress,
 	principal,
-	collateralBalance,
 	isNativeWrappedPosition,
 	t,
 	onSuccess,
