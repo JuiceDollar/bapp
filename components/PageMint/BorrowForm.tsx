@@ -162,7 +162,8 @@ export default function PositionCreate({}) {
 			});
 			setCollateralError(limitExceeded);
 		}
-	}, [collateralAmount, balancesByAddress, address, selectedPosition, liquidationPrice, selectedCollateral, t]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [collateralAmount, address, selectedPosition, liquidationPrice, selectedCollateral]);
 
 	const prices = useSelector((state: RootState) => state.prices.coingecko || {});
 	const collateralPriceUsd = prices[selectedPosition?.collateral.toLowerCase() as Address]?.price?.usd || 0;
