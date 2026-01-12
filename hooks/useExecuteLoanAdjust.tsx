@@ -2,7 +2,7 @@ import { Address } from "viem";
 import { toast } from "react-toastify";
 import { PositionV2ABI } from "@juicedollar/jusd";
 import { PositionQuery } from "@juicedollar/api";
-import { formatPositionValue, formatPositionDelta, normalizeTokenSymbol } from "@utils";
+import { formatPositionValue, normalizeTokenSymbol } from "@utils";
 import { renderErrorTxToast } from "../components/TxToast";
 import { fetchPositionsList } from "../redux/slices/positions.slice";
 import { store } from "../redux/redux.store";
