@@ -35,8 +35,7 @@ export const executeLoanAdjust = async ({
 	const isFullClose = outcome.next.debt === 0n && principal > 0n;
 
 	// Case 3: repay ≤ interest → need separate repay() call first
-	const needsSeparateRepay =
-		!isFullClose && outcome.deltaDebt < 0n && outcome.next.debt >= principal;
+	const needsSeparateRepay = !isFullClose && outcome.deltaDebt < 0n && outcome.next.debt >= principal;
 
 	const newPrincipal = isFullClose
 		? 0n // Case 1: close position

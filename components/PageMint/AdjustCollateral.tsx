@@ -238,10 +238,7 @@ export const AdjustCollateral = ({
 
 				// Case 3: repay ≤ interest → need separate repay() call first
 				const needsSeparateRepay =
-					!isFullClose &&
-					strategies[StrategyKey.REPAY_LOAN] &&
-					calculatedRepayAmount > 0n &&
-					targetDebt >= principal;
+					!isFullClose && strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n && targetDebt >= principal;
 
 				const newPrincipal = isFullClose
 					? 0n // Case 1: close position
