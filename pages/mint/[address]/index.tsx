@@ -230,7 +230,7 @@ export default function PositionBorrow({}) {
 					BigInt(position.price),
 					frontendCode,
 				],
-			});
+			} as any);
 
 			const toastContent = [
 				{

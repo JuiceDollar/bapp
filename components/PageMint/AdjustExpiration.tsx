@@ -117,7 +117,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 						newExpirationTimestamp,
 					],
 					value: extraNeeded,
-				});
+				} as any);
 			} else {
 				txHash = await writeContract(WAGMI_CONFIG, {
 					address: ADDRESS[chainId].roller,

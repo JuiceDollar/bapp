@@ -244,7 +244,7 @@ export const CollateralManageSection = () => {
 				functionName: "adjust",
 				args: [principal, contractAmount, price, false],
 				value: isNativeWrappedPosition ? BigInt(amount) : undefined,
-			});
+			} as any);
 
 			const toastContent = [
 				{
@@ -287,7 +287,7 @@ export const CollateralManageSection = () => {
 				abi: PositionV2ABI,
 				functionName: "adjust",
 				args: [principal, contractAmount, price, false],
-			});
+			} as any);
 
 			const toastContent = [
 				{

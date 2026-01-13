@@ -29,28 +29,22 @@ export const executeLoanAdjust = async ({
 	const posAddr = position.position as Address;
 	const depositAmount = outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
 	const isWithdrawing = outcome.deltaCollateral < 0n;
-	// The smart contract's adjust() function has two branches:
-	// - Repay: if (newPrincipal < principal) → _payDownDebt(currentDebt - newPrincipal)
-	// - Borrow: if (newPrincipal > principal) → _mint(newPrincipal - principal)
-	//
-	// CRITICAL: For repay, newPrincipal must be < principal for the repay branch to execute!
-	// If repayAmount < interest, then outcome.next.debt > principal, and using it as newPrincipal
-	// would trigger the borrow branch instead, causing the user to RECEIVE tokens!
-	//
-	// Safe formula:
-	// - Borrow (deltaDebt >= 0): newPrincipal = principal + deltaDebt
-	// - Repay (deltaDebt < 0): newPrincipal = min(outcome.next.debt, principal)
-	//   If outcome.next.debt >= principal (repay only covers interest), keep principal unchanged
-	const newPrincipal =
-		outcome.deltaDebt >= 0n
-			? principal + outcome.deltaDebt // Borrow: add deltaDebt to current principal
-			: outcome.next.debt < principal
-			? outcome.next.debt // Repay: target debt (only if it reduces principal)
-			: principal; // Repay only interest: keep principal, adjust() won't change debt
 	const LiqPrice = BigInt(position.price);
 
-	// Check if this is a full close (repay all debt and withdraw all collateral)
-	const isFullClose = outcome.next.debt === 0n && outcome.next.collateral === 0n && principal > 0n;
+	// Contract: repay branch executes when newPrincipal < principal
+	const isFullClose = outcome.next.debt === 0n && principal > 0n;
+
+	// Case 3: repay ≤ interest → need separate repay() call first
+	const needsSeparateRepay =
+		!isFullClose && outcome.deltaDebt < 0n && outcome.next.debt >= principal;
+
+	const newPrincipal = isFullClose
+		? 0n // Case 1: close position
+		: outcome.deltaDebt >= 0n
+		? principal + outcome.deltaDebt // Borrow
+		: outcome.next.debt < principal
+		? outcome.next.debt // Case 2: repay > interest
+		: principal; // Case 3 & 4: no principal change in adjust()
 
 	const rows = [
 		outcome.deltaCollateral !== 0n && {
@@ -75,8 +69,22 @@ export const executeLoanAdjust = async ({
 		? `${t("mint.lending")} ${formatPositionValue(outcome.deltaDebt, 18, position.stablecoinSymbol)}`
 		: t("mint.adjust_position");
 
-	// Use single adjust() call for all operations including full close
-	// The adjust() function handles: repay debt, withdraw collateral, and price changes in one transaction
+	// Case 3: call repay() first
+	if (needsSeparateRepay) {
+		await executeTx({
+			contractParams: {
+				address: posAddr,
+				abi: PositionV2ABI,
+				functionName: "repay",
+				args: [-outcome.deltaDebt],
+			},
+			pendingTitle: t("mint.txs.pay_back", { symbol: position.stablecoinSymbol }),
+			successTitle: t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol }),
+			rows: [{ title: t("common.txs.amount"), value: formatPositionValue(-outcome.deltaDebt, 18, position.stablecoinSymbol) }],
+		});
+	}
+
+	// All cases: call adjust()
 	await executeTx({
 		contractParams: {
 			address: posAddr,
