@@ -224,7 +224,7 @@ export default function PositionAdjust() {
 				abi: PositionV2ABI,
 				functionName: "adjust",
 				args: [amount, collateralAmount, liqPrice, false],
-			} as any);
+			});
 
 			const toastContent = [
 				{

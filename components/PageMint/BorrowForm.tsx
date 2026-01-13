@@ -319,7 +319,7 @@ export default function PositionCreate({}) {
 					frontendCode,
 				],
 				value: BigInt(collateralAmount),
-			} as any);
+			});
 
 			const toastContent = [
 				{

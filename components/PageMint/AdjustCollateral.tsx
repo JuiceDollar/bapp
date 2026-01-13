@@ -219,7 +219,7 @@ export const AdjustCollateral = ({
 					functionName: "adjust",
 					args: [principal, newCollateral, positionPrice, false],
 					value: isNativeWrappedPosition ? delta : undefined,
-				} as any);
+				});
 
 				const toastContent = [
 					{ title: t("common.txs.amount"), value: formatValue(delta) },
@@ -287,7 +287,7 @@ export const AdjustCollateral = ({
 							functionName: "adjust",
 							args: [newPrincipal, newCollateral, adjustPrice, isNativeWrappedPosition],
 							account: userAddress,
-						} as any)
+						})
 						.catch(() => 300_000n)) ?? 300_000n;
 
 				const withdrawHash = await writeContract(WAGMI_CONFIG, {
@@ -296,7 +296,7 @@ export const AdjustCollateral = ({
 					functionName: "adjust",
 					args: [newPrincipal, newCollateral, adjustPrice, isNativeWrappedPosition],
 					gas: (estimatedGas * 150n) / 100n,
-				} as any);
+				});
 
 				const toastContent = [
 					{ title: t("common.txs.amount"), value: formatValue(delta) },
