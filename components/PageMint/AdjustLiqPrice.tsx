@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { formatUnits } from "viem";
-import { formatCurrency, roundToWholeUnits, normalizeTokenSymbol } from "@utils";
+import { formatCurrency, normalizeTokenSymbol } from "@utils";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
 import { RemoveCircleOutlineIcon } from "@components/SvgComponents/remove_circle_outline";
@@ -41,6 +41,9 @@ export const AdjustLiqPrice = ({
 	liqPrice,
 	priceDecimals,
 	currentPosition,
+	isInCooldown,
+	cooldownRemainingFormatted,
+	cooldownEndsAt,
 	refetch,
 	onSuccess,
 }: AdjustLiqPriceProps) => {
@@ -58,6 +61,7 @@ export const AdjustLiqPrice = ({
 	const minPriceForDecrease = (currentPosition.debt * BigInt(1e18)) / currentPosition.collateral;
 	const deltaDecrease = liqPrice > minPriceForDecrease ? ((liqPrice - minPriceForDecrease) * 99n) / 100n : 0n;
 	const maxDeltaDecrease = deltaDecrease * 10n >= liqPrice ? deltaDecrease : 0n;
+	const minAllowedPrice = liqPrice > maxDeltaDecrease ? liqPrice - maxDeltaDecrease : liqPrice;
 
 	const reference = useReferencePosition(position, positionPrice);
 
@@ -110,7 +114,16 @@ export const AdjustLiqPrice = ({
 		}
 	};
 
-	const isDisabled = delta === 0n || isDecreaseInvalid;
+	const isDisabled = delta === 0n || isDecreaseInvalid || (isIncrease && isInCooldown);
+
+	const handleSliderChange = (val: string) => {
+		const newPriceValue = val ? BigInt(val) : liqPrice;
+		const rounded = (newPriceValue / BigInt(10 ** priceDecimals)) * BigInt(10 ** priceDecimals);
+		const delta = isIncrease ? rounded - liqPrice : liqPrice - rounded;
+		setDeltaAmount(delta.toString());
+	};
+
+	const newPriceForDisplay = (newPrice / BigInt(10 ** priceDecimals)) * BigInt(10 ** priceDecimals);
 
 	return (
 		<div className="flex flex-col gap-y-4">
@@ -133,10 +146,10 @@ export const AdjustLiqPrice = ({
 
 				{((isIncrease && maxDeltaIncrease > 0n) || (!isIncrease && maxDeltaDecrease > 0n)) && (
 					<SliderInputOutlined
-						value={deltaAmount}
-						onChange={(val) => setDeltaAmount(roundToWholeUnits(val, priceDecimals))}
-						min={0n}
-						max={isIncrease ? maxDeltaIncrease : maxDeltaDecrease}
+						value={newPriceForDisplay.toString()}
+						onChange={handleSliderChange}
+						min={isIncrease ? liqPrice : minAllowedPrice}
+						max={isIncrease ? maxPriceIncrease : liqPrice}
 						decimals={priceDecimals}
 						hideTrailingZeros
 					/>
@@ -184,6 +197,14 @@ export const AdjustLiqPrice = ({
 					</span>
 				</div>
 			</div>
+
+			{isIncrease && isInCooldown && (
+				<div className="text-xs text-text-muted2 px-4">
+					{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
+					<br />
+					{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
+				</div>
+			)}
 
 			{showCooldownMessage && (
 				<div className="text-sm text-text-muted2 px-4">
