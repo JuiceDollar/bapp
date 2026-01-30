@@ -208,10 +208,10 @@ export const AdjustLiqPrice = ({
 
 			{showCooldownMessage && (
 				<div className="text-sm text-text-muted2 px-4">
-					<div className="font-semibold mb-1">Cooldown active</div>
-					After increasing your liquidation price, a 3-day cooldown applies before you can increase your loan.
+					<div className="font-semibold mb-1">{t("mint.cooldown_active")}</div>
+					{t("mint.cooldown_increase_info")}
 					<br />
-					Once a higher liquidation price exists in the system, future increases will be instant.
+					{t("mint.cooldown_reference_info")}
 				</div>
 			)}
 
