@@ -2,9 +2,9 @@ import { gql, useQuery } from "@apollo/client";
 import { ApolloClient, InMemoryCache } from "@apollo/client";
 import { CONFIG } from "@config";
 
-// Create a separate Apollo Client for Ponder endpoint
+const PONDER_URL = CONFIG.chain === "mainnet" ? CONFIG.ponder.mainnet : CONFIG.ponder.testnet;
 const ponderClient = new ApolloClient({
-	uri: CONFIG.ponder,
+	uri: PONDER_URL,
 	cache: new InMemoryCache(),
 });
 

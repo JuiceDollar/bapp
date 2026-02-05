@@ -5,7 +5,6 @@ import { onError } from "@apollo/client/link/error";
 import { cookieStorage, createConfig, createStorage, http } from "@wagmi/core";
 import { injected, coinbaseWallet, walletConnect } from "@wagmi/connectors";
 import { testnet, mainnet, CONFIG } from "@config";
-import axios from "axios";
 import { Address, Chain } from "viem";
 import { TOKEN_SYMBOL } from "./utils";
 
@@ -22,26 +21,12 @@ export const CONFIG_RPC = (): string => {
 	return CONFIG.chain === "testnet" ? CONFIG.network.testnet : CONFIG.network.mainnet;
 };
 
-// Ponder fallback mechanism
-let fallbackUntil: number | null = null;
+const PONDER_URL = CONFIG.chain === "mainnet" ? CONFIG.ponder.mainnet : CONFIG.ponder.testnet;
 
-function getPonderUrl(): string {
-	return fallbackUntil && Date.now() < fallbackUntil ? CONFIG.ponderFallback : CONFIG.ponder;
-}
-
-function activateFallback(): void {
-	if (!fallbackUntil) {
-		fallbackUntil = Date.now() + 10 * 60 * 1000; // 10 minutes
-		console.log("[Ponder] Switching to fallback for 10min:", CONFIG.ponderFallback);
-	}
-}
-
-// PONDER CLIENT
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
-	// Log GraphQL errors for better debugging
+const errorLink = onError(({ graphQLErrors, networkError }) => {
 	if (graphQLErrors) {
 		graphQLErrors.forEach((error) => {
-			console.error(`[GraphQL error in operation: ${operation?.operationName || "unknown"}]`, {
+			console.error(`[GraphQL error]`, {
 				message: error.message,
 				locations: error.locations,
 				path: error.path,
@@ -49,46 +34,21 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 		});
 	}
 
-	if (!networkError || getPonderUrl() !== CONFIG.ponder) return;
-
-	const is503 =
-		(networkError as any)?.response?.status === 503 ||
-		(networkError as any)?.statusCode === 503 ||
-		(networkError as any)?.result?.status === 503;
-
-	// Handle 503 Service Unavailable (Ponder syncing)
-	if (is503) {
-		console.log("[Ponder] 503 Service Unavailable - Ponder is syncing, switching to fallback");
-		activateFallback();
-		return forward(operation);
+	if (networkError) {
+		console.error(`[Network error]`, networkError);
 	}
-
-	// Handle other network errors
-	console.error(`[Network error in operation: ${operation?.operationName || "unknown"}]`, {
-		message: (networkError as any).message,
-		name: (networkError as any).name,
-	});
-	console.log("[Ponder] Network error detected, activating fallback");
-	activateFallback();
-	return forward(operation);
 });
 
 const httpLink = createHttpLink({
-	uri: () => getPonderUrl(),
-	// Add timeout protection for hanging requests
+	uri: PONDER_URL,
 	fetchOptions: {
-		timeout: 10000, // 10 second timeout
+		timeout: 10000,
 	},
 });
 
 export const PONDER_CLIENT = new ApolloClient({
 	link: from([errorLink, httpLink]),
 	cache: new InMemoryCache(),
-});
-
-// API CLIENT
-export const API_CLIENT = axios.create({
-	baseURL: CONFIG.api,
 });
 
 // WAGMI CONFIG

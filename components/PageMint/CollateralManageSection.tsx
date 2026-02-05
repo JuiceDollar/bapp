@@ -224,7 +224,7 @@ export const CollateralManageSection = () => {
 			});
 			await refetchBalances();
 			await refetchReadContracts();
-			store.dispatch(fetchPositionsList());
+			store.dispatch(fetchPositionsList(chainId ?? WAGMI_CHAIN.id));
 		} catch (error) {
 			toast.error(renderErrorTxToast(error)); // TODO: needs to be translated
 		} finally {

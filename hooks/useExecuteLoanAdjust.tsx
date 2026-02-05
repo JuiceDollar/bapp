@@ -10,6 +10,7 @@ import { executeTx } from "./useApproveToken";
 import { SolverOutcome } from "../utils/positionSolver";
 
 interface ExecuteLoanAdjustParams {
+	chainId: number;
 	outcome: SolverOutcome;
 	position: PositionQuery;
 	principal: bigint;
@@ -19,6 +20,7 @@ interface ExecuteLoanAdjustParams {
 }
 
 export const executeLoanAdjust = async ({
+	chainId,
 	outcome,
 	position,
 	principal,
@@ -97,7 +99,7 @@ export const executeLoanAdjust = async ({
 		rows,
 	});
 
-	store.dispatch(fetchPositionsList());
+	store.dispatch(fetchPositionsList(chainId));
 	onSuccess();
 };
 

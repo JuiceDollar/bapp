@@ -53,42 +53,56 @@ export const useSavingsInterest = () => {
 	useEffect(() => {
 		if (account === zeroAddress || isClaiming) return;
 
-		const fetchAsync = async function () {
-			const [_userSavings, _userTicks] = await readContract(WAGMI_CONFIG, {
-				address: ADDR.savingsGateway,
-				abi: SavingsGatewayABI,
-				functionName: "savings",
-				args: [account as `0x${string}`],
-			});
-			setUserSavingsBalance(_userSavings);
+		if (!ADDR?.savingsGateway) {
+			setUserSavingsBalance(0n);
+			setInterestToBeCollected(0n);
+			setUserSavingsInterest(0n);
+			if (!isLoaded) setAmount(0n);
+			setLoaded(true);
+			return;
+		}
 
-			const _current = await readContract(WAGMI_CONFIG, {
-				address: ADDR.savingsGateway,
-				abi: SavingsGatewayABI,
-				functionName: "currentTicks",
-			});
+		(async () => {
+			try {
+				const [_userSavings, _userTicks] = await readContract(WAGMI_CONFIG, {
+					address: ADDR.savingsGateway,
+					abi: SavingsGatewayABI,
+					functionName: "savings",
+					args: [account as `0x${string}`],
+				});
+				setUserSavingsBalance(_userSavings);
 
-			const accruedInterest = await readContract(WAGMI_CONFIG, {
-				address: ADDR.savingsGateway,
-				abi: SavingsGatewayABI,
-				functionName: "accruedInterest",
-				args: [account as `0x${string}`],
-			});
-			setInterestToBeCollected(accruedInterest);
+				const _current = await readContract(WAGMI_CONFIG, {
+					address: ADDR.savingsGateway,
+					abi: SavingsGatewayABI,
+					functionName: "currentTicks",
+				});
+				const accruedInterest = await readContract(WAGMI_CONFIG, {
+					address: ADDR.savingsGateway,
+					abi: SavingsGatewayABI,
+					functionName: "accruedInterest",
+					args: [account as `0x${string}`],
+				});
+				setInterestToBeCollected(accruedInterest);
 
-			const _locktime = _userTicks >= _current && leadrate > 0n ? (_userTicks - _current) / BigInt(leadrate) : 0n;
-			const _tickDiff = _current - _userTicks;
-			const _interest = _userTicks == 0n || _locktime > 0 ? 0n : (_tickDiff * _userSavings) / (1_000_000n * 365n * 24n * 60n * 60n);
+				const _locktime = _userTicks >= _current && leadrate > 0n ? (_userTicks - _current) / BigInt(leadrate) : 0n;
+				const _tickDiff = _current - _userTicks;
+				const _interest =
+					_userTicks == 0n || _locktime > 0 ? 0n : (_tickDiff * _userSavings) / (1_000_000n * 365n * 24n * 60n * 60n);
+				setUserSavingsInterest(_interest);
 
-			setUserSavingsInterest(_interest);
-
-			if (!isLoaded) {
-				setAmount(_userSavings);
+				if (!isLoaded) {
+					setAmount(_userSavings);
+					setLoaded(true);
+				}
+			} catch {
+				setUserSavingsBalance(0n);
+				setInterestToBeCollected(0n);
+				setUserSavingsInterest(0n);
+				if (!isLoaded) setAmount(0n);
 				setLoaded(true);
 			}
-		};
-
-		fetchAsync();
+		})();
 	}, [data, account, ADDR, isLoaded, leadrate, isClaiming, refetchSignal]);
 
 	useEffect(() => {

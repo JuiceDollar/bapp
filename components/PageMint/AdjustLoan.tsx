@@ -15,6 +15,7 @@ import Button from "@components/Button";
 import { Tooltip } from "flowbite-react";
 import { PositionQuery } from "@juicedollar/api";
 import { useChainId, useAccount } from "wagmi";
+import { WAGMI_CHAIN } from "../../app.config";
 import { ADDRESS } from "@juicedollar/jusd";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
@@ -196,6 +197,7 @@ export const AdjustLoan = ({
 	const handleExecute = () => {
 		if (!outcome || !outcome.isValid || !position || !userAddress) return;
 		handleLoanExecute({
+			chainId: chainId ?? WAGMI_CHAIN.id,
 			outcome,
 			position,
 			principal,

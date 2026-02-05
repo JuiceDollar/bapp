@@ -10,10 +10,10 @@ import { SvgIconButton } from "./PlusMinusButtons";
 import Button from "@components/Button";
 import { PositionQuery } from "@juicedollar/api";
 import { SolverPosition } from "../../utils/positionSolver";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { PositionV2ABI } from "@juicedollar/jusd";
 import { writeContract, waitForTransactionReceipt } from "wagmi/actions";
-import { WAGMI_CONFIG } from "../../app.config";
+import { WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
 import { toast } from "react-toastify";
 import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import { store } from "../../redux/redux.store";
@@ -49,6 +49,7 @@ export const AdjustLiqPrice = ({
 }: AdjustLiqPriceProps) => {
 	const { t } = useTranslation();
 	const router = useRouter();
+	const chainId = useChainId() ?? WAGMI_CHAIN.id;
 	const { address: userAddress } = useAccount();
 
 	const [deltaAmount, setDeltaAmount] = useState<string>("");
@@ -104,7 +105,7 @@ export const AdjustLiqPrice = ({
 				success: { render: <TxToast title={t("mint.txs.adjusting_price_success")} rows={[]} /> },
 			});
 
-			store.dispatch(fetchPositionsList());
+			store.dispatch(fetchPositionsList(chainId));
 			refetch();
 			onSuccess();
 		} catch (error) {

@@ -10,10 +10,10 @@ import { SvgIconButton } from "./PlusMinusButtons";
 import { MaxButton } from "@components/Input/MaxButton";
 import Button from "@components/Button";
 import { PositionQuery } from "@juicedollar/api";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { PositionV2ABI } from "@juicedollar/jusd";
 import { writeContract, waitForTransactionReceipt, getPublicClient } from "wagmi/actions";
-import { WAGMI_CONFIG } from "../../app.config";
+import { WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
 import { toast } from "react-toastify";
 import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import { store } from "../../redux/redux.store";
@@ -63,6 +63,7 @@ export const AdjustCollateral = ({
 }: AdjustCollateralProps) => {
 	const { t } = useTranslation();
 	const router = useRouter();
+	const chainId = useChainId() ?? WAGMI_CHAIN.id;
 	const { address: userAddress } = useAccount();
 	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol?.toLowerCase() || "");
 
@@ -313,7 +314,7 @@ export const AdjustCollateral = ({
 				});
 			}
 
-			store.dispatch(fetchPositionsList());
+			store.dispatch(fetchPositionsList(chainId));
 			if (isClosingPosition) {
 				router.push("/dashboard");
 			} else {
