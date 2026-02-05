@@ -105,9 +105,11 @@ export default function BockUpdater({ children }: { children?: React.ReactElemen
 	}, [initialized, error, data, latestHeight, latestHeight10, latestAddress, chainId]);
 
 	// --------------------------------------------------------------------------------
-	// Chain change: refetch all data for new network
+	// Chain change: reset block state and refetch all data for new network
 	useEffect(() => {
 		if (!initialized) return;
+		setLatestHeight(0);
+		setLatestHeight10(0);
 		console.log(`Policy [BlockUpdater]: Chain changed to ${chainId}, refetching API data`);
 		store.dispatch(fetchEcosystem(chainId));
 		store.dispatch(fetchPositionsList(chainId));
