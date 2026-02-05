@@ -1,5 +1,6 @@
 "use client";
 
+import type { NormalizedCacheObject } from "@apollo/client";
 import { ApolloClient, InMemoryCache, createHttpLink, from } from "@apollo/client";
 import { onError } from "@apollo/client/link/error";
 import { cookieStorage, createConfig, createStorage, http } from "@wagmi/core";
@@ -21,8 +22,6 @@ export const CONFIG_RPC = (): string => {
 	return CONFIG.chain === "testnet" ? CONFIG.network.testnet : CONFIG.network.mainnet;
 };
 
-const PONDER_URL = CONFIG.chain === "mainnet" ? CONFIG.ponder.mainnet : CONFIG.ponder.testnet;
-
 const errorLink = onError(({ graphQLErrors, networkError }) => {
 	if (graphQLErrors) {
 		graphQLErrors.forEach((error) => {
@@ -33,23 +32,27 @@ const errorLink = onError(({ graphQLErrors, networkError }) => {
 			});
 		});
 	}
-
 	if (networkError) {
 		console.error(`[Network error]`, networkError);
 	}
 });
 
-const httpLink = createHttpLink({
-	uri: PONDER_URL,
-	fetchOptions: {
-		timeout: 10000,
-	},
-});
+const ponderClientCache: Partial<Record<number, ApolloClient<NormalizedCacheObject>>> = {};
 
-export const PONDER_CLIENT = new ApolloClient({
-	link: from([errorLink, httpLink]),
-	cache: new InMemoryCache(),
-});
+export function getPonderClient(chainId: number): ApolloClient<NormalizedCacheObject> {
+	if (ponderClientCache[chainId]) return ponderClientCache[chainId]!;
+	const ponderUrl = chainId === 4114 ? CONFIG.ponder.mainnet : CONFIG.ponder.testnet;
+	const httpLink = createHttpLink({
+		uri: ponderUrl,
+		fetchOptions: { timeout: 10000 },
+	});
+	const client = new ApolloClient({
+		link: from([errorLink, httpLink]),
+		cache: new InMemoryCache(),
+	});
+	ponderClientCache[chainId] = client;
+	return client;
+}
 
 // WAGMI CONFIG
 export const WAGMI_CHAIN = CONFIG_CHAIN();
