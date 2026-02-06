@@ -134,11 +134,9 @@ export const AdjustLiqPrice = ({
 						{t("mint.adjust")} {t("mint.liquidation_price")}
 					</div>
 					<div className="flex flex-row items-center">
-						{maxDeltaIncrease > 0n && (
-							<SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
-								{t("mint.increase")}
-							</SvgIconButton>
-						)}
+						<SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
+							{t("mint.increase")}
+						</SvgIconButton>
 						<SvgIconButton isSelected={!isIncrease} onClick={() => setIsIncrease(false)} SvgComponent={RemoveCircleOutlineIcon}>
 							{t("mint.decrease")}
 						</SvgIconButton>
