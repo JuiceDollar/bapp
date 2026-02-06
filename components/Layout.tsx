@@ -3,12 +3,14 @@ import { ReactNode } from "react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import { TestnetTopBar } from "./TestnetBanner";
+import { useRedirectOnChainChange } from "../hooks/useRedirectOnChainChange";
 
 type LayoutProps = {
 	children: NonNullable<ReactNode>;
 };
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+	useRedirectOnChainChange();
 	return (
 		<div className="flex flex-col min-h-screen">
 			<Head>
