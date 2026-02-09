@@ -25,8 +25,6 @@ enum TokenInteractionSide {
 	OUTPUT = "output",
 }
 
-const STABLECOIN_SYMBOLS = ["SUSD"];
-
 const noTokenMeta = {
 	symbol: "",
 	userBal: 0n,
@@ -50,8 +48,10 @@ const getAmountWithLeastPrecision = (amount: bigint, fromDecimals: bigint, toDec
 };
 
 export default function Swap() {
-	const [fromSymbol, setFromSymbol] = useState(STABLECOIN_SYMBOLS[0]);
-	const [fromOptions, setFromOptions] = useState(STABLECOIN_SYMBOLS);
+	const swapStats = useSwapStats();
+	const stablecoinSymbols = Object.keys(swapStats.bridgeTokens);
+	const [fromSymbol, setFromSymbol] = useState("");
+	const [fromOptions, setFromOptions] = useState<string[]>([]);
 	const [toSymbol, setToSymbol] = useState(TOKEN_SYMBOL);
 	const [toOptions, setToOptions] = useState([TOKEN_SYMBOL]);
 	const [amount, setAmount] = useState(0n);
@@ -59,8 +59,16 @@ export default function Swap() {
 	const [isTxOnGoing, setTxOnGoing] = useState(false);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [interactionSide, setInteractionSide] = useState<TokenInteractionSide>();
-	const swapStats = useSwapStats();
 	const { t } = useTranslation();
+
+	// Sync fromSymbol/fromOptions when bridge tokens load from package
+	useEffect(() => {
+		if (stablecoinSymbols.length === 0) return;
+		setFromOptions(stablecoinSymbols);
+		if (!fromSymbol || !stablecoinSymbols.includes(fromSymbol)) {
+			setFromSymbol(stablecoinSymbols[0]);
+		}
+	}, [stablecoinSymbols.join(","), fromSymbol]);
 
 	const getSelectedStablecoinSymbol = useCallback(() => {
 		return fromSymbol === TOKEN_SYMBOL ? toSymbol : fromSymbol;
@@ -68,28 +76,27 @@ export default function Swap() {
 
 	const getTokenMetaBySymbol = useCallback(
 		(symbol: string) => {
-			switch (symbol) {
-				case TOKEN_SYMBOL:
-					const userAllowance = swapStats.dEuro.bridgeAllowance;
-					return {
-						symbol: TOKEN_SYMBOL,
-						userBal: swapStats.dEuro.userBal,
-						userAllowance: userAllowance,
-						limit: 0n,
-						minted: 0n,
-						remaining: 0n,
-						decimals: swapStats.dEuro.decimals,
-						bridgeBal: 0n,
-						contractBridgeAddress: "0x0",
-						contractAddress: swapStats.dEuro.contractAddress,
-					};
-				case "SUSD":
-					return swapStats.startUSD;
-				default:
-					return noTokenMeta;
+			if (symbol === TOKEN_SYMBOL) {
+				const stablecoinSymbol = getSelectedStablecoinSymbol();
+				const bridgeAddr = swapStats.bridgeTokens[stablecoinSymbol]?.contractBridgeAddress ?? "0x0";
+				const userAllowance = bridgeAddr !== "0x0" ? swapStats.jusd.bridgeAllowances[bridgeAddr] ?? 0n : 0n;
+				return {
+					symbol: TOKEN_SYMBOL,
+					userBal: swapStats.jusd.userBal,
+					userAllowance,
+					limit: 0n,
+					minted: 0n,
+					remaining: 0n,
+					decimals: swapStats.jusd.decimals,
+					bridgeBal: 0n,
+					contractBridgeAddress: "0x0",
+					contractAddress: swapStats.jusd.contractAddress,
+				};
 			}
+			const token = swapStats.bridgeTokens[symbol];
+			return token ?? noTokenMeta;
 		},
-		[swapStats]
+		[swapStats, getSelectedStablecoinSymbol]
 	);
 
 	const onChangeAmount = useCallback(
@@ -443,7 +450,9 @@ export default function Swap() {
 							/>
 							<div className="mx-auto mt-12 max-w-full flex-col">
 								<GuardToAllowedChainBtn>
-									{amount > fromTokenMeta.userAllowance ? (
+									{!fromSymbol ? (
+										<Button disabled>{t("common.loading")}</Button>
+									) : amount > fromTokenMeta.userAllowance ? (
 										<Button isLoading={isTxOnGoing} onClick={() => handleApprove()}>
 											{t("common.approve")}
 										</Button>
@@ -464,16 +473,21 @@ export default function Swap() {
 			</div>
 			<TokenSelectModal title={t("swap.select_stablecoin")} isOpen={isModalOpen} setIsOpen={setIsModalOpen}>
 				<div className="h-full">
-					<TokenModalRowButton
-						currency="$"
-						symbol={swapStats.startUSD.symbol}
-						price={formatCurrency(formatUnits(swapStats.startUSD.userBal, Number(swapStats.startUSD.decimals)), 2, 2) as string}
-						balance={
-							formatCurrency(formatUnits(swapStats.startUSD.userBal, Number(swapStats.startUSD.decimals)), 2, 2) as string
-						}
-						name={swapStats.startUSD.symbol}
-						onClick={() => handleSelectToken(swapStats.startUSD.symbol)}
-					/>
+					{stablecoinSymbols.map((symbol) => {
+						const token = swapStats.bridgeTokens[symbol];
+						if (!token) return null;
+						return (
+							<TokenModalRowButton
+								key={symbol}
+								currency="$"
+								symbol={token.symbol}
+								price={formatCurrency(formatUnits(token.userBal, Number(token.decimals)), 2, 2) as string}
+								balance={formatCurrency(formatUnits(token.userBal, Number(token.decimals)), 2, 2) as string}
+								name={token.symbol}
+								onClick={() => handleSelectToken(token.symbol)}
+							/>
+						);
+					})}
 				</div>
 			</TokenSelectModal>
 		</>
