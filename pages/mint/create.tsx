@@ -12,11 +12,10 @@ import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/ac
 import { formatBigInt, shortenAddress, TOKEN_SYMBOL, SOCIAL } from "@utils";
 import { toast } from "react-toastify";
 import { TxToast, renderErrorToast, renderErrorTxToast } from "@components/TxToast";
-import Link from "next/link";
 import NormalInput from "@components/Input/NormalInput";
 import AddressInput from "@components/Input/AddressInput";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
-import { WAGMI_CHAIN, WAGMI_CONFIG } from "../../app.config";
+import { WAGMI_CONFIG } from "../../app.config";
 import { ADDRESS, MintingHubGatewayABI } from "@juicedollar/jusd";
 import { useTranslation, Trans } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";

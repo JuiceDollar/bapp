@@ -10,7 +10,7 @@ import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/ac
 import { toast } from "react-toastify";
 import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
-import { WAGMI_CHAIN, WAGMI_CONFIG } from "../../../app.config";
+import { WAGMI_CONFIG } from "../../../app.config";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/redux.store";
 import { PositionQuery } from "@juicedollar/api";

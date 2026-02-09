@@ -7,7 +7,7 @@ import { VoteData } from "./GovernanceVotersTable";
 import GovernanceVotersAction from "./GovernanceVotersAction";
 import { useEffect, useState } from "react";
 import { readContract } from "wagmi/actions";
-import { WAGMI_CHAIN, WAGMI_CONFIG } from "../../app.config";
+import { WAGMI_CONFIG } from "../../app.config";
 import { useAccount, useChainId } from "wagmi";
 import { ADDRESS, EquityABI } from "@juicedollar/jusd";
 import { POOL_SHARE_TOKEN_SYMBOL } from "../../utils/constant";
