@@ -17,6 +17,7 @@ import { PositionQuery } from "@juicedollar/api";
 import { useChainId, useAccount } from "wagmi";
 import { WAGMI_CHAIN } from "../../app.config";
 import { ADDRESS } from "@juicedollar/jusd";
+import { mainnet, testnet } from "@config";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
 import { getAmountLended, getRetainedReserve } from "../../utils/loanCalculations";
@@ -188,6 +189,7 @@ export const AdjustLoan = ({
 			tokenAddress: ADDRESS[chainId]?.juiceDollar as Address,
 			spender: position.position as Address,
 			amount: repayAmount * 2n,
+			chainId: chainId as typeof mainnet.id | typeof testnet.id,
 			t,
 			onSuccess: refetchAllowance,
 		});

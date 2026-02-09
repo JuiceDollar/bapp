@@ -56,7 +56,7 @@ export default function PositionDetail() {
 		};
 
 		fetchAsync();
-	}, [position]);
+	}, [position, chainId]);
 
 	if (!position) return;
 
