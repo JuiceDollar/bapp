@@ -20,6 +20,7 @@ import { store } from "../../redux/redux.store";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { Address } from "viem";
 import { useReferencePosition } from "../../hooks/useReferencePosition";
+import { mainnet, testnet } from "@config";
 
 interface AdjustLiqPriceProps {
 	position: PositionQuery;
@@ -88,12 +89,14 @@ export const AdjustLiqPrice = ({
 
 			const adjustHash = useReference
 				? await writeContract(WAGMI_CONFIG, {
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
 						address: position.position as Address,
 						abi: PositionV2ABI,
 						functionName: "adjustPriceWithReference",
 						args: [newPrice, reference.address!],
 				  })
 				: await writeContract(WAGMI_CONFIG, {
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
 						address: position.position as Address,
 						abi: PositionV2ABI,
 						functionName: "adjustPrice",

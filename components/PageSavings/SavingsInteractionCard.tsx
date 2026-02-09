@@ -22,6 +22,7 @@ import { shortenAddress } from "@utils";
 import { toast } from "react-toastify";
 import { renderErrorTxToast, TxToast } from "@components/TxToast";
 import { waitForTransactionReceipt } from "wagmi/actions";
+import { mainnet, testnet } from "@config";
 
 export default function SavingsInteractionCard() {
 	const [amount, setAmount] = useState(0n);
@@ -130,6 +131,7 @@ export default function SavingsInteractionCard() {
 			setIsApproving(true);
 
 			const approveWriteHash = await writeContract(WAGMI_CONFIG, {
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDR.juiceDollar,
 				abi: erc20Abi,
 				functionName: "approve",

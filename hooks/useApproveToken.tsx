@@ -3,18 +3,21 @@ import { writeContract, waitForTransactionReceipt } from "@wagmi/core";
 import { toast } from "react-toastify";
 import { WAGMI_CONFIG } from "../app.config";
 import { TxToast, TxToastRowType, renderErrorTxToast } from "../components/TxToast";
+import { mainnet, testnet } from "@config";
 
 interface ApproveParams {
 	tokenAddress: Address;
 	spender: Address;
 	amount: bigint;
+	chainId: typeof mainnet.id | typeof testnet.id;
 	t: (key: string) => string;
 	onSuccess?: () => void;
 }
 
-export const approveToken = async ({ tokenAddress, spender, amount, t, onSuccess }: ApproveParams): Promise<boolean> => {
+export const approveToken = async ({ tokenAddress, spender, amount, chainId, t, onSuccess }: ApproveParams): Promise<boolean> => {
 	try {
 		const hash = await writeContract(WAGMI_CONFIG, {
+			chainId: chainId as typeof mainnet.id | typeof testnet.id,
 			address: tokenAddress,
 			abi: erc20Abi,
 			functionName: "approve",

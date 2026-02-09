@@ -13,6 +13,7 @@ import { toast } from "react-toastify";
 import { TxToast } from "@components/TxToast";
 import { getFrontendCodeFromReferralName } from "@utils";
 import { useMyReferrals } from "@hooks";
+import { mainnet, testnet } from "@config";
 
 export const CopyLinkButton = ({ text, contentOnCopy }: { text: string; contentOnCopy: string }) => {
 	const [isCopied, setIsCopied] = useState(false);
@@ -129,6 +130,7 @@ export const ReferralCreationForm = () => {
 			}
 
 			const registerWriteHash = await writeContract(WAGMI_CONFIG, {
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
 				abi: FrontendGatewayABI,
 				functionName: "registerFrontendCode",

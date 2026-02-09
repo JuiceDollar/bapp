@@ -13,6 +13,7 @@ import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/ac
 import { WAGMI_CONFIG } from "../app.config";
 import { renderErrorTxToast, TxToast } from "@components/TxToast";
 import { gql, useQuery } from "@apollo/client";
+import { mainnet, testnet } from "@config";
 
 export const useSavingsInterest = () => {
 	const [amount, setAmount] = useState(0n);
@@ -121,6 +122,7 @@ export const useSavingsInterest = () => {
 			setIsClaiming(true);
 
 			const writeHash = await writeContract(WAGMI_CONFIG, {
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDR.savingsGateway,
 				abi: SavingsGatewayABI,
 				functionName: "adjust",
@@ -169,6 +171,7 @@ export const useSavingsInterest = () => {
 			setIsReinvesting(true);
 
 			const reinvestHash = await writeContract(WAGMI_CONFIG, {
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
 				abi: SavingsGatewayABI,
 				functionName: "refreshBalance",

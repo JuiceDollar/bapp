@@ -47,6 +47,7 @@ import {
 import { useFrontendCode } from "../../hooks/useFrontendCode";
 import { MaxButton } from "@components/Input/MaxButton";
 import Link from "next/link";
+import { mainnet, testnet } from "@config";
 
 export default function PositionCreate({}) {
 	const [selectedCollateral, setSelectedCollateral] = useState<TokenBalance | null | undefined>(null);
@@ -340,6 +341,7 @@ export default function PositionCreate({}) {
 			}
 
 			const hash = await writeContract(WAGMI_CONFIG, {
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: gatewayAddress,
 				abi: MintingHubGatewayABI,
 				functionName: "clone",

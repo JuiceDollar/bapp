@@ -20,6 +20,7 @@ import { store } from "../../redux/redux.store";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { Tooltip } from "flowbite-react";
 import { approveToken } from "../../hooks/useApproveToken";
+import { mainnet, testnet } from "@config";
 
 enum StrategyKey {
 	HIGHER_PRICE = "higherPrice",
@@ -216,6 +217,7 @@ export const AdjustCollateral = ({
 
 			if (isIncrease) {
 				const adjustHash = await writeContract(WAGMI_CONFIG, {
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: position.position as Address,
 					abi: PositionV2ABI,
 					functionName: "adjust",
@@ -254,6 +256,7 @@ export const AdjustCollateral = ({
 				// Case 3: call repay() first
 				if (needsSeparateRepay) {
 					const repayHash = await writeContract(WAGMI_CONFIG, {
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
 						address: position.position as Address,
 						abi: PositionV2ABI,
 						functionName: "repay",
@@ -293,6 +296,7 @@ export const AdjustCollateral = ({
 						.catch(() => 300_000n)) ?? 300_000n;
 
 				const withdrawHash = await writeContract(WAGMI_CONFIG, {
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: position.position as Address,
 					abi: PositionV2ABI,
 					functionName: "adjust",
