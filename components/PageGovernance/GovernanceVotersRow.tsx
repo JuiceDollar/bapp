@@ -10,6 +10,7 @@ import { readContract } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
 import { useAccount, useChainId } from "wagmi";
 import { ADDRESS, EquityABI } from "@juicedollar/jusd";
+import { mainnet, testnet } from "@config";
 import { POOL_SHARE_TOKEN_SYMBOL } from "../../utils/constant";
 import { useTranslation } from "next-i18next";
 
@@ -40,6 +41,7 @@ export default function GovernanceVotersRow({ headers, voter, votesTotal, connec
 		if (!isDelegateeVotes && isDelegated && !isRevoked) {
 			const fetcher = async function () {
 				const nativePS = await readContract(WAGMI_CONFIG, {
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: ADDRESS[chainId].equity,
 					abi: EquityABI,
 					functionName: "balanceOf",
@@ -47,6 +49,7 @@ export default function GovernanceVotersRow({ headers, voter, votesTotal, connec
 				});
 
 				const votingPowerRatio = await readContract(WAGMI_CONFIG, {
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: ADDRESS[chainId].equity,
 					abi: EquityABI,
 					functionName: "relativeVotes",

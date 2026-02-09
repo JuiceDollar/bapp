@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 import { TxToast, renderErrorTxToast } from "@components/TxToast";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../../app.config";
+import { mainnet, testnet } from "@config";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/redux.store";
 import { PositionQuery } from "@juicedollar/api";
@@ -53,6 +54,7 @@ export default function PositionAdjust() {
 		const fetchAsync = async function () {
 			if (acc !== undefined) {
 				const _balanceFrank = await readContract(WAGMI_CONFIG, {
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: ADDRESS[chainId].juiceDollar,
 					abi: erc20Abi,
 					functionName: "balanceOf",
@@ -61,6 +63,7 @@ export default function PositionAdjust() {
 				setUserFrankBalance(_balanceFrank);
 
 				const _balanceColl = await readContract(WAGMI_CONFIG, {
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: position.collateral,
 					abi: erc20Abi,
 					functionName: "balanceOf",
@@ -69,6 +72,7 @@ export default function PositionAdjust() {
 				setUserCollBalance(_balanceColl);
 
 				const _allowanceColl = await readContract(WAGMI_CONFIG, {
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: position.collateral,
 					abi: erc20Abi,
 					functionName: "allowance",
@@ -78,6 +82,7 @@ export default function PositionAdjust() {
 			}
 
 			const _balanceChallenge = await readContract(WAGMI_CONFIG, {
+				chainId: chainId as 4114 | 5115,
 				address: position.position,
 				abi: PositionV2ABI,
 				functionName: "challengedAmount",

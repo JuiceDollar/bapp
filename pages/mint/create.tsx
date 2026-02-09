@@ -16,6 +16,7 @@ import NormalInput from "@components/Input/NormalInput";
 import AddressInput from "@components/Input/AddressInput";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../app.config";
+import { mainnet, testnet } from "@config";
 import { ADDRESS, MintingHubGatewayABI } from "@juicedollar/jusd";
 import { useTranslation, Trans } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
@@ -65,6 +66,7 @@ export default function PositionCreate({}) {
 
 		const fetchAsync = async function () {
 			const _allowance = await readContract(WAGMI_CONFIG, {
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: collateralAddress as Address,
 				abi: erc20Abi,
 				functionName: "allowance",
