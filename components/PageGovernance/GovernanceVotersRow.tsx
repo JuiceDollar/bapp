@@ -8,7 +8,7 @@ import GovernanceVotersAction from "./GovernanceVotersAction";
 import { useEffect, useState } from "react";
 import { readContract } from "wagmi/actions";
 import { WAGMI_CHAIN, WAGMI_CONFIG } from "../../app.config";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 import { ADDRESS, EquityABI } from "@juicedollar/jusd";
 import { POOL_SHARE_TOKEN_SYMBOL } from "../../utils/constant";
 import { useTranslation } from "next-i18next";
@@ -26,6 +26,7 @@ export default function GovernanceVotersRow({ headers, voter, votesTotal, connec
 	const [isDelegateeVotes, setDelegateeVotes] = useState<VoteData | undefined>(undefined);
 	const delegationData = useDelegationQuery();
 	const account = useAccount();
+	const chainId = useChainId();
 	const sender: Address = account.address || zeroAddress;
 
 	const delegatedFrom = delegationData.delegatees[voter.holder.toLowerCase() as Address] || [];
@@ -39,14 +40,14 @@ export default function GovernanceVotersRow({ headers, voter, votesTotal, connec
 		if (!isDelegateeVotes && isDelegated && !isRevoked) {
 			const fetcher = async function () {
 				const nativePS = await readContract(WAGMI_CONFIG, {
-					address: ADDRESS[WAGMI_CHAIN.id].equity,
+					address: ADDRESS[chainId].equity,
 					abi: EquityABI,
 					functionName: "balanceOf",
 					args: [delegatee],
 				});
 
 				const votingPowerRatio = await readContract(WAGMI_CONFIG, {
-					address: ADDRESS[WAGMI_CHAIN.id].equity,
+					address: ADDRESS[chainId].equity,
 					abi: EquityABI,
 					functionName: "relativeVotes",
 					args: [delegatee],
@@ -64,7 +65,7 @@ export default function GovernanceVotersRow({ headers, voter, votesTotal, connec
 
 			fetcher();
 		}
-	}, [isDelegateeVotes, isDelegated, isRevoked, delegatee, voter, votesTotal]);
+	}, [isDelegateeVotes, isDelegated, isRevoked, delegatee, voter, votesTotal, chainId]);
 
 	return (
 		<>

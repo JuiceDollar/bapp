@@ -47,13 +47,13 @@ export default function PositionAdjust() {
 	// ---------------------------------------------------------------------------
 	useEffect(() => {
 		const acc: Address | undefined = account.address;
-		const fc: Address = ADDRESS[WAGMI_CHAIN.id].juiceDollar;
+		const fc: Address = ADDRESS[chainId].juiceDollar;
 		if (!position || !position.collateral) return;
 
 		const fetchAsync = async function () {
 			if (acc !== undefined) {
 				const _balanceFrank = await readContract(WAGMI_CONFIG, {
-					address: ADDRESS[WAGMI_CHAIN.id].juiceDollar,
+					address: ADDRESS[chainId].juiceDollar,
 					abi: erc20Abi,
 					functionName: "balanceOf",
 					args: [acc],
@@ -86,7 +86,7 @@ export default function PositionAdjust() {
 		};
 
 		fetchAsync();
-	}, [data, account.address, position]);
+	}, [data, account.address, position, chainId]);
 
 	// ---------------------------------------------------------------------------
 	if (!position) return null;
