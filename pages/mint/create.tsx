@@ -54,7 +54,7 @@ export default function PositionCreate({}) {
 	const collTokenData = useTokenData(collateralAddress);
 	const userBalance = useUserBalance();
 
-	const { allowance: deuroAllowance, refetch: refetchDeuroAllowance } = useTokenData(ADDRESS[WAGMI_CHAIN.id].juiceDollar);
+	const { allowance: deuroAllowance, refetch: refetchDeuroAllowance } = useTokenData(ADDRESS[chainId].juiceDollar);
 
 	const { t } = useTranslation();
 
@@ -69,13 +69,13 @@ export default function PositionCreate({}) {
 				address: collateralAddress as Address,
 				abi: erc20Abi,
 				functionName: "allowance",
-				args: [acc, ADDRESS[WAGMI_CHAIN.id].mintingHubGateway],
+				args: [acc, ADDRESS[chainId].mintingHubGateway],
 			});
 			setUserAllowance(_allowance);
 		};
 
 		fetchAsync();
-	}, [data, account.address, collateralAddress, isConfirming]);
+	}, [data, account.address, collateralAddress, isConfirming, chainId]);
 
 	useEffect(() => {
 		if (isAddress(collateralAddress)) {
