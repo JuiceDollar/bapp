@@ -97,6 +97,7 @@ export const ReferralCreationForm = () => {
 				try {
 					const frontendCode = getFrontendCodeFromReferralName(value);
 					const [, owner] = await readContract(WAGMI_CONFIG, {
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
 						address: ADDRESS[chainId].frontendGateway,
 						abi: FrontendGatewayABI,
 						functionName: "frontendCodes",
@@ -118,6 +119,7 @@ export const ReferralCreationForm = () => {
 
 			const frontendCode = getFrontendCodeFromReferralName(name);
 			const [, owner] = await readContract(WAGMI_CONFIG, {
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
 				abi: FrontendGatewayABI,
 				functionName: "frontendCodes",

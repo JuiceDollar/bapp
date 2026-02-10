@@ -66,6 +66,7 @@ export const useSavingsInterest = () => {
 		(async () => {
 			try {
 				const [_userSavings, _userTicks] = await readContract(WAGMI_CONFIG, {
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: ADDR.savingsGateway,
 					abi: SavingsGatewayABI,
 					functionName: "savings",
@@ -74,11 +75,13 @@ export const useSavingsInterest = () => {
 				setUserSavingsBalance(_userSavings);
 
 				const _current = await readContract(WAGMI_CONFIG, {
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: ADDR.savingsGateway,
 					abi: SavingsGatewayABI,
 					functionName: "currentTicks",
 				});
 				const accruedInterest = await readContract(WAGMI_CONFIG, {
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: ADDR.savingsGateway,
 					abi: SavingsGatewayABI,
 					functionName: "accruedInterest",
@@ -104,7 +107,7 @@ export const useSavingsInterest = () => {
 				setLoaded(true);
 			}
 		})();
-	}, [data, account, ADDR, isLoaded, leadrate, isClaiming, refetchSignal]);
+	}, [data, account, ADDR, isLoaded, leadrate, isClaiming, refetchSignal, chainId]);
 
 	useEffect(() => {
 		setLoaded(false);

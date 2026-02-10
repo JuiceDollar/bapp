@@ -25,6 +25,7 @@ export const ReferralsStats = () => {
 
 		try {
 			const [balance, owner] = await readContract(WAGMI_CONFIG, {
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
 				abi: FrontendGatewayABI,
 				functionName: "frontendCodes",

@@ -284,7 +284,9 @@ export const AdjustCollateral = ({
 				}
 
 				// All cases: call adjust()
-				const publicClient = getPublicClient(WAGMI_CONFIG);
+				const publicClient = getPublicClient(WAGMI_CONFIG, {
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				});
 				const estimatedGas =
 					(await publicClient
 						?.estimateContractGas({

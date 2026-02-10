@@ -38,14 +38,24 @@ export const approveToken = async ({ tokenAddress, spender, amount, chainId, t, 
 };
 
 interface ExecuteTxParams {
+	chainId: typeof mainnet.id | typeof testnet.id;
 	contractParams: any;
 	pendingTitle: string;
 	successTitle: string;
 	rows?: TxToastRowType[];
 }
 
-export const executeTx = async ({ contractParams, pendingTitle, successTitle, rows = [] }: ExecuteTxParams): Promise<`0x${string}`> => {
-	const hash = await writeContract(WAGMI_CONFIG, contractParams);
+export const executeTx = async ({
+	chainId,
+	contractParams,
+	pendingTitle,
+	successTitle,
+	rows = [],
+}: ExecuteTxParams): Promise<`0x${string}`> => {
+	const hash = await writeContract(WAGMI_CONFIG, {
+		chainId,
+		...contractParams,
+	});
 	const toastRows = [...rows, { title: "Transaction", hash }];
 	await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash, confirmations: 1 }), {
 		pending: { render: <TxToast title={pendingTitle} rows={toastRows} /> },
