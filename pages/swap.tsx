@@ -68,7 +68,7 @@ export default function Swap() {
 	useEffect(() => {
 		if (stablecoinSymbols.length === 0) return;
 		setFromOptions(stablecoinSymbols);
-		if (!fromSymbol || !stablecoinSymbols.includes(fromSymbol)) {
+		if (!fromSymbol || (fromSymbol !== TOKEN_SYMBOL && !stablecoinSymbols.includes(fromSymbol))) {
 			setFromSymbol(stablecoinSymbols[0]);
 		}
 	}, [stablecoinSymbols.join(","), fromSymbol]);
@@ -479,9 +479,9 @@ export default function Swap() {
 			</div>
 			<TokenSelectModal title={t("swap.select_stablecoin")} isOpen={isModalOpen} setIsOpen={setIsModalOpen}>
 				<div className="h-full">
-					{stablecoinSymbols.map((symbol) => {
-						const token = swapStats.bridgeTokens[symbol];
-						if (!token) return null;
+					{(interactionSide === TokenInteractionSide.INPUT ? fromOptions : toOptions).map((symbol) => {
+						const token = getTokenMetaBySymbol(symbol);
+						if (!token || !token.symbol) return null;
 						return (
 							<TokenModalRowButton
 								key={symbol}
