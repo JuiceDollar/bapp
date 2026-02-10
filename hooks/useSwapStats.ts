@@ -138,7 +138,7 @@ export const useSwapStats = () => {
 	const jusdAllowanceStartIndex = 3;
 	const bridgeTokensStartIndex = 3 + bridgeEntries.length;
 
-	const jusd = {
+	const jusdData = {
 		userBal: data && addr ? decodeBigIntCall(data[jusdBaseIndex]) : BigInt(0),
 		symbol: data && addr ? String(data[jusdBaseIndex + 1].result) : "",
 		decimals: data && addr ? decodeBigIntCall(data[jusdBaseIndex + 2]) : BigInt(0),
@@ -166,7 +166,7 @@ export const useSwapStats = () => {
 	return {
 		isError,
 		isLoading,
-		jusd,
+		jusdData,
 		bridgeTokens,
 		refetch,
 	};

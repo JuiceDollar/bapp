@@ -82,18 +82,18 @@ export default function Swap() {
 			if (symbol === TOKEN_SYMBOL) {
 				const stablecoinSymbol = getSelectedStablecoinSymbol();
 				const bridgeAddr = swapStats.bridgeTokens[stablecoinSymbol]?.contractBridgeAddress ?? "0x0";
-				const userAllowance = bridgeAddr !== "0x0" ? swapStats.jusd.bridgeAllowances[bridgeAddr] ?? 0n : 0n;
+				const userAllowance = bridgeAddr !== "0x0" ? swapStats.jusdData.bridgeAllowances[bridgeAddr] ?? 0n : 0n;
 				return {
 					symbol: TOKEN_SYMBOL,
-					userBal: swapStats.jusd.userBal,
+					userBal: swapStats.jusdData.userBal,
 					userAllowance,
 					limit: 0n,
 					minted: 0n,
 					remaining: 0n,
-					decimals: swapStats.jusd.decimals,
+					decimals: swapStats.jusdData.decimals,
 					bridgeBal: 0n,
 					contractBridgeAddress: "0x0",
-					contractAddress: swapStats.jusd.contractAddress,
+					contractAddress: swapStats.jusdData.contractAddress,
 				};
 			}
 			const token = swapStats.bridgeTokens[symbol];
