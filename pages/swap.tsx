@@ -19,6 +19,8 @@ import { TokenInputSelectOutlined } from "@components/Input/TokenInputSelectOutl
 import { InputTitle } from "@components/Input/InputTitle";
 import { MaxButton } from "@components/Input/MaxButton";
 import { TokenModalRowButton, TokenSelectModal } from "@components/TokenSelectModal";
+import { useChainId } from "wagmi";
+import { mainnet, testnet } from "@config";
 
 enum TokenInteractionSide {
 	INPUT = "input",
@@ -60,6 +62,7 @@ export default function Swap() {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [interactionSide, setInteractionSide] = useState<TokenInteractionSide>();
 	const { t } = useTranslation();
+	const chainId = useChainId();
 
 	// Sync fromSymbol/fromOptions when bridge tokens load from package
 	useEffect(() => {
@@ -187,6 +190,7 @@ export default function Swap() {
 			const bridgeAddress = getTokenMetaBySymbol(stablecoinSymbol).contractBridgeAddress as `0x${string}`;
 
 			const approveWriteHash = await writeContract(WAGMI_CONFIG, {
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: fromContractAddress as `0x${string}`,
 				abi: erc20Abi,
 				functionName: "approve",
@@ -232,6 +236,7 @@ export default function Swap() {
 			const bridgeAddress = getTokenMetaBySymbol(stablecoinSymbol).contractBridgeAddress as `0x${string}`;
 
 			const mintWriteHash = await writeContract(WAGMI_CONFIG, {
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: bridgeAddress,
 				abi: StablecoinBridgeABI,
 				functionName: "mint",
@@ -281,6 +286,7 @@ export default function Swap() {
 			const bridgeAddress = getTokenMetaBySymbol(stablecoinSymbol).contractBridgeAddress as `0x${string}`;
 
 			const burnWriteHash = await writeContract(WAGMI_CONFIG, {
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: bridgeAddress,
 				abi: StablecoinBridgeABI,
 				functionName: "burn",
