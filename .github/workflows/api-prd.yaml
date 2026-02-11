@@ -55,7 +55,7 @@ jobs:
                       source .env.prd
                       set +a
                       NEXT_PUBLIC_CHAIN_NAME=testnet
-                      
+
                       az containerapp update --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CONTAINER_APP_TESTNET }} --image ${{ env.DOCKER_TAGS }} --set-env-vars \
                         "NEXT_PUBLIC_LANDINGPAGE_URL=$NEXT_PUBLIC_LANDINGPAGE_URL" \
                         "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL" \
@@ -77,7 +77,7 @@ jobs:
                       source .env.prd
                       set +a
                       NEXT_PUBLIC_CHAIN_NAME=mainnet
-                      
+
                       az containerapp update --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CONTAINER_APP_MAINNET }} --image ${{ env.DOCKER_TAGS }} --set-env-vars \
                         "NEXT_PUBLIC_LANDINGPAGE_URL=$NEXT_PUBLIC_LANDINGPAGE_URL" \
                         "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL" \
