@@ -716,5 +716,45 @@
 			"withdrawing": "Retirando de ahorros...",
 			"successfully_withdrawn": "Retiro exitoso"
 		}
+	},
+	"coverage": {
+		"title": "Cobertura",
+		"total_supply": "Oferta total",
+		"positions": "Posiciones con garantía",
+		"bridges": "Bridges de stablecoin",
+		"reserves": "Reservas",
+		"other": "Otros (comisiones/intereses)",
+		"collateral_positions": "Posiciones con garantía",
+		"collateral": "Garantía",
+		"open_positions": "Posiciones abiertas",
+		"total_minted": "Total acuñado",
+		"interest_avg": "Interés medio",
+		"utilization": "Utilización",
+		"stablecoin_bridges": "Bridges de stablecoin",
+		"stablecoin": "Stablecoin",
+		"minted": "Acuñado",
+		"limit": "Límite",
+		"status": "Estado",
+		"active": "Activo",
+		"expired": "Caducado"
+	},
+	"minter_check": {
+		"title": "Verificación de minter",
+		"description": "Cada JUSD en circulación puede rastrearse hasta un minter concreto. Esta página permite verificar cómo se creó todo el JUSD. Haz clic en cualquier posición para verificarla en el explorador de bloques.",
+		"total_supply": "Oferta total",
+		"collateral_positions": "Posiciones con garantía",
+		"bridge_minters": "Minters de bridge"
+	},
+	"rates": {
+		"title": "Tipos de interés en vivo",
+		"loan_interest": "Intereses de préstamo (ingresos)",
+		"savings_interest": "Intereses de ahorro (gastos)",
+		"open_positions": "Posiciones abiertas",
+		"total_minted": "Total acuñado",
+		"interest_pa": "Interés p.a.",
+		"total_savings_balance": "Saldo total de ahorros",
+		"savings_rate": "Tipo de ahorro",
+		"estimated_interest_pa": "Interés estimado p.a.",
+		"net_interest_pa": "Interés neto p.a."
 	}
 }
