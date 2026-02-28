@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { usePoolStats } from "@hooks";
 import { formatBigInt, formatCurrency, POOL_SHARE_TOKEN_SYMBOL, SAVINGS_VAULT_SYMBOL, shortenAddress, TOKEN_SYMBOL } from "@utils";
 import { useAccount, useChainId, useClient, useReadContract } from "wagmi";
-import { multicall, waitForTransactionReceipt } from "wagmi/actions";
+import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { erc20Abi, formatUnits, zeroAddress } from "viem";
 import Button from "@components/Button";
