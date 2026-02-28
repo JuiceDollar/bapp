@@ -4,6 +4,7 @@ import { formatUnits, maxUint256 } from "viem";
 import Button from "@components/Button";
 import { SecondaryButton } from "@components/Button";
 import { formatBigInt, shortenAddress } from "@utils";
+import { WAGMI_CHAIN } from "../app.config";
 import type { TraceResult } from "../utils/traceTransaction";
 
 type TxPreviewModalProps = {
@@ -20,6 +21,7 @@ export default function TxPreviewModal({ traceResult, nativeValue, onConfirm, on
 	const outgoing = transfers.filter((c) => c.direction === "out");
 	const incoming = transfers.filter((c) => c.direction === "in");
 
+	const nativeSymbol = WAGMI_CHAIN.nativeCurrency.symbol;
 	const hasNativeValue = nativeValue !== undefined && nativeValue > 0n;
 	const hasOutgoing = outgoing.length > 0 || hasNativeValue;
 	const hasIncoming = incoming.length > 0;
@@ -39,11 +41,11 @@ export default function TxPreviewModal({ traceResult, nativeValue, onConfirm, on
 			>
 				<div className="text-lg font-extrabold leading-tight align-middle">{t("common.txs.preview_title")}</div>
 			</Modal.Header>
-			<Modal.Body theme={{ base: "flex flex-col px-3 py-2" }}>
+			<Modal.Body theme={{ base: "flex flex-col px-6 py-2" }}>
 				<div className="flex flex-col gap-3">
 					{hasOutgoing && (
 						<Section title={t("common.txs.you_send")}>
-							{hasNativeValue && <ChangeRow symbol="cBTC" amount={nativeValue!} decimals={18} direction="out" />}
+							{hasNativeValue && <ChangeRow symbol={nativeSymbol} amount={nativeValue!} decimals={18} direction="out" />}
 							{outgoing.map((c, i) => (
 								<ChangeRow key={`out-${i}`} symbol={c.symbol} amount={c.amount} decimals={c.decimals} direction="out" />
 							))}

@@ -4,6 +4,7 @@ import { Hash } from "viem";
 import { useChainId } from "wagmi";
 import { mainnet, testnet } from "@config";
 import { SimulationError, UserCancelledError } from "../utils/contractHelpers";
+import { extractRevertReason } from "../utils/errorUtils";
 
 export const renderErrorToast = (error: string | string[], t?: any) => {
 	error = typeof error == "string" ? [error] : error;
@@ -41,16 +42,6 @@ export const renderSimulationErrorToast = (error: any, t?: any) => {
 				.map((line: string) => ({ title: "", value: line }))
 		: [{ title: "", value: error?.message || "Unknown error" }];
 	return <TxToast title={title} rows={rows} />;
-};
-
-const extractRevertReason = (error: any): string | null => {
-	const msg = error?.message || error?.shortMessage || "";
-	const match = msg.match(/reverted with reason string '([^']+)'/);
-	if (match) return match[1];
-	const customMatch = msg.match(/reverted with custom error '([^']+)'/);
-	if (customMatch) return customMatch[1];
-	if (error?.shortMessage) return error.shortMessage;
-	return null;
 };
 
 export const renderErrorTxStackToast = (error: any, limit: number, t?: any) => {

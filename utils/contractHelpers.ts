@@ -4,6 +4,10 @@ import { Abi, Address } from "viem";
 import { mainnet, testnet } from "@config";
 import { traceTransaction } from "./traceTransaction";
 import { requestPreview } from "./txPreviewManager";
+import { extractRevertReason } from "./errorUtils";
+
+/** Native value below 0.0001 cBTC is treated as dust and hidden from preview */
+const NATIVE_DUST_THRESHOLD = 10n ** 14n;
 
 export class UserCancelledError extends Error {
 	constructor() {
@@ -16,23 +20,11 @@ export class SimulationError extends Error {
 	public readonly cause: unknown;
 
 	constructor(cause: unknown) {
-		const reason = extractSimulationReason(cause);
+		const reason = extractRevertReason(cause);
 		super(reason ?? "Transaction simulation failed");
 		this.name = "SimulationError";
 		this.cause = cause;
 	}
-}
-
-function extractSimulationReason(error: unknown): string | null {
-	if (!error || typeof error !== "object") return null;
-	const err = error as Record<string, unknown>;
-	const msg = (err.shortMessage ?? err.message ?? "") as string;
-	const reasonMatch = msg.match(/reverted with reason string '([^']+)'/);
-	if (reasonMatch) return reasonMatch[1];
-	const customMatch = msg.match(/reverted with custom error '([^']+)'/);
-	if (customMatch) return customMatch[1];
-	if (err.shortMessage && typeof err.shortMessage === "string") return err.shortMessage;
-	return null;
 }
 
 interface SimulateAndWriteParams {
@@ -80,7 +72,8 @@ export async function simulateAndWrite({
 		throw new SimulationError(error);
 	}
 
-	// Trace + Preview
+	// Trace + Preview — only show for transactions with balance changes,
+	// skip for approve-only transactions (low risk, adds unnecessary friction)
 	const connectedAccount = account ?? getAccount(WAGMI_CONFIG).address;
 	if (connectedAccount) {
 		try {
@@ -93,8 +86,9 @@ export async function simulateAndWrite({
 				value,
 				account: connectedAccount,
 			});
-			if (traceResult.transfers.length > 0 || traceResult.approvals.length > 0) {
-				const nativeValue = value && value >= 10n ** 14n ? value : undefined;
+			const nativeValue = value && value >= NATIVE_DUST_THRESHOLD ? value : undefined;
+			const hasBalanceChanges = traceResult.transfers.length > 0 || nativeValue;
+			if (hasBalanceChanges) {
 				const confirmed = await requestPreview(traceResult, nativeValue);
 				if (!confirmed) throw new UserCancelledError();
 			}
