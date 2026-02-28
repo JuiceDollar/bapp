@@ -3,7 +3,7 @@ import { shortenHash, transactionLink } from "@utils";
 import { Hash } from "viem";
 import { useChainId } from "wagmi";
 import { mainnet, testnet } from "@config";
-import { useTranslation } from "react-i18next";
+import { SimulationError } from "../utils/contractHelpers";
 
 export const renderErrorToast = (error: string | string[], t?: any) => {
 	error = typeof error == "string" ? [error] : error;
@@ -19,7 +19,25 @@ export const renderErrorToast = (error: string | string[], t?: any) => {
 };
 
 export const renderErrorTxToast = (error: any, t?: any) => {
+	if (error instanceof SimulationError) {
+		return renderSimulationErrorToast(error, t);
+	}
 	return renderErrorTxStackToast(error, 2, t);
+};
+
+export const renderSimulationErrorToast = (error: any, t?: any) => {
+	const title = t ? t("common.txs.simulation_failed") : "Transaction Would Fail";
+	const cause = error instanceof SimulationError ? error.cause : error;
+	const reason = extractRevertReason(cause);
+	const rows: TxToastRowType[] = reason
+		? [{ title: "", value: reason }]
+		: cause?.message
+		? cause.message
+				.split("\n")
+				.slice(0, 2)
+				.map((line: string) => ({ title: "", value: line }))
+		: [{ title: "", value: error?.message || "Unknown error" }];
+	return <TxToast title={title} rows={rows} />;
 };
 
 const extractRevertReason = (error: any): string | null => {
@@ -32,19 +50,6 @@ const extractRevertReason = (error: any): string | null => {
 	return null;
 };
 
-export const renderSimulationErrorToast = (error: any, t?: any) => {
-	const title = t ? t("common.txs.simulation_failed") : "Transaction Would Fail";
-	const reason = extractRevertReason(error);
-	const rows: TxToastRowType[] = reason
-		? [{ title: "", value: reason }]
-		: error?.message
-		? error.message
-				.split("\n")
-				.slice(0, 2)
-				.map((line: string) => ({ title: "", value: line }))
-		: [{ title: "", value: "Unknown error" }];
-	return <TxToast title={title} rows={rows} />;
-};
 export const renderErrorTxStackToast = (error: any, limit: number, t?: any) => {
 	const errorLines: string[] = error.message.split("\n");
 	const title = t ? t("common.txs.failed") : "Transaction Failed";

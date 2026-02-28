@@ -3,6 +3,29 @@ import { WAGMI_CONFIG } from "../app.config";
 import { Abi, Address } from "viem";
 import { mainnet, testnet } from "@config";
 
+export class SimulationError extends Error {
+	public readonly cause: unknown;
+
+	constructor(cause: unknown) {
+		const reason = extractSimulationReason(cause);
+		super(reason ?? "Transaction simulation failed");
+		this.name = "SimulationError";
+		this.cause = cause;
+	}
+}
+
+function extractSimulationReason(error: unknown): string | null {
+	if (!error || typeof error !== "object") return null;
+	const err = error as Record<string, unknown>;
+	const msg = (err.shortMessage ?? err.message ?? "") as string;
+	const reasonMatch = msg.match(/reverted with reason string '([^']+)'/);
+	if (reasonMatch) return reasonMatch[1];
+	const customMatch = msg.match(/reverted with custom error '([^']+)'/);
+	if (customMatch) return customMatch[1];
+	if (err.shortMessage && typeof err.shortMessage === "string") return err.shortMessage;
+	return null;
+}
+
 interface SimulateAndWriteParams {
 	chainId: typeof mainnet.id | typeof testnet.id;
 	address: Address;
@@ -24,7 +47,10 @@ export async function simulateAndWrite({
 	account,
 	gas,
 }: SimulateAndWriteParams): Promise<`0x${string}`> {
-	const { request } = await simulateContract(WAGMI_CONFIG, {
+	// wagmi's simulateContract/writeContract use heavily generic types tied to
+	// the ABI literal. Our wrapper can't preserve those generics, so we cast
+	// the params object. Input types are still validated by SimulateAndWriteParams.
+	const simulateParams = {
 		chainId,
 		address,
 		abi,
@@ -32,10 +58,17 @@ export async function simulateAndWrite({
 		args,
 		...(value !== undefined ? { value } : {}),
 		...(account ? { account } : {}),
-	} as any);
+	};
 
-	return writeContract(WAGMI_CONFIG, {
-		...request,
-		...(gas ? { gas } : {}),
-	} as any);
+	let request;
+	try {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const result = await simulateContract(WAGMI_CONFIG, simulateParams as any);
+		request = result.request;
+	} catch (error) {
+		throw new SimulationError(error);
+	}
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	return writeContract(WAGMI_CONFIG, { ...request, ...(gas ? { gas } : {}) } as any);
 }
