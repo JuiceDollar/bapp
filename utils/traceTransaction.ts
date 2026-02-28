@@ -5,7 +5,7 @@ import { mainnet, testnet } from "@config";
 import { normalizeTokenSymbol } from "./tokenDisplay";
 
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-const APPROVAL_TOPIC = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c93090";
+const APPROVAL_TOPIC = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925";
 
 export interface BalanceChange {
 	token: Address;
@@ -98,6 +98,15 @@ export async function traceTransaction(params: TraceParams): Promise<TraceResult
 
 	const rpcUrl = CONFIG_RPC();
 
+	// Fetch current gas price for the trace call
+	const gasPriceRes = await fetch(rpcUrl, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ jsonrpc: "2.0", id: 0, method: "eth_gasPrice", params: [] }),
+	});
+	const gasPriceJson = await gasPriceRes.json();
+	const gasPrice = gasPriceJson.result ?? "0x0";
+
 	const response = await fetch(rpcUrl, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
@@ -110,12 +119,17 @@ export async function traceTransaction(params: TraceParams): Promise<TraceResult
 					from: account,
 					to: address,
 					data: calldata,
+					gas: "0x1000000",
+					gasPrice,
 					...(value ? { value: `0x${value.toString(16)}` } : {}),
 				},
 				"latest",
 				{
 					tracer: "callTracer",
 					tracerConfig: { withLog: true },
+					stateOverrides: {
+						[account]: { balance: "0xFFFFFFFFFFFFFFFFFFFFFFFF" },
+					},
 				},
 			],
 		}),
