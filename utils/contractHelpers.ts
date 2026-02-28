@@ -1,4 +1,4 @@
-import { simulateContract, writeContract } from "@wagmi/core";
+import { simulateContract, writeContract, getAccount } from "@wagmi/core";
 import { WAGMI_CONFIG } from "../app.config";
 import { Abi, Address } from "viem";
 import { mainnet, testnet } from "@config";
@@ -79,9 +79,18 @@ export async function simulateAndWrite({
 	}
 
 	// Trace + Preview
-	if (account) {
+	const connectedAccount = account ?? getAccount(WAGMI_CONFIG).address;
+	if (connectedAccount) {
 		try {
-			const traceResult = await traceTransaction({ chainId, address, abi, functionName, args, value, account });
+			const traceResult = await traceTransaction({
+				chainId,
+				address,
+				abi,
+				functionName,
+				args,
+				value,
+				account: connectedAccount,
+			});
 			if (traceResult.transfers.length > 0 || traceResult.approvals.length > 0) {
 				const confirmed = await requestPreview(traceResult, value);
 				if (!confirmed) throw new UserCancelledError();

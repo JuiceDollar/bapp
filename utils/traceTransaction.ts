@@ -135,16 +135,17 @@ export async function traceTransaction(params: TraceParams): Promise<TraceResult
 	for (const log of logs) {
 		if (!log.topics || log.topics.length < 3) continue;
 
+		const token = log.address.toLowerCase() as Address;
 		if (log.topics[0] === TRANSFER_TOPIC) {
 			const from = ("0x" + log.topics[1].slice(26)) as Address;
 			const to = ("0x" + log.topics[2].slice(26)) as Address;
 			const amount = BigInt(log.data || "0x0");
-			rawTransfers.push({ token: log.address as Address, from, to, amount });
+			rawTransfers.push({ token, from, to, amount });
 		} else if (log.topics[0] === APPROVAL_TOPIC) {
 			const owner = ("0x" + log.topics[1].slice(26)) as Address;
 			const spender = ("0x" + log.topics[2].slice(26)) as Address;
 			const amount = BigInt(log.data || "0x0");
-			rawApprovals.push({ token: log.address as Address, owner, spender, amount });
+			rawApprovals.push({ token, owner, spender, amount });
 		}
 	}
 
