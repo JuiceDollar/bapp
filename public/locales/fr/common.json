@@ -716,5 +716,45 @@
 			"withdrawing": "Retrait de l'épargne en cours…",
 			"successfully_withdrawn": "Retrait effectué avec succès"
 		}
+	},
+	"coverage": {
+		"title": "Couverture",
+		"total_supply": "Offre totale",
+		"positions": "Positions adossées",
+		"bridges": "Bridges stablecoin",
+		"reserves": "Réserves",
+		"other": "Autre (frais/intérêts)",
+		"collateral_positions": "Positions adossées",
+		"collateral": "Garantie",
+		"open_positions": "Positions ouvertes",
+		"total_minted": "Total émis",
+		"interest_avg": "Intérêt moy.",
+		"utilization": "Utilisation",
+		"stablecoin_bridges": "Bridges stablecoin",
+		"stablecoin": "Stablecoin",
+		"minted": "Émis",
+		"limit": "Limite",
+		"status": "Statut",
+		"active": "Actif",
+		"expired": "Expiré"
+	},
+	"minter_check": {
+		"title": "Vérification minter",
+		"description": "Chaque JUSD en circulation peut être rattaché à un minter. Cette page permet de vérifier comment tout le JUSD a été créé. Cliquez sur une position pour la vérifier dans l'explorateur de blocs.",
+		"total_supply": "Offre totale",
+		"collateral_positions": "Positions adossées",
+		"bridge_minters": "Minters bridge"
+	},
+	"rates": {
+		"title": "Taux d'intérêt en direct",
+		"loan_interest": "Intérêts des prêts (recettes)",
+		"savings_interest": "Intérêts de l'épargne (dépenses)",
+		"open_positions": "Positions ouvertes",
+		"total_minted": "Total émis",
+		"interest_pa": "Intérêt p.a.",
+		"total_savings_balance": "Solde total d'épargne",
+		"savings_rate": "Taux d'épargne",
+		"estimated_interest_pa": "Intérêt estimé p.a.",
+		"net_interest_pa": "Intérêt net p.a."
 	}
 }

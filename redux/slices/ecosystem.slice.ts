@@ -1,6 +1,7 @@
 import { createSlice, Dispatch } from "@reduxjs/toolkit";
 import { getApiClient } from "@utils";
 import {
+	DispatchAnalyticsExposure,
 	DispatchApiEcosystemCollateralPositions,
 	DispatchApiEcosystemCollateralStats,
 	DispatchApiEcosystemNativePoolShareInfo,
@@ -10,6 +11,7 @@ import {
 	EcosystemState,
 } from "./ecosystem.types";
 import {
+	ApiAnalyticsCollateralExposure,
 	ApiEcosystemCollateralPositions,
 	ApiEcosystemCollateralStats,
 	ApiEcosystemPoolSharesInfo,
@@ -29,6 +31,7 @@ export const initialState: EcosystemState = {
 	depsInfo: undefined,
 	stablecoinInfo: undefined,
 	stablecoinMinters: undefined,
+	exposureData: undefined,
 };
 
 // --------------------------------------------------------------------------------
@@ -72,6 +75,11 @@ export const slice = createSlice({
 		setStablecoinMinters: (state, action: { payload: ApiMinterListing | undefined }) => {
 			state.stablecoinMinters = action.payload;
 		},
+
+		// SET Exposure Data
+		setExposureData: (state, action: { payload: ApiAnalyticsCollateralExposure | undefined }) => {
+			state.exposureData = action.payload;
+		},
 	},
 });
 
@@ -84,6 +92,7 @@ export const fetchEcosystem =
 	async (
 		dispatch: Dispatch<
 			| DispatchBoolean
+			| DispatchAnalyticsExposure
 			| DispatchApiEcosystemCollateralPositions
 			| DispatchApiEcosystemCollateralStats
 			| DispatchApiEcosystemNativePoolShareInfo
@@ -110,6 +119,9 @@ export const fetchEcosystem =
 			const response5 = await api.get("/ecosystem/stablecoin/minter/list");
 			dispatch(slice.actions.setStablecoinMinters(response5.data as ApiMinterListing));
 
+			const response6 = await api.get("/analytics/poolshares/exposure");
+			dispatch(slice.actions.setExposureData(response6.data as ApiAnalyticsCollateralExposure));
+
 			// ---------------------------------------------------------------
 			// Finalizing, loaded set to ture
 			dispatch(slice.actions.setLoaded(true));
@@ -120,6 +132,7 @@ export const fetchEcosystem =
 			dispatch(slice.actions.setDepsInfo(undefined));
 			dispatch(slice.actions.setStablecoinInfo(undefined));
 			dispatch(slice.actions.setStablecoinMinters(undefined));
+			dispatch(slice.actions.setExposureData(undefined));
 			dispatch(slice.actions.setLoaded(true));
 		}
 	};

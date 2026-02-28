@@ -1,4 +1,5 @@
 import {
+	ApiAnalyticsCollateralExposure,
 	ApiEcosystemCollateralPositions,
 	ApiEcosystemCollateralStats,
 	ApiEcosystemPoolSharesInfo,
@@ -16,6 +17,7 @@ export type EcosystemState = {
 	depsInfo: ApiEcosystemPoolSharesInfo | undefined;
 	stablecoinInfo: ApiEcosystemStablecoinInfo | undefined;
 	stablecoinMinters: ApiMinterListing | undefined;
+	exposureData: ApiAnalyticsCollateralExposure | undefined;
 };
 
 // --------------------------------------------------------------------------------
@@ -47,4 +49,9 @@ export type DispatchApiEcosystemStablecoinInfo = {
 export type DispatchApiEcosystemStablecoinMinters = {
 	type: string;
 	payload: ApiMinterListing | undefined;
+};
+
+export type DispatchAnalyticsExposure = {
+	type: string;
+	payload: ApiAnalyticsCollateralExposure | undefined;
 };
