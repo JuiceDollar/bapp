@@ -34,7 +34,8 @@ import { ADDRESS, MintingHubGatewayABI } from "@juicedollar/jusd";
 import { useAccount, useChainId } from "wagmi";
 import { WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
 import { getApiClient } from "@utils";
-import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
 import { TxToast } from "@components/TxToast";
 import { toast } from "react-toastify";
 import { renderErrorTxToast } from "@components/TxToast";
@@ -329,18 +330,16 @@ export default function PositionCreate({}) {
 				return;
 			}
 
-			setIsOpenBorrowingDEUROModal(true);
 			setIsCloneLoading(true);
 			setIsCloneSuccess(false);
 
 			const gatewayAddress = ADDRESS[chainId]?.mintingHubGateway;
 			if (!gatewayAddress || gatewayAddress === zeroAddress) {
 				toast.error("MintingHubGateway not configured for this network");
-				setIsOpenBorrowingDEUROModal(false);
 				return;
 			}
 
-			const hash = await writeContract(WAGMI_CONFIG, {
+			const hash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: gatewayAddress,
 				abi: MintingHubGatewayABI,
@@ -355,6 +354,7 @@ export default function PositionCreate({}) {
 					frontendCode,
 				],
 				value: BigInt(collateralAmount),
+				onBeforeWrite: () => setIsOpenBorrowingDEUROModal(true),
 			});
 
 			const toastContent = [

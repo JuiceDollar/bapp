@@ -77,8 +77,16 @@
 			"receive": "Recibir:",
 			"shares": "Acciones:",
 			"failed": "Transacción fallida",
+			"simulation_failed": "La transacción fallaría",
 			"approving": "Aprobando...",
-			"approved": "Aprobado"
+			"approved": "Aprobado",
+			"preview_title": "Vista previa de transacción",
+			"you_send": "Envías",
+			"you_receive": "Recibes",
+			"approvals": "Aprobaciones",
+			"confirm_tx": "Confirmar transacción",
+			"cancel": "Cancelar",
+			"unlimited": "ilimitado"
 		},
 		"error": {
 			"insufficient_balance": "No hay suficientes {{symbol}} en su monedero.",

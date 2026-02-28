@@ -77,8 +77,16 @@
 			"receive": "Empfangen:",
 			"shares": "Anteile:",
 			"failed": "Transaktion fehlgeschlagen",
+			"simulation_failed": "Transaktion würde fehlschlagen",
 			"approving": "Genehmigung...",
-			"approved": "Genehmigt"
+			"approved": "Genehmigt",
+			"preview_title": "Transaktionsvorschau",
+			"you_send": "Du sendest",
+			"you_receive": "Du erhältst",
+			"approvals": "Genehmigungen",
+			"confirm_tx": "Transaktion bestätigen",
+			"cancel": "Abbrechen",
+			"unlimited": "unbegrenzt"
 		},
 		"error": {
 			"insufficient_balance": "Nicht genügend {{symbol}} in deiner Wallet.",
