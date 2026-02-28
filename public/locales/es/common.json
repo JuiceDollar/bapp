@@ -359,8 +359,8 @@
 	},
 	"monitoring": {
 		"title": "Monitoreo",
-		"collateral": "Garantía",
-		"collateralization": "Garantía",
+		"collateral": "Colateral",
+		"collateralization": "Colateral",
 		"expiration": "Vencimiento",
 		"challenged": "Rechazado",
 		"no_active_positions": "No hay posiciones activas.",
@@ -625,7 +625,7 @@
 		"symbol_amount": "Importe {{symbol}}",
 		"total_invested": "Total invertido",
 		"manage": "Gestionar",
-		"collateral": "Garantía",
+		"collateral": "Colateral",
 		"collateralization": "Colateralización",
 		"loan_due_in": "Vencimiento del préstamo",
 		"liquidation_price": "Precio de liquidación",
@@ -725,7 +725,7 @@
 		"reserves": "Reservas",
 		"other": "Otros (comisiones/intereses)",
 		"collateral_positions": "Posiciones con garantía",
-		"collateral": "Garantía",
+		"collateral": "Colateral",
 		"open_positions": "Posiciones abiertas",
 		"total_minted": "Total acuñado",
 		"interest_avg": "Interés medio",
@@ -743,7 +743,7 @@
 		"description": "Cada JUSD en circulación puede rastrearse hasta un minter concreto. Esta página permite verificar cómo se creó todo el JUSD. Haz clic en cualquier posición para verificarla en el explorador de bloques.",
 		"total_supply": "Oferta total",
 		"collateral_positions": "Posiciones con garantía",
-		"bridge_minters": "Minters de bridge"
+		"bridge_minters": "Minters Bridge"
 	},
 	"rates": {
 		"title": "Tipos de interés en vivo",
