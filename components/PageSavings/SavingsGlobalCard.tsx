@@ -8,7 +8,7 @@ import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ADDRESS } from "@juicedollar/jusd";
 import { useChainId } from "wagmi";
-import { useContractUrl } from "@hooks";
+import { useContractUrl, useExplorerChain } from "@hooks";
 import { shortenAddress, TOKEN_SYMBOL } from "@utils";
 import Link from "next/link";
 import { useTranslation } from "next-i18next";
@@ -17,8 +17,10 @@ export default function SavingsGlobalCard() {
 	const savingsInfo = useSelector((state: RootState) => state.savings.savingsInfo);
 	const { t } = useTranslation();
 
-	const moduleAddress = ADDRESS[useChainId()].savingsGateway;
-	const url = useContractUrl(moduleAddress);
+	const chainId = useChainId();
+	const chain = useExplorerChain();
+	const moduleAddress = ADDRESS[chainId].savingsGateway;
+	const url = useContractUrl(moduleAddress, chain);
 
 	return (
 		<AppCard>

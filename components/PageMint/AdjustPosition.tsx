@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 const TokenLogo = dynamic(() => import("@components/TokenLogo"), { ssr: false });
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
-import { useContractUrl } from "../../hooks/useContractUrl";
+import { useContractUrl, useExplorerChain } from "../../hooks/useContractUrl";
 import { PositionQuery } from "@juicedollar/api";
 import { getAmountLended } from "../../utils/loanCalculations";
 
@@ -40,7 +40,8 @@ export const AdjustPosition = ({
 	cooldownEndsAt,
 }: AdjustPositionProps) => {
 	const { t } = useTranslation();
-	const url = useContractUrl((position.position as Address) || zeroAddress);
+	const chain = useExplorerChain();
+	const url = useContractUrl((position.position as Address) || zeroAddress, chain);
 	const priceDecimals = 36 - (position.collateralDecimals || 18);
 	const amountLended = getAmountLended(BigInt(position.principal), position.reserveContribution);
 

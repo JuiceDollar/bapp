@@ -1,7 +1,7 @@
 import AppCard from "@components/AppCard";
 import TokenInput from "@components/Input/TokenInput";
 import { ADDRESS, JuiceDollarABI, SavingsGatewayABI } from "@juicedollar/jusd";
-import { useContractUrl } from "@hooks";
+import { useContractUrl, useExplorerChain } from "@hooks";
 import { useAccount, useBlockNumber, useChainId } from "wagmi";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { erc20Abi, maxUint256, zeroAddress } from "viem";
@@ -10,6 +10,7 @@ import SavingsDetailsCard from "./SavingsDetailsCard";
 import { readContract } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
+import { mainnet, testnet } from "@config";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/redux.store";
 import SavingsActionInterest from "./SavingsActionInterest";
@@ -23,7 +24,6 @@ import { shortenAddress } from "@utils";
 import { toast } from "react-toastify";
 import { toastTxError, TxToast } from "@components/TxToast";
 import { waitForTransactionReceipt } from "wagmi/actions";
-import { mainnet, testnet } from "@config";
 
 export default function SavingsInteractionCard() {
 	const [amount, setAmount] = useState(0n);
@@ -45,7 +45,8 @@ export default function SavingsInteractionCard() {
 	const { t } = useTranslation();
 	const { address } = useAccount();
 	const chainId = useChainId();
-	const url = useContractUrl(ADDRESS[chainId].savingsGateway);
+	const chain = useExplorerChain();
+	const url = useContractUrl(ADDRESS[chainId].savingsGateway, chain);
 	const account = address || zeroAddress;
 	const ADDR = ADDRESS[chainId];
 
