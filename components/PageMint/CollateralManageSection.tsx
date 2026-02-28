@@ -274,7 +274,7 @@ export const CollateralManageSection = () => {
 			refetchBalances();
 			refetchReadContracts();
 		} catch (error) {
-			toastTxError(error); //
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -318,7 +318,7 @@ export const CollateralManageSection = () => {
 			refetchBalances();
 			refetchReadContracts();
 		} catch (error) {
-			toastTxError(error); //
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}
