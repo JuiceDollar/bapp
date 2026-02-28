@@ -44,6 +44,7 @@ interface SimulateAndWriteParams {
 	value?: bigint;
 	account?: Address;
 	gas?: bigint;
+	onBeforeWrite?: () => void;
 }
 
 export async function simulateAndWrite({
@@ -55,6 +56,7 @@ export async function simulateAndWrite({
 	value,
 	account,
 	gas,
+	onBeforeWrite,
 }: SimulateAndWriteParams): Promise<`0x${string}`> {
 	// wagmi's simulateContract/writeContract use heavily generic types tied to
 	// the ABI literal. Our wrapper can't preserve those generics, so we cast
@@ -92,7 +94,8 @@ export async function simulateAndWrite({
 				account: connectedAccount,
 			});
 			if (traceResult.transfers.length > 0 || traceResult.approvals.length > 0) {
-				const confirmed = await requestPreview(traceResult, value);
+				const nativeValue = value && value >= 10n ** 14n ? value : undefined;
+				const confirmed = await requestPreview(traceResult, nativeValue);
 				if (!confirmed) throw new UserCancelledError();
 			}
 		} catch (e) {
@@ -100,6 +103,8 @@ export async function simulateAndWrite({
 			// debug_traceCall failed → skip preview, continue with write
 		}
 	}
+
+	onBeforeWrite?.();
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	return writeContract(WAGMI_CONFIG, { ...request, ...(gas ? { gas } : {}) } as any);

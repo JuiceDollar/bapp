@@ -168,19 +168,22 @@ export async function traceTransaction(params: TraceParams): Promise<TraceResult
 	const metadata = await fetchTokenMetadata(tokenAddresses);
 	const userAddr = account.toLowerCase();
 
-	const transfers: BalanceChange[] = rawTransfers.map((t) => {
-		const meta = metadata.get(t.token) ?? { symbol: "???", decimals: 18 };
-		const direction = t.from.toLowerCase() === userAddr ? "out" : "in";
-		return {
-			token: t.token,
-			symbol: meta.symbol,
-			decimals: meta.decimals,
-			from: t.from,
-			to: t.to,
-			amount: t.amount,
-			direction,
-		};
-	});
+	const transfers: BalanceChange[] = rawTransfers
+		.filter((t) => t.amount > 0n && (t.from.toLowerCase() === userAddr || t.to.toLowerCase() === userAddr))
+		.map((t) => {
+			const meta = metadata.get(t.token) ?? { symbol: "???", decimals: 18 };
+			const direction = t.from.toLowerCase() === userAddr ? ("out" as const) : ("in" as const);
+			return {
+				token: t.token,
+				symbol: meta.symbol,
+				decimals: meta.decimals,
+				from: t.from,
+				to: t.to,
+				amount: t.amount,
+				direction,
+			};
+		})
+		.filter((t) => t.amount >= 10n ** BigInt(Math.max(0, t.decimals - 4)));
 
 	const approvals: ApprovalChange[] = rawApprovals.map((a) => {
 		const meta = metadata.get(a.token) ?? { symbol: "???", decimals: 18 };

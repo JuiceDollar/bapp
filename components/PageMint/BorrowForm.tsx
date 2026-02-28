@@ -330,14 +330,12 @@ export default function PositionCreate({}) {
 				return;
 			}
 
-			setIsOpenBorrowingDEUROModal(true);
 			setIsCloneLoading(true);
 			setIsCloneSuccess(false);
 
 			const gatewayAddress = ADDRESS[chainId]?.mintingHubGateway;
 			if (!gatewayAddress || gatewayAddress === zeroAddress) {
 				toast.error("MintingHubGateway not configured for this network");
-				setIsOpenBorrowingDEUROModal(false);
 				return;
 			}
 
@@ -356,6 +354,7 @@ export default function PositionCreate({}) {
 					frontendCode,
 				],
 				value: BigInt(collateralAmount),
+				onBeforeWrite: () => setIsOpenBorrowingDEUROModal(true),
 			});
 
 			const toastContent = [

@@ -1,6 +1,6 @@
 import { Modal } from "flowbite-react";
 import { useTranslation } from "next-i18next";
-import { maxUint256 } from "viem";
+import { formatUnits, maxUint256 } from "viem";
 import Button from "@components/Button";
 import { SecondaryButton } from "@components/Button";
 import { formatBigInt, shortenAddress } from "@utils";
@@ -65,10 +65,10 @@ export default function TxPreviewModal({ traceResult, nativeValue, onConfirm, on
 								const display = isUnlimited ? t("common.txs.unlimited") : formatBigInt(a.amount, a.decimals, 2);
 								return (
 									<div key={`appr-${i}`} className="flex justify-between items-center py-1">
-										<span className="text-sm text-text-secondary">
+										<span className="text-sm font-medium text-text-primary">
 											{a.symbol} → {shortenAddress(a.spender)}
 										</span>
-										<span className="text-sm font-medium">{display}</span>
+										<span className="text-sm font-extrabold">{display}</span>
 									</div>
 								);
 							})}
@@ -91,15 +91,17 @@ export default function TxPreviewModal({ traceResult, nativeValue, onConfirm, on
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
 	return (
-		<div className="p-3 bg-white rounded-lg border border-[#dee0e6] flex-col gap-1 flex overflow-hidden">
-			<div className="text-xs font-medium text-text-secondary uppercase tracking-wide mb-1">{title}</div>
+		<div className="p-3 flex-col gap-1 flex">
+			<div className="text-sm font-extrabold text-text-primary uppercase tracking-wide mb-1">{title}</div>
 			{children}
 		</div>
 	);
 }
 
 function ChangeRow({ symbol, amount, decimals, direction }: { symbol: string; amount: bigint; decimals: number; direction: "in" | "out" }) {
-	const formatted = formatBigInt(amount, decimals, 4);
+	const num = parseFloat(formatUnits(amount, decimals));
+	const dp = num > 0 && num < 0.01 ? 4 : 2;
+	const formatted = num.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
 	const prefix = direction === "out" ? "−" : "+";
 	const color = direction === "out" ? "text-text-warning" : "text-green-600";
 
