@@ -17,7 +17,7 @@ import { WAGMI_CONFIG } from "../../app.config";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { ADDRESS, SavingsABI } from "@juicedollar/jusd";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { toast } from "react-toastify";
 import { useTranslation } from "next-i18next";
 import { BigNumberInput } from "@components/Input/BigNumberInput";
@@ -90,7 +90,7 @@ export default function GovernanceLeadrateCurrent({}: Props) {
 
 			setHidden(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error toast
+			toastTxError(error); // TODO: add error toast
 		} finally {
 			setHandling(false);
 		}

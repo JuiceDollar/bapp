@@ -3,6 +3,7 @@ import { shortenHash, transactionLink } from "@utils";
 import { Hash } from "viem";
 import { useChainId } from "wagmi";
 import { mainnet, testnet } from "@config";
+import { toast } from "react-toastify";
 import { SimulationError, UserCancelledError } from "../utils/contractHelpers";
 import { extractRevertReason } from "../utils/errorUtils";
 
@@ -19,10 +20,12 @@ export const renderErrorToast = (error: string | string[], t?: any) => {
 	);
 };
 
+export const toastTxError = (error: any, t?: any) => {
+	if (error instanceof UserCancelledError) return;
+	toast.error(renderErrorTxToast(error, t));
+};
+
 export const renderErrorTxToast = (error: any, t?: any) => {
-	if (error instanceof UserCancelledError) {
-		return null;
-	}
 	if (error instanceof SimulationError) {
 		return renderSimulationErrorToast(error, t);
 	}

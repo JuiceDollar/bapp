@@ -11,7 +11,7 @@ import { simulateAndWrite } from "../../../utils/contractHelpers";
 import { Address } from "viem";
 import { formatBigInt, formatCurrency, min, shortenAddress, TOKEN_SYMBOL, toTimestamp } from "@utils";
 import { toast } from "react-toastify";
-import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import DateInput from "@components/Input/DateInput";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../../app.config";
@@ -210,7 +210,7 @@ export default function PositionBorrow({}) {
 				},
 			});
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error translation
+			toastTxError(error); // TODO: add error translation
 		} finally {
 			setApproving(false);
 		}
@@ -262,7 +262,7 @@ export default function PositionBorrow({}) {
 				},
 			});
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error translation
+			toastTxError(error); // TODO: add error translation
 		} finally {
 			setCloning(false);
 		}

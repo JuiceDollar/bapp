@@ -38,7 +38,7 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { TxToast } from "@components/TxToast";
 import { toast } from "react-toastify";
-import { renderErrorTxToast } from "@components/TxToast";
+import { toastTxError } from "@components/TxToast";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import {
 	LoanDetails,
@@ -389,7 +389,7 @@ export default function PositionCreate({}) {
 			setIsCloneSuccess(true);
 			await refetchBalances();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error, t));
+			toastTxError(error, t);
 			setIsOpenBorrowingDEUROModal(false);
 		} finally {
 			setIsCloneLoading(false);

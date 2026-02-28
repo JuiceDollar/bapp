@@ -2,7 +2,7 @@ import { Address, erc20Abi } from "viem";
 import { waitForTransactionReceipt } from "@wagmi/core";
 import { toast } from "react-toastify";
 import { WAGMI_CONFIG } from "../app.config";
-import { TxToast, TxToastRowType, renderErrorTxToast } from "../components/TxToast";
+import { TxToast, TxToastRowType, toastTxError } from "../components/TxToast";
 import { simulateAndWrite } from "../utils/contractHelpers";
 import { mainnet, testnet } from "@config";
 
@@ -33,7 +33,7 @@ export const approveToken = async ({ tokenAddress, spender, amount, chainId, t, 
 		onSuccess?.();
 		return true;
 	} catch (error) {
-		toast.error(renderErrorTxToast(error));
+		toastTxError(error);
 		return false;
 	}
 };

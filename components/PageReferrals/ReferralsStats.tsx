@@ -11,7 +11,7 @@ import { formatCurrency, TOKEN_SYMBOL } from "@utils";
 import { SecondaryButton } from "@components/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { mainnet, testnet } from "@config";
 
 export const ReferralsStats = () => {
@@ -79,7 +79,7 @@ export const ReferralsStats = () => {
 			});
 			await fetchReferralsStats();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsClaiming(false);
 		}

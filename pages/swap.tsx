@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { formatBigInt, formatCurrency, shortenAddress, TOKEN_SYMBOL } from "@utils";
-import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../app.config";
 import AppCard from "@components/AppCard";
@@ -223,7 +223,7 @@ export default function Swap() {
 			});
 			await swapStats.refetch();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: need to translate
+			toastTxError(error); // TODO: need to translate
 		} finally {
 			setTxOnGoing(false);
 		}
@@ -272,7 +272,7 @@ export default function Swap() {
 			swapStats.refetch();
 			setAmount(0n);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: need to translate
+			toastTxError(error); // TODO: need to translate
 		} finally {
 			setTxOnGoing(false);
 		}
@@ -322,7 +322,7 @@ export default function Swap() {
 			swapStats.refetch();
 			setAmount(0n);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: need to translate
+			toastTxError(error); // TODO: need to translate
 		} finally {
 			setTxOnGoing(false);
 		}

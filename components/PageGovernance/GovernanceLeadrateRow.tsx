@@ -13,7 +13,7 @@ import Button from "@components/Button";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import GuardToMinVotingPower from "@components/Guards/GuardToMinVotingPower";
 import { toast } from "react-toastify";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { mainnet, testnet } from "@config";
 
 interface Props {
@@ -79,7 +79,7 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 
 			setHidden(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setApplying(false);
 		}
@@ -125,7 +125,7 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 
 			setHidden(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setDenying(false);
 		}

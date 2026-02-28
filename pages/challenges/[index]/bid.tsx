@@ -12,7 +12,7 @@ import { useAccount, useBlockNumber, useChainId } from "wagmi";
 import { readContract, waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../../utils/contractHelpers";
 import { toast } from "react-toastify";
-import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import DisplayLabel from "@components/DisplayLabel";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../../app.config";
@@ -182,7 +182,7 @@ export default function ChallengePlaceBid() {
 			});
 			setUserAllowance(maxUint256);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsApproving(false);
 		}
@@ -225,7 +225,7 @@ export default function ChallengePlaceBid() {
 			});
 			setNavigating(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setBidding(false);
 		}
