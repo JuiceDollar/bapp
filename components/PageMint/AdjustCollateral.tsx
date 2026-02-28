@@ -342,7 +342,7 @@ export const AdjustCollateral = ({
 		isTxOnGoing ||
 		needsStrategy ||
 		(!isIncrease && isInCooldown) ||
-		(!isIncrease && collateralBalance <= requiredCollateral);
+		(!isIncrease && collateralBalance <= requiredCollateral && !isClosingPosition);
 
 	const getButtonLabel = () => {
 		if (needsApproval) return t("common.approve");
