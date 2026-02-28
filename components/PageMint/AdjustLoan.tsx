@@ -92,7 +92,7 @@ export const AdjustLoan = ({
 
 	const hasAnyStrategy = strategies[StrategyKey.ADD_COLLATERAL];
 
-	const rawMaxDebt = (BigInt(position.price) * collateralBalance) / BigInt(1e18);
+	const rawMaxDebt = (liqPrice * collateralBalance) / BigInt(1e18);
 	const maxDebtAtCurrentParams = rawMaxDebt - rawMaxDebt / 10000n; // 0.01% buffer for precision
 	const availableWithoutAdjustment = maxDebtAtCurrentParams > currentDebt ? maxDebtAtCurrentParams - currentDebt : 0n;
 
@@ -136,7 +136,7 @@ export const AdjustLoan = ({
 				return setOutcome(solveManage(currentPosition, Target.LOAN, Strategy.KEEP_COLLATERAL, currentDebt - delta));
 			}
 			const newDebt = currentDebt + delta;
-			const maxDebtNoAdjust = (BigInt(position.price) * collateralBalance) / BigInt(1e18);
+			const maxDebtNoAdjust = (liqPrice * collateralBalance) / BigInt(1e18);
 			const canBorrowWithoutAdjustment = newDebt <= maxDebtNoAdjust;
 			if (!strategies[StrategyKey.ADD_COLLATERAL] && !canBorrowWithoutAdjustment) return setOutcome(null);
 			if (canBorrowWithoutAdjustment) {
@@ -144,7 +144,7 @@ export const AdjustLoan = ({
 					next: {
 						collateral: collateralBalance,
 						debt: newDebt,
-						liqPrice: BigInt(position.price),
+						liqPrice,
 						expiration: currentPosition.expiration,
 					},
 					deltaCollateral: 0n,
@@ -159,7 +159,7 @@ export const AdjustLoan = ({
 		} catch {
 			setOutcome(null);
 		}
-	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, collateralBalance, liqPrice, position.price]);
+	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, collateralBalance, liqPrice]);
 
 	const repayAmount = useMemo(() => (!outcome || outcome.deltaDebt >= 0n ? 0n : -outcome.deltaDebt), [outcome]);
 
