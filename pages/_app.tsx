@@ -19,6 +19,7 @@ import { FrontendCodeProvider } from "@components/FrontendCodeProvider";
 import { appWithTranslation } from "next-i18next";
 import { useLanguageSelector } from "../hooks/useLanguageSelector";
 import ErrorBoundary from "@components/ErrorBoundary";
+import TxPreviewProvider from "@components/TxPreviewProvider";
 
 function PonderProvider({ children }: { children: React.ReactNode }) {
 	const chainId = useChainId() ?? WAGMI_CHAIN.id;
@@ -43,6 +44,7 @@ function App({ Component, pageProps }: AppProps) {
 								rtl={false}
 								closeButton={false}
 							/>
+							<TxPreviewProvider />
 							<USGovSanctionList />
 							<ErrorBoundary>
 								<Layout>

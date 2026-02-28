@@ -80,7 +80,14 @@
 			"failed": "Transazione Fallita",
 			"simulation_failed": "La transazione fallirebbe",
 			"approving": "Approvazione...",
-			"approved": "Approvato"
+			"approved": "Approvato",
+			"preview_title": "Anteprima transazione",
+			"you_send": "Invii",
+			"you_receive": "Ricevi",
+			"approvals": "Approvazioni",
+			"confirm_tx": "Conferma transazione",
+			"cancel": "Annulla",
+			"unlimited": "illimitato"
 		},
 		"error": {
 			"insufficient_balance": "Non hai abbastanza {{symbol}} nel tuo portafoglio.",

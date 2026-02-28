@@ -79,7 +79,14 @@
 			"failed": "Transaction échouée",
 			"simulation_failed": "La transaction échouerait",
 			"approving": "Approbation en cours...",
-			"approved": "Approuvé"
+			"approved": "Approuvé",
+			"preview_title": "Aperçu de la transaction",
+			"you_send": "Vous envoyez",
+			"you_receive": "Vous recevez",
+			"approvals": "Approbations",
+			"confirm_tx": "Confirmer la transaction",
+			"cancel": "Annuler",
+			"unlimited": "illimité"
 		},
 		"error": {
 			"insufficient_balance": "Solde insuffisant de {{symbol}} dans votre portefeuille.",

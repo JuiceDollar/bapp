@@ -2,6 +2,15 @@ import { simulateContract, writeContract } from "@wagmi/core";
 import { WAGMI_CONFIG } from "../app.config";
 import { Abi, Address } from "viem";
 import { mainnet, testnet } from "@config";
+import { traceTransaction } from "./traceTransaction";
+import { requestPreview } from "./txPreviewManager";
+
+export class UserCancelledError extends Error {
+	constructor() {
+		super("Transaction cancelled by user");
+		this.name = "UserCancelledError";
+	}
+}
 
 export class SimulationError extends Error {
 	public readonly cause: unknown;
@@ -67,6 +76,20 @@ export async function simulateAndWrite({
 		request = result.request;
 	} catch (error) {
 		throw new SimulationError(error);
+	}
+
+	// Trace + Preview
+	if (account) {
+		try {
+			const traceResult = await traceTransaction({ chainId, address, abi, functionName, args, value, account });
+			if (traceResult.transfers.length > 0 || traceResult.approvals.length > 0) {
+				const confirmed = await requestPreview(traceResult, value);
+				if (!confirmed) throw new UserCancelledError();
+			}
+		} catch (e) {
+			if (e instanceof UserCancelledError) throw e;
+			// debug_traceCall failed → skip preview, continue with write
+		}
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
