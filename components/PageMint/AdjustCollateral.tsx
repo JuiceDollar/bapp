@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Address, formatUnits } from "viem";
-import { formatCurrency, normalizeTokenSymbol, getDisplayDecimals, formatPositionValue, NATIVE_WRAPPED_SYMBOLS } from "@utils";
+import { formatCurrency, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
 import { RemoveCircleOutlineIcon } from "@components/SvgComponents/remove_circle_outline";
@@ -129,7 +129,7 @@ export const AdjustCollateral = ({
 		const delta = BigInt(deltaAmount || 0);
 		const newCollateral = isIncrease ? collateralBalance + delta : collateralBalance - delta;
 		const validationDebt = strategies[StrategyKey.REPAY_LOAN] ? currentDebt - calculatedRepayAmount : currentDebt;
-		const formattedCurrentCollateral = formatCurrency(formatUnits(collateralBalance, collateralDecimals), 3, 3);
+		const formattedCurrentCollateral = formatCurrency(formatUnits(collateralBalance, collateralDecimals), 6, 6);
 
 		const validations = [
 			{
@@ -175,7 +175,7 @@ export const AdjustCollateral = ({
 
 	const isBelowMinCollateral = (col: bigint) => col > 0n && col < BigInt(position.minimumCollateral || 0) && newDebt > 0n;
 
-	const formatValue = (value: bigint) => formatPositionValue(value, collateralDecimals, collateralSymbol);
+	const formatValue = (value: bigint) => formatCurrency(formatUnits(value, collateralDecimals), 6, 6) + " " + collateralSymbol;
 
 	const maxRemovable = hasAnyStrategy || maxRemovableWithoutAdjustment === 0n ? collateralBalance : maxRemovableWithoutAdjustment;
 
@@ -349,9 +349,9 @@ export const AdjustCollateral = ({
 	const getButtonLabel = () => {
 		if (needsApproval) return t("common.approve");
 		if (delta === 0n) return isIncrease ? t("common.add") : t("common.remove");
-		const formattedDelta = formatCurrency(formatUnits(delta, collateralDecimals), 3, 3);
+		const formattedDelta = formatCurrency(formatUnits(delta, collateralDecimals), 6, 6);
 		if (strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n) {
-			const formattedRepay = formatCurrency(formatUnits(calculatedRepayAmount, 18), 2, 2);
+			const formattedRepay = formatCurrency(formatUnits(calculatedRepayAmount, 18), 6, 6);
 			if (isClosingPosition) {
 				return `${t("mint.repay")} ${formattedRepay} ${position.stablecoinSymbol}, ${t("common.remove")} & ${t(
 					"mint.close_position"
@@ -397,7 +397,7 @@ export const AdjustCollateral = ({
 							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden"></div>
 							<div className="h-7 justify-end items-center gap-2.5 flex">
 								<div className="text-input-label text-xs font-medium leading-none">
-									{formatCurrency(formatUnits(isIncrease ? walletBalance : maxRemovable, collateralDecimals), 3, 3)}{" "}
+									{formatCurrency(formatUnits(isIncrease ? walletBalance : maxRemovable, collateralDecimals), 6, 6)}{" "}
 									{collateralSymbol}
 								</div>
 								<MaxButton
@@ -448,7 +448,7 @@ export const AdjustCollateral = ({
 							</Tooltip>
 						</div>
 						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} {position.stablecoinSymbol}
+							{formatCurrency(formatUnits(newPrice, priceDecimals), 6, 6)} {position.stablecoinSymbol}
 						</span>
 					</div>
 				)}
@@ -466,27 +466,27 @@ export const AdjustCollateral = ({
 							</Tooltip>
 						</div>
 						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(calculatedRepayAmount, 18), 2, 2)} {position.stablecoinSymbol}
+							{formatCurrency(formatUnits(calculatedRepayAmount, 18), 6, 6)} {position.stablecoinSymbol}
 						</span>
 					</div>
 				)}
 				<div className="flex justify-between text-sm">
 					<span className="text-text-muted2">{t("mint.current_collateral")}</span>
 					<span className="font-medium text-text-title">
-						{formatCurrency(formatUnits(collateralBalance, collateralDecimals), 3, 3)} {collateralSymbol}
+						{formatCurrency(formatUnits(collateralBalance, collateralDecimals), 6, 6)} {collateralSymbol}
 					</span>
 				</div>
 				<div className="flex justify-between text-sm">
 					<span className="text-text-muted2">{t("mint.change")}</span>
 					<span className="font-medium text-text-title">
 						{isIncrease ? "+" : "-"}
-						{formatCurrency(formatUnits(delta, collateralDecimals), 3, 3)} {collateralSymbol}
+						{formatCurrency(formatUnits(delta, collateralDecimals), 6, 6)} {collateralSymbol}
 					</span>
 				</div>
 				<div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
 					<span className="font-bold text-text-title">{t("mint.new_collateral")}</span>
 					<span className="font-bold text-text-title">
-						{formatCurrency(formatUnits(newCollateral, collateralDecimals), 3, 3)} {collateralSymbol}
+						{formatCurrency(formatUnits(newCollateral, collateralDecimals), 6, 6)} {collateralSymbol}
 					</span>
 				</div>
 			</div>

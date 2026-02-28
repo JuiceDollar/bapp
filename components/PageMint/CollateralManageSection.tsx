@@ -192,7 +192,7 @@ export const CollateralManageSection = () => {
 				{
 					title: t("common.txs.amount"),
 					value:
-						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals), 3, 3) +
+						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals), 6, 6) +
 						" " +
 						normalizeTokenSymbol(position.collateralSymbol),
 				},
@@ -253,7 +253,7 @@ export const CollateralManageSection = () => {
 				{
 					title: t("common.txs.amount"),
 					value:
-						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals), 3, 3) +
+						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals), 6, 6) +
 						` ${normalizeTokenSymbol(position.collateralSymbol)}`,
 				},
 				{
@@ -297,7 +297,7 @@ export const CollateralManageSection = () => {
 				{
 					title: t("common.txs.amount"),
 					value:
-						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals), 3, 3) +
+						formatCurrency(formatUnits(BigInt(amount), position.collateralDecimals), 6, 6) +
 						` ${normalizeTokenSymbol(position.collateralSymbol)}`,
 				},
 				{
@@ -335,7 +335,7 @@ export const CollateralManageSection = () => {
 						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} />
 						<div className="flex flex-col">
 							<span className="text-base font-extrabold leading-tight">
-								<span className="">{formatCurrency(formatUnits(balanceOf, position.collateralDecimals), 3, 3)}</span>{" "}
+								<span className="">{formatCurrency(formatUnits(balanceOf, position.collateralDecimals), 6, 6)}</span>{" "}
 								{normalizeTokenSymbol(position.collateralSymbol)}
 							</span>
 							<span className="text-xs font-medium text-text-muted2 leading-[1rem]">
@@ -366,7 +366,7 @@ export const CollateralManageSection = () => {
 									{t(isAdd ? "mint.available_to_add" : "mint.available_to_remove")}:
 								</span>
 								<button className="text-text-labelButton font-extrabold" onClick={isAdd ? handleAddMax : handleRemoveMax}>
-									{formatUnits(isAdd ? walletBalance : maxToRemove, position.collateralDecimals)}{" "}
+									{formatCurrency(formatUnits(isAdd ? walletBalance : maxToRemove, position.collateralDecimals), 6, 6)}{" "}
 									{normalizeTokenSymbol(position.collateralSymbol)}
 								</button>
 							</div>
