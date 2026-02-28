@@ -4,7 +4,7 @@ import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
 import { shortenAddress } from "@utils";
-import { renderErrorToast, toastTxError, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { useAccount, useChainId } from "wagmi";
 import Button from "@components/Button";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";

@@ -12,7 +12,7 @@ import { readContract, waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { formatBigInt, shortenAddress, TOKEN_SYMBOL, SOCIAL } from "@utils";
 import { toast } from "react-toastify";
-import { TxToast, renderErrorToast, toastTxError } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import NormalInput from "@components/Input/NormalInput";
 import AddressInput from "@components/Input/AddressInput";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";

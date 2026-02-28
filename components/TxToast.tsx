@@ -25,7 +25,7 @@ export const toastTxError = (error: any, t?: any) => {
 	toast.error(renderErrorTxToast(error, t));
 };
 
-export const renderErrorTxToast = (error: any, t?: any) => {
+const renderErrorTxToast = (error: any, t?: any) => {
 	if (error instanceof SimulationError) {
 		return renderSimulationErrorToast(error, t);
 	}

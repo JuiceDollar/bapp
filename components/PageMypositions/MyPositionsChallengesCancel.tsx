@@ -5,7 +5,7 @@ import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
 import { formatBigInt, TOKEN_SYMBOL } from "@utils";
-import { renderErrorToast, toastTxError, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { RootState } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
 import { Address } from "viem";
