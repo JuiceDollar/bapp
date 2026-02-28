@@ -78,8 +78,16 @@
 			"receive": "Ricevi:",
 			"shares": "Quote:",
 			"failed": "Transazione Fallita",
+			"simulation_failed": "La transazione fallirebbe",
 			"approving": "Approvazione...",
-			"approved": "Approvato"
+			"approved": "Approvato",
+			"preview_title": "Anteprima transazione",
+			"you_send": "Invii",
+			"you_receive": "Ricevi",
+			"approvals": "Approvazioni",
+			"confirm_tx": "Conferma transazione",
+			"cancel": "Annulla",
+			"unlimited": "illimitato"
 		},
 		"error": {
 			"insufficient_balance": "Non hai abbastanza {{symbol}} nel tuo portafoglio.",
@@ -724,5 +732,45 @@
 			"withdrawing": "Prelievo dai risparmi...",
 			"successfully_withdrawn": "Prelievo completato con successo"
 		}
+	},
+	"coverage": {
+		"title": "Copertura",
+		"total_supply": "Offerta totale",
+		"positions": "Posizioni collateralizzate",
+		"bridges": "Bridge stablecoin",
+		"reserves": "Riserve",
+		"other": "Altro (commissioni/interessi)",
+		"collateral_positions": "Posizioni collateralizzate",
+		"collateral": "Collaterale",
+		"open_positions": "Posizioni aperte",
+		"total_minted": "Totale coniato",
+		"interest_avg": "Interesse medio",
+		"utilization": "Utilizzo",
+		"stablecoin_bridges": "Bridge stablecoin",
+		"stablecoin": "Stablecoin",
+		"minted": "Coniato",
+		"limit": "Limite",
+		"status": "Stato",
+		"active": "Attivo",
+		"expired": "Scaduto"
+	},
+	"minter_check": {
+		"title": "Verifica minter",
+		"description": "Ogni JUSD in circolazione può essere ricondotto a un minter. Questa pagina permette di verificare come è stato creato tutto il JUSD. Clicca su una posizione per verificarla nell'esploratore di blocchi.",
+		"total_supply": "Offerta totale",
+		"collateral_positions": "Posizioni collateralizzate",
+		"bridge_minters": "Minter bridge"
+	},
+	"rates": {
+		"title": "Tassi di interesse in tempo reale",
+		"loan_interest": "Interessi sui prestiti (ricavi)",
+		"savings_interest": "Interessi sul risparmio (spese)",
+		"open_positions": "Posizioni aperte",
+		"total_minted": "Totale coniato",
+		"interest_pa": "Interesse p.a.",
+		"total_savings_balance": "Saldo totale risparmi",
+		"savings_rate": "Tasso di risparmio",
+		"estimated_interest_pa": "Interesse stimato p.a.",
+		"net_interest_pa": "Interesse netto p.a."
 	}
 }

@@ -77,8 +77,16 @@
 			"receive": "Empfangen:",
 			"shares": "Anteile:",
 			"failed": "Transaktion fehlgeschlagen",
+			"simulation_failed": "Transaktion würde fehlschlagen",
 			"approving": "Genehmigung...",
-			"approved": "Genehmigt"
+			"approved": "Genehmigt",
+			"preview_title": "Transaktionsvorschau",
+			"you_send": "Du sendest",
+			"you_receive": "Du erhältst",
+			"approvals": "Genehmigungen",
+			"confirm_tx": "Transaktion bestätigen",
+			"cancel": "Abbrechen",
+			"unlimited": "unbegrenzt"
 		},
 		"error": {
 			"insufficient_balance": "Nicht genügend {{symbol}} in deiner Wallet.",
@@ -716,5 +724,45 @@
 			"withdrawing": "Auszahlung von Ersparnissen wird durchgeführt...",
 			"successfully_withdrawn": "Erfolgreich ausgezahlt"
 		}
+	},
+	"coverage": {
+		"title": "Deckung",
+		"total_supply": "Gesamtangebot",
+		"positions": "Besicherte Positionen",
+		"bridges": "Stablecoin-Bridges",
+		"reserves": "Reserven",
+		"other": "Sonstiges (Gebühren/Zinsen)",
+		"collateral_positions": "Besicherte Positionen",
+		"collateral": "Besicherung",
+		"open_positions": "Offene Positionen",
+		"total_minted": "Gesamt geprägt",
+		"interest_avg": "Ø Zinsen",
+		"utilization": "Auslastung",
+		"stablecoin_bridges": "Stablecoin-Bridges",
+		"stablecoin": "Stablecoin",
+		"minted": "Geprägt",
+		"limit": "Limit",
+		"status": "Status",
+		"active": "Aktiv",
+		"expired": "Abgelaufen"
+	},
+	"minter_check": {
+		"title": "Minter-Prüfung",
+		"description": "Jeder JUSD im Umlauf kann einem bestimmten Minter zugeordnet werden. Diese Seite zeigt, wie alle JUSD entstanden sind. Klicken Sie auf eine Position, um sie im Block-Explorer zu prüfen.",
+		"total_supply": "Gesamtangebot",
+		"collateral_positions": "Besicherte Positionen",
+		"bridge_minters": "Bridge-Minter"
+	},
+	"rates": {
+		"title": "Aktuelle Zinssätze",
+		"loan_interest": "Kreditzinsen (Einnahmen)",
+		"savings_interest": "Sparzinsen (Ausgaben)",
+		"open_positions": "Offene Positionen",
+		"total_minted": "Gesamt geprägt",
+		"interest_pa": "Zinsen p.a.",
+		"total_savings_balance": "Gesamtes Sparguthaben",
+		"savings_rate": "Sparzins",
+		"estimated_interest_pa": "Geschätzte Zinsen p.a.",
+		"net_interest_pa": "Nettozinsen p.a."
 	}
 }

@@ -4,6 +4,7 @@ import { formatCurrency, shortenAddress } from "../../utils/format";
 import { useDelegationQuery } from "@hooks";
 import { AddressLabelSimple } from "@components/AddressLabel";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
+import GuardToMinVotingPower from "@components/Guards/GuardToMinVotingPower";
 import Button from "@components/Button";
 import NormalInput from "@components/Input/NormalInput";
 import AppCard from "@components/AppCard";
@@ -13,9 +14,10 @@ import AppBox from "@components/AppBox";
 import { useEffect, useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 import { WAGMI_CONFIG } from "../../app.config";
-import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
 import { ADDRESS, SavingsABI } from "@juicedollar/jusd";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { toast } from "react-toastify";
 import { useTranslation } from "next-i18next";
 import { BigNumberInput } from "@components/Input/BigNumberInput";
@@ -54,7 +56,7 @@ export default function GovernanceLeadrateCurrent({}: Props) {
 		try {
 			setHandling(true);
 
-			const writeHash = await writeContract(WAGMI_CONFIG, {
+			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
 				abi: SavingsABI,
@@ -88,7 +90,7 @@ export default function GovernanceLeadrateCurrent({}: Props) {
 
 			setHidden(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error toast
+			toastTxError(error); // TODO: add error toast
 		} finally {
 			setHandling(false);
 		}
@@ -119,14 +121,16 @@ export default function GovernanceLeadrateCurrent({}: Props) {
 					label={t("dashboard.propose")}
 					disabled={isDisabled || isHidden}
 				>
-					<Button
-						className="h-full full sm:max-w-48 p-4"
-						disabled={isDisabled || isHidden}
-						isLoading={isHandling}
-						onClick={(e) => handleOnClick(e)}
-					>
-						{t("dashboard.propose")}
-					</Button>
+					<GuardToMinVotingPower buttonClassName="h-full w-full sm:max-w-48 p-4" label={t("dashboard.propose")}>
+						<Button
+							className="h-full full sm:max-w-48 p-4"
+							disabled={isDisabled || isHidden}
+							isLoading={isHandling}
+							onClick={(e) => handleOnClick(e)}
+						>
+							{t("dashboard.propose")}
+						</Button>
+					</GuardToMinVotingPower>
 				</GuardToAllowedChainBtn>
 			</div>
 		</AppCard>

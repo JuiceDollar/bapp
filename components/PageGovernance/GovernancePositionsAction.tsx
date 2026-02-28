@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
 import { shortenAddress } from "@utils";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { useAccount, useChainId } from "wagmi";
 import Button from "@components/Button";
 import { Address, zeroAddress } from "viem";
@@ -33,7 +34,7 @@ export default function GovernancePositionsAction({ position, disabled }: Props)
 		try {
 			setDenying(true);
 
-			const writeHash = await writeContract(WAGMI_CONFIG, {
+			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: position.position,
 				abi: PositionV2ABI,
@@ -67,7 +68,7 @@ export default function GovernancePositionsAction({ position, disabled }: Props)
 
 			setHidden(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setDenying(false);
 		}

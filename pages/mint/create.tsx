@@ -8,10 +8,11 @@ import { useState } from "react";
 import Button from "@components/Button";
 import { useAccount, useBlockNumber, useChainId } from "wagmi";
 import { erc20Abi } from "viem";
-import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { readContract, waitForTransactionReceipt } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
 import { formatBigInt, shortenAddress, TOKEN_SYMBOL, SOCIAL } from "@utils";
 import { toast } from "react-toastify";
-import { TxToast, renderErrorToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import NormalInput from "@components/Input/NormalInput";
 import AddressInput from "@components/Input/AddressInput";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
@@ -217,7 +218,7 @@ export default function PositionCreate({}) {
 		try {
 			setIsConfirming("approve");
 
-			const approveWriteHash = await writeContract(WAGMI_CONFIG, {
+			const approveWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: collTokenData.address,
 				abi: erc20Abi,
@@ -249,7 +250,7 @@ export default function PositionCreate({}) {
 				},
 			});
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: Need translation
+			toastTxError(error); // TODO: Need translation
 		} finally {
 			setIsConfirming("");
 		}
@@ -259,7 +260,7 @@ export default function PositionCreate({}) {
 		try {
 			setIsConfirming("approveDeuro");
 
-			const approveWriteHash = await writeContract(WAGMI_CONFIG, {
+			const approveWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
@@ -293,7 +294,7 @@ export default function PositionCreate({}) {
 
 			await refetchDeuroAllowance();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: Need translation
+			toastTxError(error); // TODO: Need translation
 		} finally {
 			setIsConfirming("");
 		}
@@ -302,7 +303,7 @@ export default function PositionCreate({}) {
 	const handleOpenPosition = async () => {
 		try {
 			setIsConfirming("open");
-			const openWriteHash = await writeContract(WAGMI_CONFIG, {
+			const openWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].mintingHubGateway,
 				abi: MintingHubGatewayABI,
@@ -350,7 +351,7 @@ export default function PositionCreate({}) {
 				},
 			});
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: Need translation
+			toastTxError(error); // TODO: Need translation
 		} finally {
 			setIsConfirming("");
 		}

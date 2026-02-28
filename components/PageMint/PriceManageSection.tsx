@@ -6,12 +6,12 @@ import { useSelector } from "react-redux";
 import { Address, formatUnits, zeroAddress } from "viem";
 import { formatCurrency, shortenAddress } from "@utils";
 import { useChainId, useReadContracts } from "wagmi";
-import { writeContract } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
 import { PositionV2ABI } from "@juicedollar/jusd";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
 import { waitForTransactionReceipt } from "wagmi/actions";
-import { renderErrorTxToast } from "@components/TxToast";
+import { toastTxError } from "@components/TxToast";
 import { TxToast } from "@components/TxToast";
 import { DetailsExpandablePanel } from "@components/PageMint/DetailsExpandablePanel";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
@@ -165,7 +165,7 @@ export const PriceManageSection = () => {
 		try {
 			setIsTxOnGoing(true);
 
-			const adjustPriceHash = await writeContract(WAGMI_CONFIG, {
+			const adjustPriceHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: position.position,
 				abi: PositionV2ABI,
@@ -190,7 +190,7 @@ export const PriceManageSection = () => {
 			});
 			await refetchReadContracts();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}

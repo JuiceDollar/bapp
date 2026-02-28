@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useMyReferrals } from "@hooks";
 import { useChainId } from "wagmi";
-import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { readContract, waitForTransactionReceipt } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
 import { useTranslation } from "next-i18next";
 import { ADDRESS, FrontendGatewayABI } from "@juicedollar/jusd";
 import { formatUnits, zeroAddress } from "viem";
@@ -10,7 +11,7 @@ import { formatCurrency, TOKEN_SYMBOL } from "@utils";
 import { SecondaryButton } from "@components/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { mainnet, testnet } from "@config";
 
 export const ReferralsStats = () => {
@@ -49,7 +50,7 @@ export const ReferralsStats = () => {
 		setIsClaiming(true);
 
 		try {
-			const tx = await writeContract(WAGMI_CONFIG, {
+			const tx = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
 				abi: FrontendGatewayABI,
@@ -78,7 +79,7 @@ export const ReferralsStats = () => {
 			});
 			await fetchReferralsStats();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsClaiming(false);
 		}

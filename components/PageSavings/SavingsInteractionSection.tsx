@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { erc20Abi, formatUnits, maxUint256 } from "viem";
-import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
 import { toast } from "react-toastify";
 import { formatCurrency, shortenAddress, TOKEN_SYMBOL } from "@utils";
-import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import { WAGMI_CONFIG } from "../../app.config";
 import TokenLogo from "@components/TokenLogo";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
@@ -53,7 +54,7 @@ export default function SavingsInteractionSection() {
 		try {
 			setIsTxOnGoing(true);
 
-			const approveWriteHash = await writeContract(WAGMI_CONFIG, {
+			const approveWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: juiceDollarAddress,
 				abi: erc20Abi,
@@ -86,7 +87,7 @@ export default function SavingsInteractionSection() {
 			});
 			refetchBalances();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error translation
+			toastTxError(error); // TODO: add error translation
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -142,7 +143,7 @@ export default function SavingsInteractionSection() {
 		try {
 			setIsTxOnGoing(true);
 
-			const saveHash = await writeContract(WAGMI_CONFIG, {
+			const saveHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
 				abi: SavingsGatewayABI,
@@ -155,7 +156,7 @@ export default function SavingsInteractionSection() {
 			await refetchBalances();
 			setAmount("");
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -172,7 +173,7 @@ export default function SavingsInteractionSection() {
 					? 2n * BigInt(amount) + interestToBeCollected // 2X so we can be sure to widhtdraw all the funds
 					: BigInt(amount) + interestToBeCollected;
 
-			const withdrawHash = await writeContract(WAGMI_CONFIG, {
+			const withdrawHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
 				abi: SavingsGatewayABI,
@@ -185,7 +186,7 @@ export default function SavingsInteractionSection() {
 			await refetchBalances();
 			setAmount("");
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}

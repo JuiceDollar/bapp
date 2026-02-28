@@ -17,10 +17,10 @@ import { useAccount, useChainId } from "wagmi";
 import { useReadContracts } from "wagmi";
 import { getLoanDetailsByCollateralAndStartingLiqPrice, getLoanDetailsByCollateralAndYouGetAmount } from "../../utils/loanCalculations";
 import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
-import { renderErrorTxToast } from "@components/TxToast";
+import { toastTxError } from "@components/TxToast";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
-import { writeContract } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
 import { toast } from "react-toastify";
 import { TxToast } from "@components/TxToast";
 import { DetailsExpandablePanel } from "@components/PageMint/DetailsExpandablePanel";
@@ -193,7 +193,7 @@ export const BorrowedManageSection = () => {
 
 			const { loanAmount } = getLoanDetailsByCollateralAndYouGetAmount(position, balanceOf, BigInt(amount));
 
-			const borrowMoreHash = await writeContract(WAGMI_CONFIG, {
+			const borrowMoreHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: position.position,
 				abi: PositionV2ABI,
@@ -224,7 +224,7 @@ export const BorrowedManageSection = () => {
 			await refetchBalances();
 			await refetchReadContracts();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -234,7 +234,7 @@ export const BorrowedManageSection = () => {
 		try {
 			setIsTxOnGoing(true);
 
-			const approveWriteHash = await writeContract(WAGMI_CONFIG, {
+			const approveWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: position.stablecoinAddress as Address,
 				abi: erc20Abi,
@@ -267,7 +267,7 @@ export const BorrowedManageSection = () => {
 			});
 			await refetchBalances();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: needs to be translated
+			toastTxError(error); // TODO: needs to be translated
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -282,7 +282,7 @@ export const BorrowedManageSection = () => {
 			const isPayingFullDebt = BigInt(amount) >= debt;
 
 			if (isPayingFullDebt) {
-				payBackHash = await writeContract(WAGMI_CONFIG, {
+				payBackHash = await simulateAndWrite({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: position.position,
 					abi: PositionV2ABI,
@@ -301,7 +301,7 @@ export const BorrowedManageSection = () => {
 					fixedAnnualRatePPM: fixedAnnualRatePPM,
 				});
 
-				payBackHash = await writeContract(WAGMI_CONFIG, {
+				payBackHash = await simulateAndWrite({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: position.position,
 					abi: PositionV2ABI,
@@ -333,7 +333,7 @@ export const BorrowedManageSection = () => {
 			await refetchBalances();
 			await refetchReadContracts();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}

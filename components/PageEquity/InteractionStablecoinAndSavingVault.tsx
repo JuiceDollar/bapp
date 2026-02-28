@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { usePoolStats } from "@hooks";
 import { formatBigInt, formatCurrency, SAVINGS_VAULT_SYMBOL, shortenAddress, TOKEN_SYMBOL } from "@utils";
 import { useAccount, useChainId, useReadContract } from "wagmi";
-import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
 import { erc20Abi, formatUnits, zeroAddress } from "viem";
 import Button from "@components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowDownLong } from "@fortawesome/free-solid-svg-icons";
-import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import { toast } from "react-toastify";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../app.config";
@@ -63,7 +64,7 @@ export default function InteractionStablecoinAndSavingVault({
 		try {
 			setApproving(true);
 
-			const approveWriteHash = await writeContract(WAGMI_CONFIG, {
+			const approveWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
@@ -98,7 +99,7 @@ export default function InteractionStablecoinAndSavingVault({
 			await poolStats.refetchPoolStats();
 			await refetchStablecoinAllowance();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setApproving(false);
 		}
@@ -106,7 +107,7 @@ export default function InteractionStablecoinAndSavingVault({
 
 	const handleDeposit = async () => {
 		try {
-			const depositWriteHash = await writeContract(WAGMI_CONFIG, {
+			const depositWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsVaultJUSD,
 				abi: SavingsVaultJUSDABI,
@@ -141,7 +142,7 @@ export default function InteractionStablecoinAndSavingVault({
 			await poolStats.refetchPoolStats();
 			await refetchBalances();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setAmount(0n);
 			setInversting(false);
@@ -181,7 +182,7 @@ export default function InteractionStablecoinAndSavingVault({
 
 		try {
 			setRedeeming(true);
-			const redeemWriteHash = await writeContract(WAGMI_CONFIG, {
+			const redeemWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsVaultJUSD,
 				abi: SavingsVaultJUSDABI,
@@ -216,7 +217,7 @@ export default function InteractionStablecoinAndSavingVault({
 			await poolStats.refetchPoolStats();
 			await refetchBalances();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error translation
+			toastTxError(error); // TODO: add error translation
 		} finally {
 			setAmount(0n);
 			setRedeeming(false);

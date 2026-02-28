@@ -1,10 +1,11 @@
 import { MinterQuery } from "@juicedollar/api";
 import { useState } from "react";
-import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
 import { shortenAddress } from "@utils";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { useAccount, useChainId } from "wagmi";
 import Button from "@components/Button";
 import { Address } from "viem";
@@ -34,7 +35,7 @@ export default function GovernanceMintersAction({ minter, disabled }: Props) {
 		try {
 			setVetoing(true);
 
-			const writeHash = await writeContract(WAGMI_CONFIG, {
+			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].juiceDollar,
 				abi: JuiceDollarABI,
@@ -68,7 +69,7 @@ export default function GovernanceMintersAction({ minter, disabled }: Props) {
 
 			setHidden(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setVetoing(false);
 		}

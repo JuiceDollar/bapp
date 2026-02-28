@@ -1,9 +1,10 @@
 import { Dispatch, SetStateAction, useState } from "react";
-import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
 import { formatCurrency, TOKEN_SYMBOL } from "@utils";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { useAccount, useChainId } from "wagmi";
 import Button from "@components/Button";
 import { formatUnits } from "viem";
@@ -36,7 +37,7 @@ export default function SavingsActionInterest({ balance, interest, disabled, set
 			 * @dev: checkout if you want to return back to "claim" into savings account, aka reinvest via SC function "refreshMyBalance"
 			 * https://github.com/d-EURO/dapp/blob/main/components/PageSavings/SavingsActionInterest.tsx
 			 */
-			const writeHash = await writeContract(WAGMI_CONFIG, {
+			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
 				abi: SavingsGatewayABI,
@@ -70,7 +71,7 @@ export default function SavingsActionInterest({ balance, interest, disabled, set
 
 			setHidden(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			if (setLoaded != undefined) setLoaded(false);
 			setAction(false);

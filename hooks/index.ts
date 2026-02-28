@@ -20,3 +20,4 @@ export * from "./useSavingsInterest";
 export * from "./useExtensionTarget";
 export * from "./useReferencePosition";
 export * from "./useExpandableTable";
+export * from "./useBridgeStats";

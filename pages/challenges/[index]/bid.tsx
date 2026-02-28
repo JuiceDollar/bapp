@@ -9,9 +9,10 @@ import { ContractUrl, formatBigInt, formatCurrency, formatDate, shortenAddress, 
 import Link from "next/link";
 import Button from "@components/Button";
 import { useAccount, useBlockNumber, useChainId } from "wagmi";
-import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { readContract, waitForTransactionReceipt } from "wagmi/actions";
+import { simulateAndWrite } from "../../../utils/contractHelpers";
 import { toast } from "react-toastify";
-import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import DisplayLabel from "@components/DisplayLabel";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../../app.config";
@@ -148,7 +149,7 @@ export default function ChallengePlaceBid() {
 		try {
 			setIsApproving(true);
 
-			const approveWriteHash = await writeContract(WAGMI_CONFIG, {
+			const approveWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
@@ -181,7 +182,7 @@ export default function ChallengePlaceBid() {
 			});
 			setUserAllowance(maxUint256);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsApproving(false);
 		}
@@ -191,7 +192,7 @@ export default function ChallengePlaceBid() {
 		try {
 			setBidding(true);
 
-			const bidWriteHash = await writeContract(WAGMI_CONFIG, {
+			const bidWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].mintingHubGateway,
 				abi: MintingHubV2ABI,
@@ -224,7 +225,7 @@ export default function ChallengePlaceBid() {
 			});
 			setNavigating(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setBidding(false);
 		}
