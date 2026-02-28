@@ -16,6 +16,10 @@ function notify() {
 }
 
 export function requestPreview(traceResult: TraceResult, nativeValue?: bigint): Promise<boolean> {
+	// Cancel any pending preview to avoid orphaned promises
+	if (currentPreview) {
+		currentPreview.resolve(false);
+	}
 	return new Promise<boolean>((resolve) => {
 		currentPreview = { traceResult, nativeValue, resolve };
 		notify();

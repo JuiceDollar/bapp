@@ -3,7 +3,7 @@ import { shortenHash, transactionLink } from "@utils";
 import { Hash } from "viem";
 import { useChainId } from "wagmi";
 import { mainnet, testnet } from "@config";
-import { SimulationError } from "../utils/contractHelpers";
+import { SimulationError, UserCancelledError } from "../utils/contractHelpers";
 
 export const renderErrorToast = (error: string | string[], t?: any) => {
 	error = typeof error == "string" ? [error] : error;
@@ -19,6 +19,9 @@ export const renderErrorToast = (error: string | string[], t?: any) => {
 };
 
 export const renderErrorTxToast = (error: any, t?: any) => {
+	if (error instanceof UserCancelledError) {
+		return null;
+	}
 	if (error instanceof SimulationError) {
 		return renderSimulationErrorToast(error, t);
 	}
