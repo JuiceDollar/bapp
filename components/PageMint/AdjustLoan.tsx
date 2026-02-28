@@ -32,6 +32,7 @@ interface AdjustLoanProps {
 	position: PositionQuery;
 	collateralBalance: bigint;
 	currentDebt: bigint;
+	collateralRequirement: bigint;
 	liqPrice: bigint;
 	principal: bigint;
 	currentPosition: SolverPosition;
@@ -50,6 +51,7 @@ export const AdjustLoan = ({
 	position,
 	collateralBalance,
 	currentDebt,
+	collateralRequirement,
 	liqPrice,
 	principal,
 	currentPosition,
@@ -94,7 +96,7 @@ export const AdjustLoan = ({
 
 	const rawMaxDebt = (liqPrice * collateralBalance) / BigInt(1e18);
 	const maxDebtAtCurrentParams = rawMaxDebt - rawMaxDebt / 10000n; // 0.01% buffer for precision
-	const availableWithoutAdjustment = maxDebtAtCurrentParams > currentDebt ? maxDebtAtCurrentParams - currentDebt : 0n;
+	const availableWithoutAdjustment = maxDebtAtCurrentParams > collateralRequirement ? maxDebtAtCurrentParams - collateralRequirement : 0n;
 
 	const maxDelta = useMemo(() => {
 		if (!isIncrease) return currentDebt;

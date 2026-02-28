@@ -34,6 +34,7 @@ interface AdjustCollateralProps {
 	position: PositionQuery;
 	collateralBalance: bigint;
 	currentDebt: bigint;
+	collateralRequirement: bigint;
 	positionPrice: bigint;
 	principal: bigint;
 	walletBalance: bigint;
@@ -51,6 +52,7 @@ export const AdjustCollateral = ({
 	position,
 	collateralBalance,
 	currentDebt,
+	collateralRequirement,
 	positionPrice,
 	principal,
 	walletBalance,
@@ -88,7 +90,7 @@ export const AdjustCollateral = ({
 		setStrategies({ [StrategyKey.HIGHER_PRICE]: false, [StrategyKey.REPAY_LOAN]: false });
 	}, [isIncrease]);
 
-	const minCollateralNeeded = currentDebt > 0n ? (currentDebt * BigInt(1e18)) / positionPrice : 0n;
+	const minCollateralNeeded = collateralRequirement > 0n ? (collateralRequirement * BigInt(1e18)) / positionPrice : 0n;
 	const minCollateralWithBuffer = (minCollateralNeeded * 101n) / 100n;
 	const minimumCollateralValue = BigInt(position.minimumCollateral || 0);
 	const requiredCollateral = minCollateralWithBuffer > minimumCollateralValue ? minCollateralWithBuffer : minimumCollateralValue;
