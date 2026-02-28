@@ -16,7 +16,7 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
 import { toast } from "react-toastify";
-import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import { store } from "../../redux/redux.store";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { Address } from "viem";
@@ -113,7 +113,7 @@ export const AdjustLiqPrice = ({
 			refetch();
 			onSuccess();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}

@@ -1,9 +1,8 @@
 import { Address } from "viem";
-import { toast } from "react-toastify";
 import { PositionV2ABI } from "@juicedollar/jusd";
 import { PositionQuery } from "@juicedollar/api";
 import { formatPositionValue, normalizeTokenSymbol } from "@utils";
-import { renderErrorTxToast } from "../components/TxToast";
+import { toastTxError } from "../components/TxToast";
 import { fetchPositionsList } from "../redux/slices/positions.slice";
 import { store } from "../redux/redux.store";
 import { mainnet, testnet } from "@config";
@@ -111,7 +110,7 @@ export const handleLoanExecute = async (params: ExecuteLoanAdjustParams & { setI
 		setIsTxOnGoing(true);
 		await executeLoanAdjust(executeParams);
 	} catch (error) {
-		toast.error(renderErrorTxToast(error));
+		toastTxError(error);
 	} finally {
 		setIsTxOnGoing(false);
 	}

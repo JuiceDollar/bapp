@@ -45,7 +45,14 @@ export default function TxPreviewModal({ traceResult, nativeValue, onConfirm, on
 				<div className="flex flex-col gap-3">
 					{hasOutgoing && (
 						<Section title={t("common.txs.you_send")}>
-							{hasNativeValue && <ChangeRow symbol={nativeSymbol} amount={nativeValue!} decimals={18} direction="out" />}
+							{hasNativeValue && (
+								<ChangeRow
+									symbol={nativeSymbol}
+									amount={nativeValue!}
+									decimals={WAGMI_CHAIN.nativeCurrency.decimals}
+									direction="out"
+								/>
+							)}
 							{outgoing.map((c, i) => (
 								<ChangeRow key={`out-${i}`} symbol={c.symbol} amount={c.amount} decimals={c.decimals} direction="out" />
 							))}

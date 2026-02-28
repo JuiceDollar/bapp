@@ -5,7 +5,7 @@ import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
 import { shortenAddress } from "@utils";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { useAccount, useChainId } from "wagmi";
 import Button from "@components/Button";
 import { Address } from "viem";
@@ -69,7 +69,7 @@ export default function GovernanceMintersAction({ minter, disabled }: Props) {
 
 			setHidden(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setVetoing(false);
 		}

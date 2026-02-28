@@ -4,7 +4,7 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { toast } from "react-toastify";
 import { formatCurrency, shortenAddress, TOKEN_SYMBOL } from "@utils";
-import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import { WAGMI_CONFIG } from "../../app.config";
 import TokenLogo from "@components/TokenLogo";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
@@ -87,7 +87,7 @@ export default function SavingsInteractionSection() {
 			});
 			refetchBalances();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error translation
+			toastTxError(error); // TODO: add error translation
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -156,7 +156,7 @@ export default function SavingsInteractionSection() {
 			await refetchBalances();
 			setAmount("");
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -186,7 +186,7 @@ export default function SavingsInteractionSection() {
 			await refetchBalances();
 			setAmount("");
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}

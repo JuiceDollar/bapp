@@ -12,7 +12,7 @@ import { useFrontendCode } from "./useFrontendCode";
 import { readContract, waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../app.config";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { gql, useQuery } from "@apollo/client";
 import { mainnet, testnet } from "@config";
 
@@ -161,7 +161,7 @@ export const useSavingsInterest = () => {
 			refetchInterest();
 			refetchLeaderboard();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error translation
+			toastTxError(error); // TODO: add error translation
 		} finally {
 			if (setLoaded != undefined) setLoaded(false);
 			setIsClaiming(false);
@@ -202,7 +202,7 @@ export const useSavingsInterest = () => {
 				},
 			});
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsReinvesting(false);
 		}

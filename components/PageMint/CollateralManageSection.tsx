@@ -17,7 +17,7 @@ import { ADDRESS, PositionV2ABI } from "@juicedollar/jusd";
 import { WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
 import { toast } from "react-toastify";
 import { waitForTransactionReceipt } from "wagmi/actions";
-import { renderErrorTxToast } from "@components/TxToast";
+import { toastTxError } from "@components/TxToast";
 import { TxToast } from "@components/TxToast";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { DetailsExpandablePanel } from "@components/PageMint/DetailsExpandablePanel";
@@ -228,7 +228,7 @@ export const CollateralManageSection = () => {
 			await refetchReadContracts();
 			store.dispatch(fetchPositionsList(chainId ?? WAGMI_CHAIN.id));
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: needs to be translated
+			toastTxError(error); // TODO: needs to be translated
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -274,7 +274,7 @@ export const CollateralManageSection = () => {
 			refetchBalances();
 			refetchReadContracts();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); //
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -318,7 +318,7 @@ export const CollateralManageSection = () => {
 			refetchBalances();
 			refetchReadContracts();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); //
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}

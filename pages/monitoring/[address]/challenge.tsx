@@ -21,7 +21,7 @@ import { Address } from "viem";
 import { readContract, waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../../utils/contractHelpers";
 import { toast } from "react-toastify";
-import { TxToast, renderErrorToast, renderErrorTxStackToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import DisplayLabel from "@components/DisplayLabel";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../../app.config";
@@ -167,7 +167,7 @@ export default function PositionChallenge() {
 				},
 			});
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error translation
+			toastTxError(error); // TODO: add error translation
 		} finally {
 			setApproving(false);
 		}
@@ -211,7 +211,7 @@ export default function PositionChallenge() {
 
 			setNavigating(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error translation
+			toastTxError(error); // TODO: add error translation
 		} finally {
 			setChallenging(false);
 		}

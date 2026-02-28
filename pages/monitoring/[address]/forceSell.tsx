@@ -12,7 +12,7 @@ import { useAccount, useBlockNumber, useChainId } from "wagmi";
 import { readContract, waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../../utils/contractHelpers";
 import { toast } from "react-toastify";
-import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import DisplayLabel from "@components/DisplayLabel";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CHAIN, WAGMI_CONFIG } from "../../../app.config";
@@ -159,7 +159,7 @@ export default function MonitoringForceSell() {
 			});
 			setNavigating(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error translation
+			toastTxError(error); // TODO: add error translation
 		} finally {
 			setBidding(false);
 		}

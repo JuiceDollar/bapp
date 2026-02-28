@@ -8,7 +8,7 @@ import { erc20Abi, formatUnits, zeroAddress } from "viem";
 import Button from "@components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowDownLong } from "@fortawesome/free-solid-svg-icons";
-import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import { toast } from "react-toastify";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../app.config";
@@ -99,7 +99,7 @@ export default function InteractionStablecoinAndSavingVault({
 			await poolStats.refetchPoolStats();
 			await refetchStablecoinAllowance();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setApproving(false);
 		}
@@ -142,7 +142,7 @@ export default function InteractionStablecoinAndSavingVault({
 			await poolStats.refetchPoolStats();
 			await refetchBalances();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setAmount(0n);
 			setInversting(false);
@@ -217,7 +217,7 @@ export default function InteractionStablecoinAndSavingVault({
 			await poolStats.refetchPoolStats();
 			await refetchBalances();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error translation
+			toastTxError(error); // TODO: add error translation
 		} finally {
 			setAmount(0n);
 			setRedeeming(false);

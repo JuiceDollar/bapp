@@ -17,7 +17,7 @@ import { useAccount, useChainId } from "wagmi";
 import { useReadContracts } from "wagmi";
 import { getLoanDetailsByCollateralAndStartingLiqPrice, getLoanDetailsByCollateralAndYouGetAmount } from "../../utils/loanCalculations";
 import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
-import { renderErrorTxToast } from "@components/TxToast";
+import { toastTxError } from "@components/TxToast";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
 import { simulateAndWrite } from "../../utils/contractHelpers";
@@ -224,7 +224,7 @@ export const BorrowedManageSection = () => {
 			await refetchBalances();
 			await refetchReadContracts();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -267,7 +267,7 @@ export const BorrowedManageSection = () => {
 			});
 			await refetchBalances();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: needs to be translated
+			toastTxError(error); // TODO: needs to be translated
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -333,7 +333,7 @@ export const BorrowedManageSection = () => {
 			await refetchBalances();
 			await refetchReadContracts();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}

@@ -2,7 +2,7 @@ import { DateInputOutlined } from "@components/Input/DateInputOutlined";
 import { MaxButton } from "@components/Input/MaxButton";
 import { useTranslation } from "next-i18next";
 import { useEffect, useState } from "react";
-import { renderErrorTxToast } from "@components/TxToast";
+import { toastTxError } from "@components/TxToast";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { ADDRESS, PositionRollerABI, PositionV2ABI } from "@juicedollar/jusd";
 import { useRouter } from "next/router";
@@ -147,7 +147,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 
 			router.push(`/dashboard${toQueryString(getCarryOnQueryParams(router))}`);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -188,7 +188,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 
 			await refetchBalances();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}
@@ -215,7 +215,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 
 			await refetchBalances();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}

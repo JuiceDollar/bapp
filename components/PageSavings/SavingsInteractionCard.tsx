@@ -21,7 +21,7 @@ import Button from "@components/Button";
 import { useTranslation } from "next-i18next";
 import { shortenAddress } from "@utils";
 import { toast } from "react-toastify";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { mainnet, testnet } from "@config";
 
@@ -166,7 +166,7 @@ export default function SavingsInteractionCard() {
 				},
 			});
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: add error translation
+			toastTxError(error); // TODO: add error translation
 		} finally {
 			setIsApproving(false);
 			refetchBalances();

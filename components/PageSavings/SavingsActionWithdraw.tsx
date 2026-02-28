@@ -4,7 +4,7 @@ import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
 import { formatCurrency, TOKEN_SYMBOL } from "@utils";
-import { renderErrorTxToast, TxToast } from "@components/TxToast";
+import { toastTxError, TxToast } from "@components/TxToast";
 import { useAccount, useChainId } from "wagmi";
 import Button from "@components/Button";
 import { formatUnits } from "viem";
@@ -68,7 +68,7 @@ export default function SavingsActionWithdraw({ balance, change, disabled, setLo
 
 			setHidden(true);
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			if (setLoaded != undefined) setLoaded(false);
 			setAction(false);

@@ -11,7 +11,7 @@ import { PositionV2ABI } from "@juicedollar/jusd";
 import { WAGMI_CONFIG } from "../../app.config";
 import { toast } from "react-toastify";
 import { waitForTransactionReceipt } from "wagmi/actions";
-import { renderErrorTxToast } from "@components/TxToast";
+import { toastTxError } from "@components/TxToast";
 import { TxToast } from "@components/TxToast";
 import { DetailsExpandablePanel } from "@components/PageMint/DetailsExpandablePanel";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
@@ -190,7 +190,7 @@ export const PriceManageSection = () => {
 			});
 			await refetchReadContracts();
 		} catch (error) {
-			toast.error(renderErrorTxToast(error));
+			toastTxError(error);
 		} finally {
 			setIsTxOnGoing(false);
 		}

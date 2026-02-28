@@ -9,7 +9,7 @@ import { useAccount, useBlockNumber, useChainId } from "wagmi";
 import { readContract, waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../../utils/contractHelpers";
 import { toast } from "react-toastify";
-import { TxToast, renderErrorTxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../../app.config";
 import { mainnet, testnet } from "@config";
@@ -217,7 +217,7 @@ export default function PositionAdjust() {
 				},
 			});
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: needs to be translated
+			toastTxError(error); // TODO: needs to be translated
 		} finally {
 			setApproving(false);
 		}
@@ -262,7 +262,7 @@ export default function PositionAdjust() {
 				},
 			});
 		} catch (error) {
-			toast.error(renderErrorTxToast(error)); // TODO: needs to be translated
+			toastTxError(error); // TODO: needs to be translated
 		} finally {
 			setAdjusting(false);
 		}
