@@ -1,6 +1,6 @@
 import { Modal } from "flowbite-react";
 import { useTranslation } from "next-i18next";
-import { formatUnits, maxUint256 } from "viem";
+import { maxUint256 } from "viem";
 import Button from "@components/Button";
 import { SecondaryButton } from "@components/Button";
 import { formatBigInt, shortenAddress } from "@utils";

@@ -92,7 +92,7 @@ async function fetchTokenMetadata(tokenAddresses: Address[]): Promise<Map<Addres
 }
 
 export async function traceTransaction(params: TraceParams): Promise<TraceResult> {
-	const { chainId, address, abi, functionName, args, value, account } = params;
+	const { address, abi, functionName, args, value, account } = params;
 
 	const calldata = encodeFunctionData({ abi, functionName, args: args ?? [] });
 
