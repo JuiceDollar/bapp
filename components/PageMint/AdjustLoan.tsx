@@ -39,6 +39,7 @@ interface AdjustLoanProps {
 	walletBalance: bigint;
 	jusdAllowance: bigint;
 	jusdBalance: bigint;
+	collateralAllowance: bigint;
 	refetchAllowance: () => void;
 	onSuccess: () => void;
 	onFullRepaySuccess: () => void;
@@ -58,6 +59,7 @@ export const AdjustLoan = ({
 	walletBalance,
 	jusdAllowance,
 	jusdBalance,
+	collateralAllowance,
 	refetchAllowance,
 	onSuccess,
 	onFullRepaySuccess,
@@ -181,10 +183,29 @@ export const AdjustLoan = ({
 
 		setDeltaAmountError(error);
 	}, [deltaAmount, isIncrease, maxDelta, repayAmount, jusdBalance, position.stablecoinSymbol, t]);
-	const needsApproval = repayAmount > 0n && jusdAllowance < repayAmount;
+	const collateralDepositAmount = outcome?.deltaCollateral && outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
+	const needsCollateralApproval =
+		!isNativeWrappedPosition && collateralDepositAmount > 0n && collateralAllowance < collateralDepositAmount;
+	const needsJusdApproval = repayAmount > 0n && jusdAllowance < repayAmount;
+	const needsApproval = needsCollateralApproval || needsJusdApproval;
 	const handleMaxClick = () => setDeltaAmount(maxDelta.toString());
 
+	const handleApproveCollateral = async () => {
+		if (collateralDepositAmount <= 0n) return;
+		setIsTxOnGoing(true);
+		await approveToken({
+			tokenAddress: position.collateral as Address,
+			spender: position.position as Address,
+			amount: collateralDepositAmount * 2n,
+			chainId: chainId as typeof mainnet.id | typeof testnet.id,
+			t,
+			onSuccess: refetchAllowance,
+		});
+		setIsTxOnGoing(false);
+	};
+
 	const handleApprove = async () => {
+		if (needsCollateralApproval) return handleApproveCollateral();
 		if (repayAmount <= 0n) return;
 		setIsTxOnGoing(true);
 		await approveToken({

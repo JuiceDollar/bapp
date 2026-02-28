@@ -23,6 +23,7 @@ export default function ManageLoan() {
 		walletBalance,
 		jusdAllowance,
 		jusdBalance,
+		collateralAllowance,
 		isInCooldown,
 		cooldownRemainingFormatted,
 		cooldownEndsAt,
@@ -64,6 +65,7 @@ export default function ManageLoan() {
 						walletBalance={walletBalance}
 						jusdAllowance={jusdAllowance}
 						jusdBalance={jusdBalance}
+						collateralAllowance={collateralAllowance}
 						refetchAllowance={refetch}
 						onSuccess={refetch}
 						onFullRepaySuccess={() => router.push("/dashboard")}

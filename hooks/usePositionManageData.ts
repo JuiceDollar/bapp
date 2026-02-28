@@ -19,6 +19,7 @@ interface PositionManageData {
 	minimumCollateral: bigint;
 	jusdAllowance: bigint;
 	jusdBalance: bigint;
+	collateralAllowance: bigint;
 	walletBalance: bigint;
 	priceDecimals: number;
 	isInCooldown: boolean;
@@ -68,6 +69,13 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 						functionName: "balanceOf",
 						args: [userAddress as Address],
 					},
+					{
+						chainId,
+						abi: erc20Abi,
+						address: position.collateral as Address,
+						functionName: "allowance",
+						args: [userAddress as Address, position.position as Address],
+					},
 			  ]
 			: [],
 	});
@@ -81,6 +89,7 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 	const minimumCollateral = data?.[6]?.result || 0n;
 	const jusdAllowance = data?.[7]?.result || 0n;
 	const jusdBalance = data?.[8]?.result || 0n;
+	const collateralAllowance = data?.[9]?.result || 0n;
 
 	const collateralDecimals = position?.collateralDecimals || 18;
 	const priceDecimals = 36 - collateralDecimals;
@@ -112,6 +121,7 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 		minimumCollateral,
 		jusdAllowance,
 		jusdBalance,
+		collateralAllowance,
 		walletBalance,
 		priceDecimals,
 		isInCooldown,
