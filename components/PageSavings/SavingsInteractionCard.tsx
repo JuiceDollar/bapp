@@ -1,7 +1,7 @@
 import AppCard from "@components/AppCard";
 import TokenInput from "@components/Input/TokenInput";
 import { ADDRESS, JuiceDollarABI, SavingsGatewayABI } from "@juicedollar/jusd";
-import { useContractUrl, useExplorerChain } from "@hooks";
+import { useExplorerChain } from "@hooks";
 import { useAccount, useBlockNumber, useChainId } from "wagmi";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { erc20Abi, maxUint256, zeroAddress } from "viem";
@@ -46,7 +46,6 @@ export default function SavingsInteractionCard() {
 	const { address } = useAccount();
 	const chainId = useChainId();
 	const chain = useExplorerChain();
-	const url = useContractUrl(ADDRESS[chainId].savingsGateway, chain);
 	const account = address || zeroAddress;
 	const ADDR = ADDRESS[chainId];
 
