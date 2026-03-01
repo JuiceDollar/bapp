@@ -63,7 +63,7 @@ export const AdjustPosition = ({
 			id: Target.LIQ_PRICE,
 			label: t("mint.liquidation_price"),
 			desc: t("mint.adjust_liq_price_description"),
-			value: BigInt(position.virtualPrice || position.price),
+			value: liqPrice,
 			decimals: priceDecimals,
 			currency: position.stablecoinSymbol,
 		},
