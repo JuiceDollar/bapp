@@ -39,7 +39,7 @@ export default function MypositionsRow({ headers, subHeaders, position, tab }: P
 	// 1 JUSD = 1 USD, so collateral value is directly in USD
 	const balanceUSD: number = balance * collTokenPrice;
 
-	const loanDEURO: number = parseInt(position.principal) / 10 ** position.stablecoinDecimals;
+	const loanJUSD: number = (parseInt(position.principal) + parseInt(position.interest ?? "0")) / 10 ** position.stablecoinDecimals;
 
 	const liquidationDEURO: number = parseInt(position.price) / 10 ** (36 - position.collateralDecimals);
 	const liquidationPct: number = (balanceUSD / (liquidationDEURO * balance)) * 100;
@@ -167,10 +167,10 @@ export default function MypositionsRow({ headers, subHeaders, position, tab }: P
 			{/* Loan Value */}
 			<div className="flex flex-col">
 				<span className="text-md ">
-					{formatCurrency(loanDEURO, 2, 2)} {TOKEN_SYMBOL}
+					{formatCurrency(loanJUSD, 2, 2)} {TOKEN_SYMBOL}
 				</span>
 				<span className="text-sm text-text-subheader">
-					{formatCurrency(balance * liquidationDEURO - loanDEURO, 2, 2)} {TOKEN_SYMBOL}
+					{formatCurrency(balance * liquidationDEURO - loanJUSD, 2, 2)} {TOKEN_SYMBOL}
 				</span>
 			</div>
 
