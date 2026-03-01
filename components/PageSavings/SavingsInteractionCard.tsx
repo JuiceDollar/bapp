@@ -45,7 +45,6 @@ export default function SavingsInteractionCard() {
 	const { t } = useTranslation();
 	const { address } = useAccount();
 	const chainId = useChainId();
-	const chain = useExplorerChain();
 	const account = address || zeroAddress;
 	const ADDR = ADDRESS[chainId];
 
