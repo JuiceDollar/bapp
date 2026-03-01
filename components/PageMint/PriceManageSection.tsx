@@ -203,7 +203,7 @@ export const PriceManageSection = () => {
 		<div className="flex flex-col gap-y-3">
 			<div className="flex flex-row gap-x-1.5 pl-3">
 				<div className="text-lg font-extrabold leading-[1.4375rem]">{t("mint.current_price")}</div>
-				<div className="text-base font-medium">{formatCurrency(formatUnits(currentPrice, priceDecimals), 6, 6)} USD</div>
+				<div className="text-base font-medium">{formatCurrency(formatUnits(currentPrice, priceDecimals), 2, 2)} USD</div>
 			</div>
 
 			{isMintingExhausted && minPrice === maxPrice && (
@@ -221,7 +221,7 @@ export const PriceManageSection = () => {
 				isError={Boolean(error)}
 				errorMessage={error ?? undefined}
 				disabled={minPrice > maxPrice}
-				usdPrice={formatCurrency(parseFloat(formatUnits(BigInt(newPrice || "0"), priceDecimals)), 6, 6)?.toString()}
+				usdPrice={formatCurrency(parseFloat(formatUnits(BigInt(newPrice || "0"), priceDecimals)), 2, 2)?.toString()}
 			/>
 
 			<div className="w-full mt-1.5 px-4 py-2 rounded-xl bg-[#FDF2E2] flex flex-row justify-between items-center text-base font-extrabold text-[#272B38]">

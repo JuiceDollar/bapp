@@ -133,7 +133,7 @@ export const BorrowedManageSection = () => {
 		} else if (BigInt(amount) > maxBeforeAddingMoreCollateral) {
 			setError(
 				t("mint.error.minting_limit_exceeded", {
-					amount: formatCurrency(formatUnits(maxBeforeAddingMoreCollateral, 18), 6, 6),
+					amount: formatCurrency(formatUnits(maxBeforeAddingMoreCollateral, 18), 2, 2),
 					symbol: position.stablecoinSymbol,
 				})
 			);
@@ -153,7 +153,7 @@ export const BorrowedManageSection = () => {
 		} else if (BigInt(amount) > debt) {
 			setError(
 				t("mint.error.amount_greater_than_debt", {
-					amount: formatCurrency(formatUnits(debt, 18), 6, 6),
+					amount: formatCurrency(formatUnits(debt, 18), 2, 2),
 					symbol: position.stablecoinSymbol,
 				})
 			);
@@ -204,7 +204,7 @@ export const BorrowedManageSection = () => {
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatCurrency(formatUnits(BigInt(amount), position.stablecoinDecimals), 6, 6) + ` ${position.stablecoinSymbol}`,
+					value: formatCurrency(formatUnits(BigInt(amount), position.stablecoinDecimals), 2, 2) + ` ${position.stablecoinSymbol}`,
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -313,7 +313,7 @@ export const BorrowedManageSection = () => {
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatCurrency(formatUnits(BigInt(amount), position.stablecoinDecimals), 6, 6) + ` ${position.stablecoinSymbol}`,
+					value: formatCurrency(formatUnits(BigInt(amount), position.stablecoinDecimals), 2, 2) + ` ${position.stablecoinSymbol}`,
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -349,7 +349,7 @@ export const BorrowedManageSection = () => {
 						<TokenLogo currency={TOKEN_SYMBOL} />
 						<div className="flex flex-col">
 							<span className="text-base font-extrabold leading-tight">
-								<span className="">{reserveContribution ? formatCurrency(formatUnits(debt, 18), 6, 6) : "-"}</span>{" "}
+								<span className="">{reserveContribution ? formatCurrency(formatUnits(debt, 18), 2, 2) : "-"}</span>{" "}
 								{reserveContribution ? TOKEN_SYMBOL : ""}
 							</span>
 							<span className="text-xs font-medium text-text-muted2 leading-[1rem]"></span>
@@ -382,7 +382,7 @@ export const BorrowedManageSection = () => {
 									{t(isBorrowMore ? "mint.available_to_borrow" : "mint.pay_back_amount")}:
 								</span>
 								<button className="text-text-labelButton font-extrabold" onClick={handleMaxAmount}>
-									{formatCurrency(formatUnits(isBorrowMore ? maxBeforeAddingMoreCollateral : debt, 18), 6, 6)}{" "}
+									{formatCurrency(formatUnits(isBorrowMore ? maxBeforeAddingMoreCollateral : debt, 18), 2, 2)}{" "}
 									{TOKEN_SYMBOL}
 								</button>
 							</div>
