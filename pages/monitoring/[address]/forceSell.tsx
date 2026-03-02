@@ -229,7 +229,7 @@ export default function MonitoringForceSell() {
 								<DisplayLabel label={t("common.owner")} />
 								<Link
 									className="text-link"
-									href={ContractUrl(position.owner, WAGMI_CHAIN)}
+									href={ContractUrl(position.owner, chainId === mainnet.id ? mainnet : testnet)}
 									target="_blank"
 									rel="noreferrer"
 								>

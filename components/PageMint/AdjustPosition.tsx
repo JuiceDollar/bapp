@@ -7,9 +7,8 @@ import dynamic from "next/dynamic";
 const TokenLogo = dynamic(() => import("@components/TokenLogo"), { ssr: false });
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
-import { useContractUrl } from "../../hooks/useContractUrl";
+import { useContractUrl, useExplorerChain } from "../../hooks/useContractUrl";
 import { PositionQuery } from "@juicedollar/api";
-import { getAmountLended } from "../../utils/loanCalculations";
 
 export enum Target {
 	COLLATERAL = "COLLATERAL",
@@ -40,16 +39,15 @@ export const AdjustPosition = ({
 	cooldownEndsAt,
 }: AdjustPositionProps) => {
 	const { t } = useTranslation();
-	const url = useContractUrl((position.position as Address) || zeroAddress);
+	const chain = useExplorerChain();
+	const url = useContractUrl((position.position as Address) || zeroAddress, chain);
 	const priceDecimals = 36 - (position.collateralDecimals || 18);
-	const amountLended = getAmountLended(BigInt(position.principal), position.reserveContribution);
-
 	const targets = [
 		{
 			id: Target.LOAN,
 			label: t("mint.loan_amount"),
 			desc: t("mint.adjust_loan_amount_description"),
-			value: amountLended,
+			value: currentDebt,
 			decimals: 18,
 			currency: position.stablecoinSymbol,
 		},
@@ -65,7 +63,7 @@ export const AdjustPosition = ({
 			id: Target.LIQ_PRICE,
 			label: t("mint.liquidation_price"),
 			desc: t("mint.adjust_liq_price_description"),
-			value: BigInt(position.virtualPrice || position.price),
+			value: liqPrice,
 			decimals: priceDecimals,
 			currency: position.stablecoinSymbol,
 		},

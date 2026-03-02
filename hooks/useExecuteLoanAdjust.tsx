@@ -31,7 +31,7 @@ export const executeLoanAdjust = async ({
 	const posAddr = position.position as Address;
 	const depositAmount = outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
 	const isWithdrawing = outcome.deltaCollateral < 0n;
-	const LiqPrice = BigInt(position.price);
+	const LiqPrice = outcome.next.liqPrice;
 
 	// Contract: repay branch executes when newPrincipal < principal
 	const isFullClose = outcome.next.debt === 0n && principal > 0n;

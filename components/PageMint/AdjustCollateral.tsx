@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Address, formatUnits } from "viem";
-import { formatCurrency, normalizeTokenSymbol, getDisplayDecimals, formatPositionValue, NATIVE_WRAPPED_SYMBOLS } from "@utils";
+import { formatCurrency, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
 import { RemoveCircleOutlineIcon } from "@components/SvgComponents/remove_circle_outline";
@@ -34,6 +34,7 @@ interface AdjustCollateralProps {
 	position: PositionQuery;
 	collateralBalance: bigint;
 	currentDebt: bigint;
+	collateralRequirement: bigint;
 	positionPrice: bigint;
 	principal: bigint;
 	walletBalance: bigint;
@@ -51,6 +52,7 @@ export const AdjustCollateral = ({
 	position,
 	collateralBalance,
 	currentDebt,
+	collateralRequirement,
 	positionPrice,
 	principal,
 	walletBalance,
@@ -88,7 +90,7 @@ export const AdjustCollateral = ({
 		setStrategies({ [StrategyKey.HIGHER_PRICE]: false, [StrategyKey.REPAY_LOAN]: false });
 	}, [isIncrease]);
 
-	const minCollateralNeeded = currentDebt > 0n ? (currentDebt * BigInt(1e18)) / positionPrice : 0n;
+	const minCollateralNeeded = collateralRequirement > 0n ? (collateralRequirement * BigInt(1e18)) / positionPrice : 0n;
 	const minCollateralWithBuffer = (minCollateralNeeded * 101n) / 100n;
 	const minimumCollateralValue = BigInt(position.minimumCollateral || 0);
 	const requiredCollateral = minCollateralWithBuffer > minimumCollateralValue ? minCollateralWithBuffer : minimumCollateralValue;
@@ -173,7 +175,7 @@ export const AdjustCollateral = ({
 
 	const isBelowMinCollateral = (col: bigint) => col > 0n && col < BigInt(position.minimumCollateral || 0) && newDebt > 0n;
 
-	const formatValue = (value: bigint) => formatPositionValue(value, collateralDecimals, collateralSymbol);
+	const formatValue = (value: bigint) => formatCurrency(formatUnits(value, collateralDecimals), 3, 3) + " " + collateralSymbol;
 
 	const maxRemovable = hasAnyStrategy || maxRemovableWithoutAdjustment === 0n ? collateralBalance : maxRemovableWithoutAdjustment;
 
@@ -342,7 +344,7 @@ export const AdjustCollateral = ({
 		isTxOnGoing ||
 		needsStrategy ||
 		(!isIncrease && isInCooldown) ||
-		(!isIncrease && collateralBalance <= requiredCollateral);
+		(!isIncrease && collateralBalance <= requiredCollateral && !isClosingPosition);
 
 	const getButtonLabel = () => {
 		if (needsApproval) return t("common.approve");

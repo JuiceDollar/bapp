@@ -19,6 +19,7 @@ export default function ManageCollateral() {
 		positionPrice,
 		collateralBalance,
 		currentDebt,
+		collateralRequirement,
 		minimumCollateral,
 		jusdAllowance,
 		jusdBalance,
@@ -57,6 +58,7 @@ export default function ManageCollateral() {
 						position={position}
 						collateralBalance={collateralBalance}
 						currentDebt={currentDebt}
+						collateralRequirement={collateralRequirement}
 						positionPrice={positionPrice}
 						principal={principal}
 						walletBalance={walletBalance}
