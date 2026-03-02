@@ -1,4 +1,5 @@
-import { PositionQuery, ApiPositionsListing, ApiPositionsOwners, ApiPositionsMapping, ReferencePositionsMapping } from "@juicedollar/api";
+import { PositionQuery, ApiPositionsListing, ApiPositionsOwners, ApiPositionsMapping } from "@juicedollar/api";
+import { ReferencePositionsMapping } from "./positions.types";
 import { createSlice, Dispatch } from "@reduxjs/toolkit";
 import { uniqueValues } from "@utils";
 import { getApiClient } from "@utils";
