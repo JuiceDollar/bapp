@@ -1,4 +1,4 @@
-import { PositionQuery, ApiPositionsListing, ApiPositionsOwners, ApiPositionsMapping } from "@juicedollar/api";
+import { PositionQuery, ApiPositionsListing, ApiPositionsOwners, ApiPositionsMapping, ReferencePositionsMapping } from "@juicedollar/api";
 import { Address } from "viem";
 
 // --------------------------------------------------------------------------------
@@ -7,6 +7,7 @@ export type PositionsState = {
 	loaded: boolean;
 
 	defaultPosition?: PositionQuery | null;
+	referencePositions?: ReferencePositionsMapping | null;
 	list?: ApiPositionsListing;
 	mapping?: ApiPositionsMapping;
 	requests?: ApiPositionsMapping;

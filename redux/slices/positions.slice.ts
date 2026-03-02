@@ -1,4 +1,4 @@
-import { PositionQuery, ApiPositionsListing, ApiPositionsOwners, ApiPositionsMapping } from "@juicedollar/api";
+import { PositionQuery, ApiPositionsListing, ApiPositionsOwners, ApiPositionsMapping, ReferencePositionsMapping } from "@juicedollar/api";
 import { createSlice, Dispatch } from "@reduxjs/toolkit";
 import { uniqueValues } from "@utils";
 import { getApiClient } from "@utils";
@@ -21,6 +21,7 @@ export const initialState: PositionsState = {
 	loaded: false,
 
 	defaultPosition: undefined,
+	referencePositions: undefined,
 	list: undefined,
 	mapping: undefined,
 	requests: undefined,
@@ -106,6 +107,10 @@ export const slice = createSlice({
 
 		setDefaultPosition: (state, action: { payload: PositionQuery | undefined | null }) => {
 			state.defaultPosition = action.payload;
+		},
+
+		setReferencePositions: (state, action: { payload: ReferencePositionsMapping | undefined | null }) => {
+			state.referencePositions = action.payload;
 		},
 	},
 });
