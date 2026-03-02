@@ -1,6 +1,7 @@
-import { PositionQuery, ApiPositionsListing, ApiPositionsOwners, ApiPositionsMapping, ReferencePositionsMapping } from "@juicedollar/api";
+import { PositionQuery, ApiPositionsListing, ApiPositionsOwners, ApiPositionsMapping } from "@juicedollar/api";
 import { Address } from "viem";
 
+type ReferencePositionsMapping = { [collateral: string]: PositionQuery };
 // --------------------------------------------------------------------------------
 export type PositionsState = {
 	error: string | null;

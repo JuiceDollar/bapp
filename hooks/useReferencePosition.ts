@@ -3,9 +3,12 @@ import { useSelector, useDispatch } from "react-redux";
 import { useChainId } from "wagmi";
 import { RootState, AppDispatch } from "../redux/redux.store";
 import { Address } from "viem";
-import { PositionQuery, ApiReferencePositions } from "@juicedollar/api";
+import { PositionQuery } from "@juicedollar/api";
 import { getApiClient } from "@utils";
 import { slice } from "../redux/slices/positions.slice";
+
+type ReferencePositionsMapping = { [collateral: string]: PositionQuery };
+type ApiReferencePositions = { num: number; collaterals: string[]; map: ReferencePositionsMapping };
 
 type ReferencePositionResult = {
 	address: Address | null;
