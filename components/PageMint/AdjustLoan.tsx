@@ -32,12 +32,14 @@ interface AdjustLoanProps {
 	position: PositionQuery;
 	collateralBalance: bigint;
 	currentDebt: bigint;
+	collateralRequirement: bigint;
 	liqPrice: bigint;
 	principal: bigint;
 	currentPosition: SolverPosition;
 	walletBalance: bigint;
 	jusdAllowance: bigint;
 	jusdBalance: bigint;
+	collateralAllowance: bigint;
 	refetchAllowance: () => void;
 	onSuccess: () => void;
 	onFullRepaySuccess: () => void;
@@ -50,12 +52,14 @@ export const AdjustLoan = ({
 	position,
 	collateralBalance,
 	currentDebt,
+	collateralRequirement,
 	liqPrice,
 	principal,
 	currentPosition,
 	walletBalance,
 	jusdAllowance,
 	jusdBalance,
+	collateralAllowance,
 	refetchAllowance,
 	onSuccess,
 	onFullRepaySuccess,
@@ -92,9 +96,9 @@ export const AdjustLoan = ({
 
 	const hasAnyStrategy = strategies[StrategyKey.ADD_COLLATERAL];
 
-	const rawMaxDebt = (BigInt(position.price) * collateralBalance) / BigInt(1e18);
+	const rawMaxDebt = (liqPrice * collateralBalance) / BigInt(1e18);
 	const maxDebtAtCurrentParams = rawMaxDebt - rawMaxDebt / 10000n; // 0.01% buffer for precision
-	const availableWithoutAdjustment = maxDebtAtCurrentParams > currentDebt ? maxDebtAtCurrentParams - currentDebt : 0n;
+	const availableWithoutAdjustment = maxDebtAtCurrentParams > collateralRequirement ? maxDebtAtCurrentParams - collateralRequirement : 0n;
 
 	const maxDelta = useMemo(() => {
 		if (!isIncrease) return currentDebt;
@@ -136,7 +140,7 @@ export const AdjustLoan = ({
 				return setOutcome(solveManage(currentPosition, Target.LOAN, Strategy.KEEP_COLLATERAL, currentDebt - delta));
 			}
 			const newDebt = currentDebt + delta;
-			const maxDebtNoAdjust = (BigInt(position.price) * collateralBalance) / BigInt(1e18);
+			const maxDebtNoAdjust = (liqPrice * collateralBalance) / BigInt(1e18);
 			const canBorrowWithoutAdjustment = newDebt <= maxDebtNoAdjust;
 			if (!strategies[StrategyKey.ADD_COLLATERAL] && !canBorrowWithoutAdjustment) return setOutcome(null);
 			if (canBorrowWithoutAdjustment) {
@@ -144,7 +148,7 @@ export const AdjustLoan = ({
 					next: {
 						collateral: collateralBalance,
 						debt: newDebt,
-						liqPrice: BigInt(position.price),
+						liqPrice,
 						expiration: currentPosition.expiration,
 					},
 					deltaCollateral: 0n,
@@ -159,7 +163,7 @@ export const AdjustLoan = ({
 		} catch {
 			setOutcome(null);
 		}
-	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, collateralBalance, liqPrice, position.price]);
+	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, collateralBalance, liqPrice]);
 
 	const repayAmount = useMemo(() => (!outcome || outcome.deltaDebt >= 0n ? 0n : -outcome.deltaDebt), [outcome]);
 
@@ -179,10 +183,29 @@ export const AdjustLoan = ({
 
 		setDeltaAmountError(error);
 	}, [deltaAmount, isIncrease, maxDelta, repayAmount, jusdBalance, position.stablecoinSymbol, t]);
-	const needsApproval = repayAmount > 0n && jusdAllowance < repayAmount;
+	const collateralDepositAmount = outcome?.deltaCollateral && outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
+	const needsCollateralApproval =
+		!isNativeWrappedPosition && collateralDepositAmount > 0n && collateralAllowance < collateralDepositAmount;
+	const needsJusdApproval = repayAmount > 0n && jusdAllowance < repayAmount;
+	const needsApproval = needsCollateralApproval || needsJusdApproval;
 	const handleMaxClick = () => setDeltaAmount(maxDelta.toString());
 
+	const handleApproveCollateral = async () => {
+		if (collateralDepositAmount <= 0n) return;
+		setIsTxOnGoing(true);
+		await approveToken({
+			tokenAddress: position.collateral as Address,
+			spender: position.position as Address,
+			amount: collateralDepositAmount * 2n,
+			chainId: chainId as typeof mainnet.id | typeof testnet.id,
+			t,
+			onSuccess: refetchAllowance,
+		});
+		setIsTxOnGoing(false);
+	};
+
 	const handleApprove = async () => {
+		if (needsCollateralApproval) return handleApproveCollateral();
 		if (repayAmount <= 0n) return;
 		setIsTxOnGoing(true);
 		await approveToken({
@@ -338,8 +361,8 @@ export const AdjustLoan = ({
 										delta >= principal ? 0n : getAmountLended(principal - delta, position.reserveContribution),
 										18
 									),
-									2,
-									2
+									6,
+									6
 								)}{" "}
 								JUSD
 							</span>
@@ -352,8 +375,8 @@ export const AdjustLoan = ({
 										delta >= principal ? 0n : getRetainedReserve(principal - delta, position.reserveContribution),
 										18
 									),
-									2,
-									2
+									6,
+									6
 								)}{" "}
 								JUSD
 							</span>

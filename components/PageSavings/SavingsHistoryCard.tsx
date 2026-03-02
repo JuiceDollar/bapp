@@ -14,7 +14,7 @@ import { RootState } from "../../redux/redux.store";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
-import { useContractUrl } from "@hooks";
+import { useContractUrl, useExplorerChain } from "@hooks";
 import { useTotalSavingsUsers } from "../../hooks/useTotalSavingsUsers";
 
 enum Timeframe {
@@ -53,7 +53,8 @@ export default function SavingsHistoryCard() {
 	const router = useRouter();
 	const startTrades = getStartTimestampByTimeframe(timeframe);
 	const chainId = useChainId();
-	const addressSavingsGateway = useContractUrl(ADDRESS[chainId].savingsGateway);
+	const chain = useExplorerChain();
+	const addressSavingsGateway = useContractUrl(ADDRESS[chainId].savingsGateway, chain);
 
 	const { data: current = 0n } = useReadContract({
 		address: ADDRESS[chainId].juiceDollar,

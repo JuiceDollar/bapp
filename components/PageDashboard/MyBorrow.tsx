@@ -160,12 +160,9 @@ export const MyBorrow = () => {
 	const borrowData = useMemo(
 		() =>
 			ownedPositions.map((position) => {
-				const { principal, reserveContribution, collateralBalance, collateralDecimals, collateralSymbol } = position;
+				const { principal, interest, collateralBalance, collateralDecimals, collateralSymbol } = position;
 				const amountBorrowed = formatCurrency(
-					formatUnits(
-						BigInt(principal) - (BigInt(principal) * BigInt(reserveContribution)) / 1_000_000n,
-						position.stablecoinDecimals
-					),
+					formatUnits(BigInt(principal) + BigInt(interest ?? "0"), position.stablecoinDecimals),
 					2,
 					2
 				) as string;
@@ -191,10 +188,7 @@ export const MyBorrow = () => {
 		[ownedPositions, prices]
 	);
 
-	const totalOwed = ownedPositions.reduce(
-		(acc, curr) => acc + BigInt(curr.principal) - (BigInt(curr.principal) * BigInt(curr.reserveContribution)) / 1_000_000n,
-		0n
-	);
+	const totalOwed = ownedPositions.reduce((acc, curr) => acc + BigInt(curr.principal) + BigInt(curr.interest ?? "0"), 0n);
 
 	return (
 		<div className="w-full h-full p-4 sm:p-8 flex flex-col items-start">
