@@ -22,6 +22,7 @@ import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { Tooltip } from "flowbite-react";
 import { approveToken } from "../../hooks/useApproveToken";
 import { mainnet, testnet } from "@config";
+import { getAmountLended, getRetainedReserve } from "../../utils/loanCalculations";
 
 enum StrategyKey {
 	HIGHER_PRICE = "higherPrice",
@@ -125,6 +126,13 @@ export const AdjustCollateral = ({
 	const newDebt = strategies[StrategyKey.REPAY_LOAN] ? currentDebt - calculatedRepayAmount : currentDebt;
 	const newPrice = strategies[StrategyKey.HIGHER_PRICE] ? calculatedNewPrice : positionPrice;
 
+	const walletRepayAmount = getAmountLended(calculatedRepayAmount, position.reserveContribution);
+	const reserveCoversAmount = getRetainedReserve(calculatedRepayAmount, position.reserveContribution);
+	const jusdInsufficientError =
+		!isIncrease && strategies[StrategyKey.REPAY_LOAN] && walletRepayAmount > 0n && walletRepayAmount > jusdBalance
+			? t("mint.insufficient_balance", { symbol: position.stablecoinSymbol })
+			: null;
+
 	useEffect(() => {
 		if (!deltaAmount) {
 			setDeltaAmountError(null);
@@ -146,10 +154,6 @@ export const AdjustCollateral = ({
 				error: t("common.error.insufficient_balance", { symbol: collateralSymbol }),
 			},
 			{
-				condition: !isIncrease && strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > jusdBalance,
-				error: t("mint.insufficient_balance", { symbol: position.stablecoinSymbol }),
-			},
-			{
 				condition:
 					!isIncrease && newCollateral > 0n && newCollateral < BigInt(position.minimumCollateral || 0) && validationDebt > 0n,
 				error: `${t("mint.error.collateral_below_min")} (${formattedCurrentCollateral} ${collateralSymbol})`,
@@ -166,8 +170,6 @@ export const AdjustCollateral = ({
 		collateralSymbol,
 		strategies,
 		calculatedRepayAmount,
-		jusdBalance,
-		position.stablecoinSymbol,
 		position.minimumCollateral,
 		t,
 		currentDebt,
@@ -187,7 +189,7 @@ export const AdjustCollateral = ({
 
 	const toggleStrategy = (key: StrategyKey) => setStrategies((prev) => ({ ...prev, [key]: !prev[key] }));
 
-	const needsApproval = strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n && jusdAllowance < calculatedRepayAmount;
+	const needsApproval = strategies[StrategyKey.REPAY_LOAN] && walletRepayAmount > 0n && jusdAllowance < walletRepayAmount;
 
 	const handleApprove = async () => {
 		if (!position || calculatedRepayAmount <= 0n) return;
@@ -342,6 +344,7 @@ export const AdjustCollateral = ({
 		!deltaAmount ||
 		delta === 0n ||
 		Boolean(deltaAmountError) ||
+		Boolean(jusdInsufficientError) ||
 		isTxOnGoing ||
 		needsStrategy ||
 		(!isIncrease && isInCooldown) ||
@@ -350,7 +353,7 @@ export const AdjustCollateral = ({
 	const getButtonLabel = () => {
 		if (needsApproval) return t("common.approve");
 		if (delta === 0n) return isIncrease ? t("common.add") : t("common.remove");
-		const formattedDelta = formatCurrency(formatUnits(delta, collateralDecimals), 3, 3);
+		const formattedDelta = formatCurrency(formatUnits(delta, collateralDecimals), 4, 4);
 		if (strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n) {
 			const formattedRepay = formatCurrency(formatUnits(calculatedRepayAmount, 18), 2, 2);
 			if (isClosingPosition) {
@@ -411,11 +414,14 @@ export const AdjustCollateral = ({
 						</div>
 					}
 				/>
-				{deltaAmountError && <div className="ml-1 text-text-muted2 text-sm">{deltaAmountError}</div>}
+				{deltaAmountError && <div className="ml-1 text-red-500 text-sm">{deltaAmountError}</div>}
 			</div>
 
-			{showStrategyOptions && !hasAnyStrategy && (
+			{showStrategyOptions && (
 				<div className="space-y-1 px-4">
+					{jusdInsufficientError && strategies[StrategyKey.REPAY_LOAN] && (
+						<div className="text-xs text-red-500 mb-1">{jusdInsufficientError}</div>
+					)}
 					<div className="text-sm font-medium text-text-title">{t("mint.position_needs_adjustments")}</div>
 					<div
 						role="button"
@@ -426,11 +432,13 @@ export const AdjustCollateral = ({
 					>
 						<div className="flex items-center gap-1">
 							<span className="text-sm text-text-title">{t("mint.repay_loan")}</span>
-							<Tooltip content={t("mint.tooltip_repay_loan")} arrow style="light">
-								<span className="w-4 h-4 text-primary flex items-center">
+							<span className="w-4 h-4 text-primary flex items-center">
+								{strategies[StrategyKey.REPAY_LOAN] ? (
+									<RemoveCircleOutlineIcon color="currentColor" />
+								) : (
 									<AddCircleOutlineIcon color="currentColor" />
-								</span>
-							</Tooltip>
+								)}
+							</span>
 						</div>
 					</div>
 				</div>
@@ -457,19 +465,17 @@ export const AdjustCollateral = ({
 				)}
 				{strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n && (
 					<div className="flex justify-between text-sm">
-						<div className="flex items-center gap-1">
-							<span className="text-text-muted2">{t("mint.repay_loan")}</span>
-							<Tooltip content={t("mint.tooltip_remove_repay")} arrow style="light">
-								<span
-									className="w-4 h-4 text-primary cursor-pointer hover:opacity-80 flex items-center"
-									onClick={() => toggleStrategy(StrategyKey.REPAY_LOAN)}
-								>
-									<RemoveCircleOutlineIcon color="currentColor" />
-								</span>
-							</Tooltip>
-						</div>
+						<span className="text-text-muted2">{t("mint.you_pay_from_wallet")}</span>
 						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(calculatedRepayAmount, 18), 2, 2)} {position.stablecoinSymbol}
+							{formatCurrency(formatUnits(walletRepayAmount, 18), 2, 2)} {position.stablecoinSymbol}
+						</span>
+					</div>
+				)}
+				{strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n && (
+					<div className="flex justify-between text-sm">
+						<span className="text-text-muted2">{t("mint.reserve_covers")}</span>
+						<span className="font-medium text-text-title">
+							{formatCurrency(formatUnits(reserveCoversAmount, 18), 2, 2)} {position.stablecoinSymbol}
 						</span>
 					</div>
 				)}

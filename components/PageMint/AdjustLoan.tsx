@@ -188,15 +188,13 @@ export const AdjustLoan = ({
 		}
 
 		const walletInput = BigInt(deltaAmount);
-		const error =
-			walletInput > jusdBalance
-				? t("mint.insufficient_balance", { symbol: position.stablecoinSymbol })
-				: walletInput > maxDelta && maxDelta > 0n
-				? t("mint.error.amount_greater_than_max_to_remove")
-				: null;
+		const error = walletInput > maxDelta && maxDelta > 0n ? t("mint.error.amount_greater_than_max_to_remove") : null;
 
 		setDeltaAmountError(error);
-	}, [deltaAmount, isIncrease, maxDelta, jusdBalance, position.stablecoinSymbol, t]);
+	}, [deltaAmount, isIncrease, maxDelta, t]);
+
+	const jusdInsufficientError =
+		!isIncrease && delta > 0n && delta > jusdBalance ? t("mint.insufficient_balance", { symbol: position.stablecoinSymbol }) : null;
 	const collateralDepositAmount = outcome?.deltaCollateral && outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
 	const insufficientCollateral = collateralDepositAmount > 0n && collateralDepositAmount > walletBalance;
 	const needsCollateralApproval =
@@ -292,6 +290,7 @@ export const AdjustLoan = ({
 					}
 				/>
 				<ErrorDisplay error={deltaAmountError} />
+				{jusdInsufficientError && <div className="ml-1 text-red-500 text-sm">{jusdInsufficientError}</div>}
 			</div>
 
 			{showStrategyOptions && !hasAnyStrategy && (
@@ -412,6 +411,7 @@ export const AdjustLoan = ({
 					!outcome.isValid ||
 					isTxOnGoing ||
 					Boolean(deltaAmountError) ||
+					Boolean(jusdInsufficientError) ||
 					insufficientCollateral ||
 					(isIncrease && isInCooldown) ||
 					(!isIncrease && isFullRepay && isInCooldown)
