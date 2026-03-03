@@ -284,6 +284,7 @@
 		"lending": "Lending",
 		"position_at_limit": "Position at limit.",
 		"repay_debt": "repay debt",
+		"repay_debt_strategy": "Repay Debt",
 		"to_adjust_price": "to adjust price.",
 		"error": {
 			"could_not_obtain_token_data": "Could not obtain token data",

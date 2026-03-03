@@ -284,6 +284,7 @@
 		"lending": "Prestiti",
 		"position_at_limit": "Posizione al limite.",
 		"repay_debt": "rimborsa il debito",
+		"repay_debt_strategy": "Rimborsa Debito",
 		"to_adjust_price": "per modificare il prezzo.",
 		"error": {
 			"could_not_obtain_token_data": "Impossibile ottenere i dati del token",

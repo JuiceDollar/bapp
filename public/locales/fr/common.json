@@ -278,6 +278,8 @@
 		"increase": "Augmenter",
 		"reduce": "Réduire",
 		"decrease": "Diminuer",
+		"repay_debt": "rembourser la dette",
+		"repay_debt_strategy": "Rembourser Dette",
 		"set_price_to": "Définir le prix à",
 		"set_new_price": "Définir un nouveau prix",
 		"lending": "Prêt en cours",
