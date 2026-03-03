@@ -335,23 +335,20 @@ export const AdjustLoan = ({
 						</div>
 					)}
 					<div className="flex justify-between text-sm">
-						<span className="text-text-muted2">{t("mint.amount_lended")}</span>
-						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(getAmountLended(principal + delta, position.reserveContribution), 18), 2, 2)} JUSD
+						<span className="text-text-muted2">{t("mint.you_receive_now")}</span>
+						<span className="font-medium text-green-600 dark:text-green-400">
+							+{formatCurrency(formatUnits(getAmountLended(delta, position.reserveContribution), 18), 2, 2)} JUSD
 						</span>
 					</div>
 					<div className="flex justify-between text-sm">
-						<span className="text-text-muted2">{t("mint.retained_reserve")}</span>
+						<span className="text-text-muted2">{t("mint.goes_to_reserve")}</span>
 						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(getRetainedReserve(principal + delta, position.reserveContribution), 18), 2, 2)}{" "}
-							JUSD
+							{formatCurrency(formatUnits(getRetainedReserve(delta, position.reserveContribution), 18), 2, 2)} JUSD
 						</span>
 					</div>
 					<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
-						<span className="text-text-muted2 font-medium">{t("mint.total")}</span>
-						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(currentDebt + delta, 18), 2, 2)} JUSD
-						</span>
+						<span className="font-bold text-text-title">{t("mint.new_total_debt")}</span>
+						<span className="font-bold text-text-title">{formatCurrency(formatUnits(currentDebt + delta, 18), 2, 2)} JUSD</span>
 					</div>
 				</div>
 			)}
@@ -418,9 +415,7 @@ export const AdjustLoan = ({
 					? t("mint.confirm_close_position")
 					: !isIncrease
 					? t("mint.repay")
-					: delta === 0n
-					? t("mint.lend")
-					: `${t("mint.lend")} ${formatCurrency(formatUnits(delta, 18), 2, 2)} ${position.stablecoinSymbol}`}
+					: t("mint.lend")}
 			</Button>
 		</div>
 	);
