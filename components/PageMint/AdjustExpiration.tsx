@@ -297,7 +297,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					isLoading={isTxOnGoing}
 					disabled={isTxOnGoing || !targetPosition}
 				>
-					{t("common.approve")} {position.stablecoinSymbol}
+					{t("mint.approve_jusd_to_extend")}
 				</Button>
 			) : (
 				<>

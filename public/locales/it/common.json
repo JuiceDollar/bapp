@@ -207,6 +207,7 @@
 		"insufficient_balance": "Saldo {{symbol}} insufficiente",
 		"you_have": "Hai: {{amount}} {{symbol}}",
 		"you_need": "Ti servono: {{amount}} {{symbol}}",
+		"approve_jusd_to_extend": "Approva JUSD per estendere",
 		"extend_roll_borrowing": "Paga Interesse & Estendi Prestito",
 		"extend_roll_borrowing_description": "La posizione deve essere rimborsata o estesa prima della data di scadenza. Un mutuatario paga interessi solo sul tempo effettivamente utilizzato, i prestiti possono quindi essere rimborsati in anticipo in qualsiasi momento prima della data di scadenza effettiva. È generalmente consigliabile scegliere sempre la durata massima possibile del prestito.",
 		"no_extension_target_available": "Nessun obiettivo di estensione disponibile. La posizione non può essere estesa poiché non c'è una posizione target adatta con una data di scadenza successiva.",
