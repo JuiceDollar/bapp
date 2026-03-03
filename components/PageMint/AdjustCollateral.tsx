@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Address, formatUnits } from "viem";
-import { formatCurrency, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
+import { formatCurrency, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS, NATIVE_GAS_BUFFER } from "@utils";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
 import { RemoveCircleOutlineIcon } from "@components/SvgComponents/remove_circle_outline";
@@ -70,6 +70,11 @@ export const AdjustCollateral = ({
 	const chainId = useChainId() ?? WAGMI_CHAIN.id;
 	const { address: userAddress } = useAccount();
 	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol?.toLowerCase() || "");
+	const maxWalletForAdd = isNativeWrappedPosition
+		? walletBalance > NATIVE_GAS_BUFFER
+			? walletBalance - NATIVE_GAS_BUFFER
+			: 0n
+		: walletBalance;
 
 	const [isTxOnGoing, setIsTxOnGoing] = useState(false);
 	const [deltaAmount, setDeltaAmount] = useState<string>("");
@@ -171,12 +176,12 @@ export const AdjustCollateral = ({
 
 	const isBelowMinCollateral = (col: bigint) => col > 0n && col < BigInt(position.minimumCollateral || 0) && newDebt > 0n;
 
-	const formatValue = (value: bigint) => formatCurrency(formatUnits(value, collateralDecimals), 3, 3) + " " + collateralSymbol;
+	const formatValue = (value: bigint) => formatCurrency(formatUnits(value, collateralDecimals), 4, 4) + " " + collateralSymbol;
 
 	const maxRemovable = hasAnyStrategy || maxRemovableWithoutAdjustment === 0n ? collateralBalance : maxRemovableWithoutAdjustment;
 
 	const handleMaxClick = () => {
-		const maxAmount = isIncrease ? walletBalance : maxRemovable;
+		const maxAmount = isIncrease ? maxWalletForAdd : collateralBalance;
 		setDeltaAmount(maxAmount.toString());
 	};
 
@@ -333,16 +338,10 @@ export const AdjustCollateral = ({
 		}
 	};
 
-	const isBelowMinError =
-		!isIncrease &&
-		newCollateral > 0n &&
-		newCollateral < BigInt(position.minimumCollateral || 0) &&
-		(strategies[StrategyKey.REPAY_LOAN] ? currentDebt - calculatedRepayAmount : currentDebt) > 0n;
-
 	const isDisabled =
 		!deltaAmount ||
 		delta === 0n ||
-		(Boolean(deltaAmountError) && !(isBelowMinError && strategies[StrategyKey.REPAY_LOAN])) ||
+		Boolean(deltaAmountError) ||
 		isTxOnGoing ||
 		needsStrategy ||
 		(!isIncrease && isInCooldown) ||
@@ -366,9 +365,7 @@ export const AdjustCollateral = ({
 		if (strategies[StrategyKey.HIGHER_PRICE] && newPrice > positionPrice) {
 			return t("mint.adjust_liq_price_btn");
 		}
-		return isIncrease
-			? `${t("common.add")} ${formattedDelta} ${collateralSymbol}`
-			: `${t("common.remove")} ${formattedDelta} ${collateralSymbol}`;
+		return isIncrease ? `${t("common.add")} ${formattedDelta} ${collateralSymbol}` : t("common.remove");
 	};
 
 	return (
@@ -399,11 +396,15 @@ export const AdjustCollateral = ({
 							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden"></div>
 							<div className="h-7 justify-end items-center gap-2.5 flex">
 								<div className="text-input-label text-xs font-medium leading-none">
-									{formatCurrency(formatUnits(isIncrease ? walletBalance : maxRemovable, collateralDecimals), 3, 3)}{" "}
+									{formatCurrency(
+										formatUnits(isIncrease ? maxWalletForAdd : collateralBalance, collateralDecimals),
+										4,
+										4
+									)}{" "}
 									{collateralSymbol}
 								</div>
 								<MaxButton
-									disabled={(isIncrease && walletBalance === 0n) || (!isIncrease && maxRemovable === 0n)}
+									disabled={(isIncrease && maxWalletForAdd === 0n) || (!isIncrease && collateralBalance === 0n)}
 									onClick={handleMaxClick}
 								/>
 							</div>
@@ -473,22 +474,16 @@ export const AdjustCollateral = ({
 					</div>
 				)}
 				<div className="flex justify-between text-sm">
-					<span className="text-text-muted2">{t("mint.current_collateral")}</span>
-					<span className="font-medium text-text-title">
-						{formatCurrency(formatUnits(collateralBalance, collateralDecimals), 3, 3)} {collateralSymbol}
-					</span>
-				</div>
-				<div className="flex justify-between text-sm">
-					<span className="text-text-muted2">{t("mint.change")}</span>
-					<span className="font-medium text-text-title">
+					<span className="text-text-muted2">{isIncrease ? t("mint.you_add") : t("mint.you_remove")}</span>
+					<span className={`font-medium ${isIncrease ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
 						{isIncrease ? "+" : "-"}
-						{formatCurrency(formatUnits(delta, collateralDecimals), 3, 3)} {collateralSymbol}
+						{formatCurrency(formatUnits(delta, collateralDecimals), 4, 4)} {collateralSymbol}
 					</span>
 				</div>
 				<div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
 					<span className="font-bold text-text-title">{t("mint.new_collateral")}</span>
 					<span className="font-bold text-text-title">
-						{formatCurrency(formatUnits(newCollateral, collateralDecimals), 3, 3)} {collateralSymbol}
+						{formatCurrency(formatUnits(newCollateral, collateralDecimals), 4, 4)} {collateralSymbol}
 					</span>
 				</div>
 			</div>

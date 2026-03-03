@@ -254,6 +254,8 @@
 		"current_collateral": "Current Collateral",
 		"change": "Change",
 		"new_collateral": "New Collateral",
+		"you_add": "You add",
+		"you_remove": "You remove",
 		"new_liq_price": "New Liquidation Price",
 		"choose_what_stays_constant": "Choose what stays constant",
 		"preview_changes": "Preview Changes",

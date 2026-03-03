@@ -251,6 +251,8 @@
 		"current_value": "Aktueller Wert",
 		"current_liquidation_price": "Aktueller Liquidationspreis",
 		"current_collateral": "Aktuelle Sicherheit",
+		"you_add": "Du fügst hinzu",
+		"you_remove": "Du entfernst",
 		"change": "Änderung",
 		"new_collateral": "Neue Sicherheit",
 		"new_liq_price": "Neuer Liquidationspreis",

@@ -251,6 +251,8 @@
 		"current_value": "Valeur Actuelle",
 		"current_liquidation_price": "Prix de Liquidation Actuel",
 		"current_collateral": "Garantie Actuelle",
+		"you_add": "Vous ajoutez",
+		"you_remove": "Vous retirez",
 		"change": "Changement",
 		"new_collateral": "Nouvelle Garantie",
 		"new_liq_price": "Nouveau Prix de Liquidation",

@@ -32,7 +32,7 @@ export default function ManageCollateral() {
 		isLoading,
 	} = usePositionManageData(addressQuery);
 
-	if (isLoading || !position || !currentPosition) {
+	if (!position || !currentPosition) {
 		return (
 			<div className="md:mt-8 flex justify-center">
 				<AppCard className="max-w-lg w-full p-6 flex flex-col gap-y-6">
