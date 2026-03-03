@@ -198,8 +198,12 @@ export const AdjustLoan = ({
 		setDeltaAmountError(error);
 	}, [deltaAmount, isIncrease, maxDelta, jusdBalance, position.stablecoinSymbol, t]);
 	const collateralDepositAmount = outcome?.deltaCollateral && outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
+	const insufficientCollateral = collateralDepositAmount > 0n && collateralDepositAmount > walletBalance;
 	const needsCollateralApproval =
-		!isNativeWrappedPosition && collateralDepositAmount > 0n && collateralAllowance < collateralDepositAmount;
+		!isNativeWrappedPosition &&
+		collateralDepositAmount > 0n &&
+		!insufficientCollateral &&
+		collateralAllowance < collateralDepositAmount;
 	const needsJusdApproval = !isIncrease && delta > 0n && jusdAllowance < delta;
 	const needsApproval = needsCollateralApproval || needsJusdApproval;
 	const handleMaxClick = () => setDeltaAmount(maxDelta.toString());
@@ -314,6 +318,10 @@ export const AdjustLoan = ({
 				</div>
 			)}
 
+			{insufficientCollateral && (
+				<div className="ml-1 text-text-warning text-sm">{t("common.error.insufficient_balance", { symbol: collateralSymbol })}</div>
+			)}
+
 			{isIncrease && (
 				<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
 					{strategies[StrategyKey.ADD_COLLATERAL] && outcome && (
@@ -404,6 +412,7 @@ export const AdjustLoan = ({
 					!outcome.isValid ||
 					isTxOnGoing ||
 					Boolean(deltaAmountError) ||
+					insufficientCollateral ||
 					(isIncrease && isInCooldown) ||
 					(!isIncrease && isFullRepay && isInCooldown)
 				}
