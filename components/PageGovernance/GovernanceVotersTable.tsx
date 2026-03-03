@@ -80,7 +80,7 @@ export default function GovernanceVotersTable() {
 				setAccountVotes({ holder, nativePS: 0n, votingPower: 0n, votingPowerRatio: 0 });
 			}
 		})();
-	}, [account, votesTotal, chainId]);
+	}, [account?.address, votesTotal, chainId]);
 
 	const matchingVotes: VoteData[] = votesData.filter((v) => v.holder.toLowerCase() !== account.address?.toLowerCase());
 	const votesDataSorted: VoteData[] = sortVotes({
