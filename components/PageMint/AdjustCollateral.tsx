@@ -146,11 +146,7 @@ export const AdjustCollateral = ({
 			},
 			{
 				condition:
-					!isIncrease &&
-					!strategies[StrategyKey.REPAY_LOAN] &&
-					newCollateral > 0n &&
-					newCollateral < BigInt(position.minimumCollateral || 0) &&
-					validationDebt > 0n,
+					!isIncrease && newCollateral > 0n && newCollateral < BigInt(position.minimumCollateral || 0) && validationDebt > 0n,
 				error: `${t("mint.error.collateral_below_min")} (${formattedCurrentCollateral} ${collateralSymbol})`,
 			},
 		];
@@ -337,10 +333,16 @@ export const AdjustCollateral = ({
 		}
 	};
 
+	const isBelowMinError =
+		!isIncrease &&
+		newCollateral > 0n &&
+		newCollateral < BigInt(position.minimumCollateral || 0) &&
+		(strategies[StrategyKey.REPAY_LOAN] ? currentDebt - calculatedRepayAmount : currentDebt) > 0n;
+
 	const isDisabled =
 		!deltaAmount ||
 		delta === 0n ||
-		Boolean(deltaAmountError) ||
+		(Boolean(deltaAmountError) && !(isBelowMinError && strategies[StrategyKey.REPAY_LOAN])) ||
 		isTxOnGoing ||
 		needsStrategy ||
 		(!isIncrease && isInCooldown) ||
