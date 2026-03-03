@@ -14,10 +14,12 @@ interface PositionManageData {
 	positionPrice: bigint;
 	collateralBalance: bigint;
 	currentDebt: bigint;
+	collateralRequirement: bigint;
 	liqPrice: bigint;
 	minimumCollateral: bigint;
 	jusdAllowance: bigint;
 	jusdBalance: bigint;
+	collateralAllowance: bigint;
 	walletBalance: bigint;
 	priceDecimals: number;
 	isInCooldown: boolean;
@@ -50,6 +52,7 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 						args: [position.position],
 					},
 					{ chainId, abi: PositionV2ABI, address: position.position, functionName: "getDebt" },
+					{ chainId, abi: PositionV2ABI, address: position.position, functionName: "getCollateralRequirement" },
 					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "cooldown" },
 					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "minimumCollateral" },
 					{
@@ -66,6 +69,13 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 						functionName: "balanceOf",
 						args: [userAddress as Address],
 					},
+					{
+						chainId,
+						abi: erc20Abi,
+						address: position.collateral as Address,
+						functionName: "allowance",
+						args: [userAddress as Address, position.position as Address],
+					},
 			  ]
 			: [],
 	});
@@ -74,10 +84,12 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 	const positionPrice = data?.[1]?.result || 1n;
 	const collateralBalance = data?.[2]?.result || 0n;
 	const currentDebt = data?.[3]?.result || 0n;
-	const cooldown = data?.[4]?.result || 0n;
-	const minimumCollateral = data?.[5]?.result || 0n;
-	const jusdAllowance = data?.[6]?.result || 0n;
-	const jusdBalance = data?.[7]?.result || 0n;
+	const collateralRequirement = data?.[4]?.result || 0n;
+	const cooldown = data?.[5]?.result || 0n;
+	const minimumCollateral = data?.[6]?.result || 0n;
+	const jusdAllowance = data?.[7]?.result || 0n;
+	const jusdBalance = data?.[8]?.result || 0n;
+	const collateralAllowance = data?.[9]?.result || 0n;
 
 	const collateralDecimals = position?.collateralDecimals || 18;
 	const priceDecimals = 36 - collateralDecimals;
@@ -104,10 +116,12 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 		positionPrice,
 		collateralBalance,
 		currentDebt,
+		collateralRequirement,
 		liqPrice,
 		minimumCollateral,
 		jusdAllowance,
 		jusdBalance,
+		collateralAllowance,
 		walletBalance,
 		priceDecimals,
 		isInCooldown,

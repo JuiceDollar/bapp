@@ -1,7 +1,7 @@
 import { DateInputOutlined } from "@components/Input/DateInputOutlined";
 import { MaxButton } from "@components/Input/MaxButton";
 import { useTranslation } from "next-i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toastTxError } from "@components/TxToast";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { ADDRESS, PositionRollerABI, PositionV2ABI } from "@juicedollar/jusd";
@@ -14,7 +14,8 @@ import { getCarryOnQueryParams, toQueryString, toTimestamp, normalizeTokenSymbol
 import { toast } from "react-toastify";
 import { TxToast } from "@components/TxToast";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
-import { useReferencePosition } from "../../hooks/useReferencePosition";
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/redux.store";
 import Button from "@components/Button";
 import { erc20Abi, maxUint256 } from "viem";
 import { PositionQuery } from "@juicedollar/api";
@@ -70,30 +71,44 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	const currentDebt = contractData?.[1]?.result || 0n;
 	const positionInterest = contractData?.[2]?.result || 0n;
 
-	const { defaultPosition, isLoading: loadingDefault } = useReferencePosition();
+	const openPositions = useSelector((state: RootState) => state.positions.openPositions);
+
+	const targetPosition = useMemo(() => {
+		if (!position) return null;
+		const now = Date.now() / 1000;
+		return (
+			openPositions
+				.filter((p) => p.collateral.toLowerCase() === position.collateral.toLowerCase())
+				.filter((p) => p.cooldown < now)
+				.filter((p) => p.expiration > now)
+				.filter((p) => p.expiration > position.expiration)
+				.filter((p) => BigInt(p.availableForClones) > 0n)
+				.sort((a, b) => a.expiration - b.expiration)[0] ?? null
+		);
+	}, [openPositions, position]);
 
 	useEffect(() => {
-		if (position && defaultPosition) {
-			setExpirationDate((date) => date ?? new Date(defaultPosition.expiration * 1000));
+		if (position && targetPosition) {
+			setExpirationDate((date) => date ?? new Date(targetPosition.expiration * 1000));
 		}
-	}, [position, defaultPosition]);
+	}, [position, targetPosition]);
 
 	const currentExpirationDate = new Date(position.expiration * 1000);
 	const isExtending = !!(expirationDate && expirationDate.getTime() > currentExpirationDate.getTime());
 	const currentCollateralBalance = BigInt(position.collateralBalance);
-	const targetMinCollateral = defaultPosition ? BigInt(defaultPosition.minimumCollateral) : 0n;
+	const targetMinCollateral = targetPosition ? BigInt(targetPosition.minimumCollateral) : 0n;
 
 	const handleAdjustExpiration = async () => {
 		try {
 			setIsTxOnGoing(true);
 
-			if (!defaultPosition) {
+			if (!targetPosition) {
 				toast.error(t("mint.no_extension_target_available"));
 				return;
 			}
 
 			const newExpirationTimestamp = toTimestamp(expirationDate as Date);
-			const target = defaultPosition.position;
+			const target = targetPosition.position;
 			const interestBuffer = positionInterest / 10n + BigInt(1e16);
 			const repay = principal + positionInterest + interestBuffer;
 			const collWithdraw = currentCollateralBalance;
@@ -250,7 +265,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 				<div className="text-lg font-extrabold leading-[1.4375rem]">{t("mint.newly_selected_expiration_date")}</div>
 				<DateInputOutlined
 					minDate={currentExpirationDate}
-					maxDate={defaultPosition ? new Date(defaultPosition.expiration * 1000) : currentExpirationDate}
+					maxDate={targetPosition ? new Date(targetPosition.expiration * 1000) : currentExpirationDate}
 					value={expirationDate}
 					placeholderText={new Date(position.expiration * 1000).toISOString().split("T")[0]}
 					className="placeholder:text-[#5D647B]"
@@ -258,22 +273,20 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					rightAdornment={
 						<MaxButton
 							className="h-full py-3.5 px-3"
-							onClick={() => setExpirationDate(defaultPosition ? new Date(defaultPosition.expiration * 1000) : undefined)}
-							disabled={!defaultPosition}
+							onClick={() => setExpirationDate(targetPosition ? new Date(targetPosition.expiration * 1000) : undefined)}
+							disabled={!targetPosition}
 							label={t("common.max")}
 						/>
 					}
 				/>
 			</div>
-			{!defaultPosition && !loadingDefault && (
-				<div className="text-xs text-text-muted2 px-4">{t("mint.no_extension_target_available")}</div>
-			)}
+			{!targetPosition && <div className="text-xs text-text-muted2 px-4">{t("mint.no_extension_target_available")}</div>}
 			{!isNativeWrappedPosition && !collateralAllowance ? (
 				<Button
 					className="text-lg leading-snug !font-extrabold"
 					onClick={handleApproveCollateral}
 					isLoading={isTxOnGoing}
-					disabled={isTxOnGoing || !defaultPosition}
+					disabled={isTxOnGoing || !targetPosition}
 				>
 					{t("common.approve")} {normalizeTokenSymbol(position.collateralSymbol)}
 				</Button>
@@ -282,9 +295,9 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					className="text-lg leading-snug !font-extrabold"
 					onClick={handleApproveJusd}
 					isLoading={isTxOnGoing}
-					disabled={isTxOnGoing || !defaultPosition}
+					disabled={isTxOnGoing || !targetPosition}
 				>
-					{t("common.approve")} {position.stablecoinSymbol}
+					{t("mint.approve_jusd_to_extend")}
 				</Button>
 			) : (
 				<>
@@ -333,7 +346,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 						className="text-lg leading-snug !font-extrabold"
 						onClick={handleAdjustExpiration}
 						isLoading={isTxOnGoing}
-						disabled={isTxOnGoing || !expirationDate || !isExtending || !defaultPosition || hasInsufficientBalance}
+						disabled={isTxOnGoing || !expirationDate || !isExtending || !targetPosition || hasInsufficientBalance}
 					>
 						{t("mint.extend_roll_borrowing")}{" "}
 						{expirationDate &&

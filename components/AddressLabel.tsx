@@ -2,7 +2,7 @@ import { faArrowUpRightFromSquare, faCopy } from "@fortawesome/free-solid-svg-ic
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Address, Hash, zeroAddress } from "viem";
 import { shortenAddress } from "../utils/format";
-import { useContractUrl, useTxUrl } from "../hooks/useContractUrl";
+import { useContractUrl, useExplorerChain, useTxUrl } from "../hooks/useContractUrl";
 
 interface Props {
 	address: Address;
@@ -13,7 +13,8 @@ interface Props {
 }
 
 export default function AddressLabel({ address, label, showCopy, showLink }: Props) {
-	const link = useContractUrl(address || zeroAddress);
+	const chain = useExplorerChain();
+	const link = useContractUrl(address || zeroAddress, chain);
 
 	const content = () => {
 		return (
@@ -47,7 +48,8 @@ export default function AddressLabel({ address, label, showCopy, showLink }: Pro
 }
 
 export function AddressLabelSimple({ address, label, showLink, className }: Props) {
-	const link = useContractUrl(address || zeroAddress);
+	const chain = useExplorerChain();
+	const link = useContractUrl(address || zeroAddress, chain);
 
 	const openExplorer = (e: any) => {
 		e.preventDefault();
@@ -76,7 +78,8 @@ type TxLabelSimpleProps = {
 };
 
 export function TxLabelSimple({ label, tx, showLink, className }: TxLabelSimpleProps) {
-	const link = useTxUrl(tx);
+	const chain = useExplorerChain();
+	const link = useTxUrl(tx, chain);
 
 	const openExplorer = (e: any) => {
 		e.preventDefault();

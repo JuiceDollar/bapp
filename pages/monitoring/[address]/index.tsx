@@ -6,7 +6,7 @@ import DisplayLabel from "@components/DisplayLabel";
 import DisplayAmount from "@components/DisplayAmount";
 import { formatDate, getCarryOnQueryParams, shortenAddress, TOKEN_SYMBOL, toQueryString, normalizeTokenSymbol } from "@utils";
 import { Address, formatUnits, zeroAddress } from "viem";
-import { useContractUrl } from "@hooks";
+import { useContractUrl, useExplorerChain } from "@hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { useSelector } from "react-redux";
@@ -35,8 +35,9 @@ export default function PositionDetail() {
 
 	const position = positions.find((p) => p.position.toLowerCase() === address.toLowerCase());
 	const challengesActive = (challengesPositions?.map[address.toLowerCase() as Address] || []).filter((c) => c.status === "Active");
-	const explorerUrl = useContractUrl(String(address));
-	const ownerLink = useContractUrl(position?.owner || zeroAddress);
+	const chain = useExplorerChain();
+	const explorerUrl = useContractUrl(String(address), chain);
+	const ownerLink = useContractUrl(position?.owner || zeroAddress, chain);
 	const navigate = useNavigation();
 	const { t } = useTranslation();
 

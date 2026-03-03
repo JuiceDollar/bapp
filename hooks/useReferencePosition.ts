@@ -7,57 +7,56 @@ import { PositionQuery } from "@juicedollar/api";
 import { getApiClient } from "@utils";
 import { slice } from "../redux/slices/positions.slice";
 
+type ReferencePositionsMapping = { [collateral: string]: PositionQuery };
+type ApiReferencePositions = { num: number; collaterals: string[]; map: ReferencePositionsMapping };
+
 type ReferencePositionResult = {
 	address: Address | null;
 	price: bigint;
-	defaultPosition: PositionQuery | null | undefined;
+	referencePosition: PositionQuery | null;
 	isLoading: boolean;
 };
 
 export const useReferencePosition = (currentPosition?: PositionQuery, currentPrice?: bigint): ReferencePositionResult => {
 	const chainId = useChainId();
 	const dispatch = useDispatch<AppDispatch>();
-	const defaultPosition = useSelector((state: RootState) => state.positions.defaultPosition);
+	const referencePositions = useSelector((state: RootState) => state.positions.referencePositions);
 
 	useEffect(() => {
-		if (chainId === undefined || defaultPosition !== undefined) return;
+		if (chainId === undefined || referencePositions !== undefined) return;
 
-		const fetchDefaultPosition = async () => {
+		const fetchReferencePositions = async () => {
 			try {
 				const api = getApiClient(chainId);
-				const response = await api.get<PositionQuery>("/positions/default");
-				const position = response.data as PositionQuery;
-				dispatch(slice.actions.setDefaultPosition(position));
+				const response = await api.get<ApiReferencePositions>("/positions/reference");
+				dispatch(slice.actions.setReferencePositions(response.data.map));
 			} catch (error) {
-				console.error("Error fetching default position:", error);
-				dispatch(slice.actions.setDefaultPosition(null));
+				console.error("Error fetching reference positions:", error);
+				dispatch(slice.actions.setReferencePositions(null));
 			}
 		};
 
-		fetchDefaultPosition();
-	}, [chainId, defaultPosition, dispatch]);
+		fetchReferencePositions();
+	}, [chainId, referencePositions, dispatch]);
 
 	return useMemo(() => {
-		const isLoading = defaultPosition === undefined;
+		const isLoading = referencePositions === undefined;
 
 		if (!currentPosition || currentPrice === undefined) {
-			return { address: null, price: 0n, defaultPosition, isLoading };
+			return { address: null, price: 0n, referencePosition: null, isLoading };
 		}
 
-		if (
-			defaultPosition &&
-			defaultPosition.collateral.toLowerCase() === currentPosition.collateral.toLowerCase() &&
-			BigInt(defaultPosition.price) > currentPrice &&
-			defaultPosition.principal
-		) {
+		const ref = referencePositions?.[currentPosition.collateral.toLowerCase()];
+
+		if (ref && BigInt(ref.price) >= currentPrice) {
 			return {
-				address: defaultPosition.position as Address,
-				price: BigInt(defaultPosition.price),
-				defaultPosition,
+				address: ref.position as Address,
+				price: BigInt(ref.price),
+				referencePosition: ref,
 				isLoading,
 			};
 		}
 
-		return { address: null, price: 0n, defaultPosition, isLoading };
-	}, [currentPosition, currentPrice, defaultPosition]);
+		return { address: null, price: 0n, referencePosition: null, isLoading };
+	}, [currentPosition, currentPrice, referencePositions]);
 };

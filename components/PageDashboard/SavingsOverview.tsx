@@ -8,7 +8,7 @@ import { formatUnits } from "@ethersproject/units";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
-import { useContractUrl } from "@hooks";
+import { useContractUrl, useExplorerChain } from "@hooks";
 
 const StatsBox = ({ title, value, isLast }: { title: string; value?: string | React.ReactNode; isLast?: boolean }) => {
 	return (
@@ -24,7 +24,8 @@ const SavingsOverview = () => {
 	const rate = savingsInfo?.rate;
 	const totalInterest = savingsInfo?.totalInterest;
 	const chainId = useChainId();
-	const addressSavingsGateway = useContractUrl(ADDRESS[chainId].savingsGateway);
+	const chain = useExplorerChain();
+	const addressSavingsGateway = useContractUrl(ADDRESS[chainId].savingsGateway, chain);
 	const { t } = useTranslation();
 
 	const { data: totalSavings = 0n } = useReadContract({

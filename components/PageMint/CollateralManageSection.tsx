@@ -366,7 +366,7 @@ export const CollateralManageSection = () => {
 									{t(isAdd ? "mint.available_to_add" : "mint.available_to_remove")}:
 								</span>
 								<button className="text-text-labelButton font-extrabold" onClick={isAdd ? handleAddMax : handleRemoveMax}>
-									{formatUnits(isAdd ? walletBalance : maxToRemove, position.collateralDecimals)}{" "}
+									{formatCurrency(formatUnits(isAdd ? walletBalance : maxToRemove, position.collateralDecimals), 3, 3)}{" "}
 									{normalizeTokenSymbol(position.collateralSymbol)}
 								</button>
 							</div>

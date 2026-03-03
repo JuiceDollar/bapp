@@ -20,7 +20,7 @@ import { ADDRESS } from "@juicedollar/jusd";
 import { mainnet, testnet } from "@config";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
-import { getAmountLended, getRetainedReserve } from "../../utils/loanCalculations";
+import { getAmountLended, getRetainedReserve, walletAmountToDebtReduction } from "../../utils/loanCalculations";
 
 enum StrategyKey {
 	ADD_COLLATERAL = "addCollateral",
@@ -32,12 +32,14 @@ interface AdjustLoanProps {
 	position: PositionQuery;
 	collateralBalance: bigint;
 	currentDebt: bigint;
+	collateralRequirement: bigint;
 	liqPrice: bigint;
 	principal: bigint;
 	currentPosition: SolverPosition;
 	walletBalance: bigint;
 	jusdAllowance: bigint;
 	jusdBalance: bigint;
+	collateralAllowance: bigint;
 	refetchAllowance: () => void;
 	onSuccess: () => void;
 	onFullRepaySuccess: () => void;
@@ -50,12 +52,14 @@ export const AdjustLoan = ({
 	position,
 	collateralBalance,
 	currentDebt,
+	collateralRequirement,
 	liqPrice,
 	principal,
 	currentPosition,
 	walletBalance,
 	jusdAllowance,
 	jusdBalance,
+	collateralAllowance,
 	refetchAllowance,
 	onSuccess,
 	onFullRepaySuccess,
@@ -92,32 +96,45 @@ export const AdjustLoan = ({
 
 	const hasAnyStrategy = strategies[StrategyKey.ADD_COLLATERAL];
 
-	const rawMaxDebt = (BigInt(position.price) * collateralBalance) / BigInt(1e18);
+	const rawMaxDebt = (liqPrice * collateralBalance) / BigInt(1e18);
 	const maxDebtAtCurrentParams = rawMaxDebt - rawMaxDebt / 10000n; // 0.01% buffer for precision
-	const availableWithoutAdjustment = maxDebtAtCurrentParams > currentDebt ? maxDebtAtCurrentParams - currentDebt : 0n;
+	const availableWithoutAdjustment = maxDebtAtCurrentParams > collateralRequirement ? maxDebtAtCurrentParams - collateralRequirement : 0n;
 
 	const maxDelta = useMemo(() => {
-		if (!isIncrease) return currentDebt;
+		if (!isIncrease) return getAmountLended(currentDebt, position.reserveContribution);
 		if (!hasAnyStrategy) return availableWithoutAdjustment;
 		const maxCollateral = strategies[StrategyKey.ADD_COLLATERAL] ? collateralBalance + walletBalance : collateralBalance;
 		const rawMaxDebtStrategy = (liqPrice * maxCollateral) / BigInt(1e18);
 		const maxDebt = rawMaxDebtStrategy - rawMaxDebtStrategy / 10000n;
 		const deltaFromStrategies = maxDebt > currentDebt ? maxDebt - currentDebt : 0n;
 		return deltaFromStrategies > availableWithoutAdjustment ? deltaFromStrategies : availableWithoutAdjustment;
-	}, [isIncrease, hasAnyStrategy, strategies, liqPrice, collateralBalance, currentDebt, walletBalance, availableWithoutAdjustment]);
+	}, [
+		isIncrease,
+		hasAnyStrategy,
+		strategies,
+		liqPrice,
+		collateralBalance,
+		currentDebt,
+		walletBalance,
+		availableWithoutAdjustment,
+		position.reserveContribution,
+	]);
 
 	const delta = BigInt(deltaAmount || 0);
+	const debtReduction = !isIncrease && delta > 0n ? walletAmountToDebtReduction(delta, position.reserveContribution) : 0n;
+
 	const showStrategyOptions = isIncrease && delta > availableWithoutAdjustment;
 	const FULL_REPAY_THRESHOLD = currentDebt / 1000n;
-	const isFullRepay = !isIncrease && delta > 0n && (delta >= currentDebt || currentDebt - delta <= FULL_REPAY_THRESHOLD);
+	const isFullRepay = !isIncrease && delta > 0n && (debtReduction >= currentDebt || currentDebt - debtReduction <= FULL_REPAY_THRESHOLD);
 
 	useEffect(() => {
 		if (!deltaAmount) return setOutcome(null);
 		try {
-			const delta = BigInt(deltaAmount);
-			if (delta === 0n) return setOutcome(null);
+			const walletInput = BigInt(deltaAmount);
+			if (walletInput === 0n) return setOutcome(null);
 			if (!isIncrease) {
-				const isFullRepayNow = delta >= currentDebt || currentDebt - delta <= currentDebt / 1000n;
+				const debtRed = walletAmountToDebtReduction(walletInput, position.reserveContribution);
+				const isFullRepayNow = debtRed >= currentDebt || currentDebt - debtRed <= currentDebt / 1000n;
 				if (isFullRepayNow) {
 					return setOutcome({
 						next: {
@@ -133,10 +150,11 @@ export const AdjustLoan = ({
 						isValid: true,
 					});
 				}
-				return setOutcome(solveManage(currentPosition, Target.LOAN, Strategy.KEEP_COLLATERAL, currentDebt - delta));
+				return setOutcome(solveManage(currentPosition, Target.LOAN, Strategy.KEEP_COLLATERAL, currentDebt - debtRed));
 			}
+			const delta = walletInput;
 			const newDebt = currentDebt + delta;
-			const maxDebtNoAdjust = (BigInt(position.price) * collateralBalance) / BigInt(1e18);
+			const maxDebtNoAdjust = (liqPrice * collateralBalance) / BigInt(1e18);
 			const canBorrowWithoutAdjustment = newDebt <= maxDebtNoAdjust;
 			if (!strategies[StrategyKey.ADD_COLLATERAL] && !canBorrowWithoutAdjustment) return setOutcome(null);
 			if (canBorrowWithoutAdjustment) {
@@ -144,7 +162,7 @@ export const AdjustLoan = ({
 					next: {
 						collateral: collateralBalance,
 						debt: newDebt,
-						liqPrice: BigInt(position.price),
+						liqPrice,
 						expiration: currentPosition.expiration,
 					},
 					deltaCollateral: 0n,
@@ -159,7 +177,7 @@ export const AdjustLoan = ({
 		} catch {
 			setOutcome(null);
 		}
-	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, collateralBalance, liqPrice, position.price]);
+	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, collateralBalance, liqPrice]);
 
 	const repayAmount = useMemo(() => (!outcome || outcome.deltaDebt >= 0n ? 0n : -outcome.deltaDebt), [outcome]);
 
@@ -169,20 +187,41 @@ export const AdjustLoan = ({
 			return;
 		}
 
-		const delta = BigInt(deltaAmount || 0);
-		const error =
-			repayAmount > jusdBalance
-				? t("mint.insufficient_balance", { symbol: position.stablecoinSymbol })
-				: delta > maxDelta && maxDelta > 0n
-				? t("mint.error.amount_greater_than_max_to_remove")
-				: null;
+		const walletInput = BigInt(deltaAmount);
+		const error = walletInput > maxDelta && maxDelta > 0n ? t("mint.error.amount_greater_than_max_to_remove") : null;
 
 		setDeltaAmountError(error);
-	}, [deltaAmount, isIncrease, maxDelta, repayAmount, jusdBalance, position.stablecoinSymbol, t]);
-	const needsApproval = repayAmount > 0n && jusdAllowance < repayAmount;
+	}, [deltaAmount, isIncrease, maxDelta, t]);
+
+	const jusdInsufficientError =
+		!isIncrease && delta > 0n && delta > jusdBalance ? t("mint.insufficient_balance", { symbol: position.stablecoinSymbol }) : null;
+	const collateralDepositAmount = outcome?.deltaCollateral && outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
+	const insufficientCollateral = collateralDepositAmount > 0n && collateralDepositAmount > walletBalance;
+	const needsCollateralApproval =
+		!isNativeWrappedPosition &&
+		collateralDepositAmount > 0n &&
+		!insufficientCollateral &&
+		collateralAllowance < collateralDepositAmount;
+	const needsJusdApproval = !isIncrease && delta > 0n && jusdAllowance < delta;
+	const needsApproval = needsCollateralApproval || needsJusdApproval;
 	const handleMaxClick = () => setDeltaAmount(maxDelta.toString());
 
+	const handleApproveCollateral = async () => {
+		if (collateralDepositAmount <= 0n) return;
+		setIsTxOnGoing(true);
+		await approveToken({
+			tokenAddress: position.collateral as Address,
+			spender: position.position as Address,
+			amount: collateralDepositAmount * 2n,
+			chainId: chainId as typeof mainnet.id | typeof testnet.id,
+			t,
+			onSuccess: refetchAllowance,
+		});
+		setIsTxOnGoing(false);
+	};
+
 	const handleApprove = async () => {
+		if (needsCollateralApproval) return handleApproveCollateral();
 		if (repayAmount <= 0n) return;
 		setIsTxOnGoing(true);
 		await approveToken({
@@ -251,6 +290,7 @@ export const AdjustLoan = ({
 					}
 				/>
 				<ErrorDisplay error={deltaAmountError} />
+				{jusdInsufficientError && <div className="ml-1 text-red-500 text-sm">{jusdInsufficientError}</div>}
 			</div>
 
 			{showStrategyOptions && !hasAnyStrategy && (
@@ -277,6 +317,10 @@ export const AdjustLoan = ({
 				</div>
 			)}
 
+			{insufficientCollateral && (
+				<div className="ml-1 text-text-warning text-sm">{t("common.error.insufficient_balance", { symbol: collateralSymbol })}</div>
+			)}
+
 			{isIncrease && (
 				<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
 					{strategies[StrategyKey.ADD_COLLATERAL] && outcome && (
@@ -298,23 +342,20 @@ export const AdjustLoan = ({
 						</div>
 					)}
 					<div className="flex justify-between text-sm">
-						<span className="text-text-muted2">{t("mint.amount_lended")}</span>
-						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(getAmountLended(principal + delta, position.reserveContribution), 18), 2, 2)} JUSD
+						<span className="text-text-muted2">{t("mint.you_receive_now")}</span>
+						<span className="font-medium text-green-600 dark:text-green-400">
+							+{formatCurrency(formatUnits(getAmountLended(delta, position.reserveContribution), 18), 2, 2)} JUSD
 						</span>
 					</div>
 					<div className="flex justify-between text-sm">
-						<span className="text-text-muted2">{t("mint.retained_reserve")}</span>
+						<span className="text-text-muted2">{t("mint.goes_to_reserve")}</span>
 						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(getRetainedReserve(principal + delta, position.reserveContribution), 18), 2, 2)}{" "}
-							JUSD
+							{formatCurrency(formatUnits(getRetainedReserve(delta, position.reserveContribution), 18), 2, 2)} JUSD
 						</span>
 					</div>
 					<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
-						<span className="text-text-muted2 font-medium">{t("mint.total")}</span>
-						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(currentDebt + delta, 18), 2, 2)} JUSD
-						</span>
+						<span className="font-bold text-text-title">{t("mint.new_total_debt")}</span>
+						<span className="font-bold text-text-title">{formatCurrency(formatUnits(currentDebt + delta, 18), 2, 2)} JUSD</span>
 					</div>
 				</div>
 			)}
@@ -331,37 +372,23 @@ export const AdjustLoan = ({
 							</div>
 						)}
 						<div className="flex justify-between text-sm">
-							<span className="text-text-muted2">{t("mint.amount_lended")}</span>
-							<span className="font-medium text-text-title">
-								{formatCurrency(
-									formatUnits(
-										delta >= principal ? 0n : getAmountLended(principal - delta, position.reserveContribution),
-										18
-									),
-									2,
-									2
-								)}{" "}
-								JUSD
-							</span>
+							<span className="text-text-muted2">{t("mint.you_pay_from_wallet")}</span>
+							<span className="font-medium text-text-title">{formatCurrency(formatUnits(delta, 18), 2, 2)} JUSD</span>
 						</div>
 						<div className="flex justify-between text-sm">
-							<span className="text-text-muted2">{t("mint.retained_reserve")}</span>
+							<span className="text-text-muted2">{t("mint.reserve_covers")}</span>
 							<span className="font-medium text-text-title">
-								{formatCurrency(
-									formatUnits(
-										delta >= principal ? 0n : getRetainedReserve(principal - delta, position.reserveContribution),
-										18
-									),
-									2,
-									2
-								)}{" "}
-								JUSD
+								{formatCurrency(formatUnits(debtReduction - delta, 18), 2, 2)} JUSD
 							</span>
 						</div>
 						<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
-							<span className="text-text-muted2 font-medium">{t("mint.total")}</span>
-							<span className="font-medium text-text-title">
-								{formatCurrency(formatUnits(delta >= currentDebt ? 0n : currentDebt - delta, 18), 2, 2)} JUSD
+							<span className="text-text-title">{t("mint.debt_reduction")}</span>
+							<span className="text-red-500">-{formatCurrency(formatUnits(debtReduction, 18), 2, 2)} JUSD</span>
+						</div>
+						<div className="flex justify-between text-sm">
+							<span className="font-bold text-text-title">{t("mint.new_debt")}</span>
+							<span className="font-bold text-text-title">
+								{formatCurrency(formatUnits(isFullRepay ? 0n : currentDebt - debtReduction, 18), 2, 2)} JUSD
 							</span>
 						</div>
 					</div>
@@ -384,6 +411,8 @@ export const AdjustLoan = ({
 					!outcome.isValid ||
 					isTxOnGoing ||
 					Boolean(deltaAmountError) ||
+					Boolean(jusdInsufficientError) ||
+					insufficientCollateral ||
 					(isIncrease && isInCooldown) ||
 					(!isIncrease && isFullRepay && isInCooldown)
 				}
@@ -393,13 +422,9 @@ export const AdjustLoan = ({
 					? t("common.approve")
 					: isFullRepay
 					? t("mint.confirm_close_position")
-					: delta === 0n
-					? isIncrease
-						? t("mint.lend")
-						: t("mint.repay")
 					: !isIncrease
-					? `${t("mint.repay")} ${formatCurrency(formatUnits(delta, 18), 2, 2)} ${position.stablecoinSymbol}`
-					: `${t("mint.lend")} ${formatCurrency(formatUnits(delta, 18), 2, 2)} ${position.stablecoinSymbol}`}
+					? t("mint.repay")
+					: t("mint.lend")}
 			</Button>
 		</div>
 	);
