@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "next-i18next";
 import { Address, formatUnits } from "viem";
-import { formatCurrency, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS, NATIVE_GAS_BUFFER } from "@utils";
+import { formatCurrency, normalizeTokenSymbol, NATIVE_GAS_BUFFER } from "@utils";
+import { isNativeWrappedToken } from "../../utils/tokenDisplay";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
 import { RemoveCircleOutlineIcon } from "@components/SvgComponents/remove_circle_outline";
 import { SvgIconButton } from "./PlusMinusButtons";
 import Button from "@components/Button";
 import { PositionQuery } from "@juicedollar/api";
-import { SolverPosition } from "../../utils/positionSolver";
 import { useAccount, useChainId } from "wagmi";
 import { PositionV2ABI } from "@juicedollar/jusd";
 import { waitForTransactionReceipt } from "wagmi/actions";
@@ -33,7 +33,6 @@ interface AdjustLiqPriceProps {
 	positionPrice: bigint;
 	liqPrice: bigint;
 	priceDecimals: number;
-	currentPosition: SolverPosition;
 	isInCooldown: boolean;
 	cooldownRemainingFormatted: string | null;
 	cooldownEndsAt?: Date;
@@ -76,14 +75,15 @@ export const AdjustLiqPrice = ({
 	const [isTxOnGoing, setIsTxOnGoing] = useState(false);
 	const [activeStrategy, setActiveStrategy] = useState<StrategyKey | null>(null);
 
-	const collateralDecimals = position.collateralDecimals || 18;
-	const collateralSymbol = normalizeTokenSymbol(position.collateralSymbol || "");
-	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol?.toLowerCase() || "");
-	const maxWalletForAdd = isNativeWrappedPosition
-		? walletBalance > NATIVE_GAS_BUFFER
+	const collateralDecimals = position.collateralDecimals;
+	const collateralSymbol = normalizeTokenSymbol(position.collateralSymbol);
+	const isNativeWrappedPosition = isNativeWrappedToken(position.collateralSymbol);
+	const maxWalletForAdd =
+		isNativeWrappedPosition && walletBalance > NATIVE_GAS_BUFFER
 			? walletBalance - NATIVE_GAS_BUFFER
-			: 0n
-		: walletBalance;
+			: isNativeWrappedPosition
+			? 0n
+			: walletBalance;
 
 	const PRICE_SCALE = BigInt(10 ** priceDecimals);
 	const pairNotation = `${collateralSymbol}/${position.stablecoinSymbol}`;

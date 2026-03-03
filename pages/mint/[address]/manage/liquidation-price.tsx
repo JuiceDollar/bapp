@@ -59,7 +59,6 @@ export default function ManageLiquidationPrice() {
 						positionPrice={positionPrice}
 						liqPrice={liqPrice}
 						priceDecimals={priceDecimals}
-						currentPosition={currentPosition}
 						isInCooldown={isInCooldown}
 						cooldownRemainingFormatted={cooldownRemainingFormatted}
 						cooldownEndsAt={cooldownEndsAt}

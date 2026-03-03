@@ -187,7 +187,7 @@ export const AdjustLoan = ({
 			return;
 		}
 
-		const walletInput = BigInt(deltaAmount || 0);
+		const walletInput = BigInt(deltaAmount);
 		const error =
 			walletInput > jusdBalance
 				? t("mint.insufficient_balance", { symbol: position.stablecoinSymbol })
