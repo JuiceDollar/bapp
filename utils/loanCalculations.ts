@@ -7,6 +7,11 @@ export const getRetainedReserve = (principal: bigint, reserveContribution: numbe
 export const getAmountLended = (principal: bigint, reserveContribution: number): bigint =>
 	principal - getRetainedReserve(principal, reserveContribution);
 
+export const walletAmountToDebtReduction = (walletAmount: bigint, reserveContribution: number): bigint => {
+	const rc = BigInt(reserveContribution);
+	return rc < 1_000_000n ? (walletAmount * 1_000_000n) / (1_000_000n - rc) : walletAmount;
+};
+
 export type LoanDetails = {
 	loanAmount: bigint;
 	apr: number;

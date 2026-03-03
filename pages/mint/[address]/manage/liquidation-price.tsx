@@ -22,11 +22,17 @@ export default function ManageLiquidationPrice() {
 		cooldownRemainingFormatted,
 		cooldownEndsAt,
 		currentPosition,
+		collateralBalance,
+		currentDebt,
+		principal,
+		walletBalance,
+		jusdBalance,
+		jusdAllowance,
+		collateralAllowance,
 		refetch,
-		isLoading,
 	} = usePositionManageData(addressQuery);
 
-	if (isLoading || !position || !currentPosition) {
+	if (!position || !currentPosition) {
 		return (
 			<div className="md:mt-8 flex justify-center">
 				<AppCard className="max-w-lg w-full p-6 flex flex-col gap-y-6">
@@ -53,10 +59,16 @@ export default function ManageLiquidationPrice() {
 						positionPrice={positionPrice}
 						liqPrice={liqPrice}
 						priceDecimals={priceDecimals}
-						currentPosition={currentPosition}
 						isInCooldown={isInCooldown}
 						cooldownRemainingFormatted={cooldownRemainingFormatted}
 						cooldownEndsAt={cooldownEndsAt}
+						collateralBalance={collateralBalance}
+						currentDebt={currentDebt}
+						principal={principal}
+						walletBalance={walletBalance}
+						jusdBalance={jusdBalance}
+						jusdAllowance={jusdAllowance}
+						collateralAllowance={collateralAllowance}
 						refetch={refetch}
 						onBack={() => router.push(`/mint/${addressQuery}/manage`)}
 						onSuccess={() => router.push(`/mint/${addressQuery}/manage`)}
