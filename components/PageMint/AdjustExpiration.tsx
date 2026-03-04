@@ -285,7 +285,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 			{!targetPosition && <div className="text-xs text-text-muted2 px-4">{t("mint.no_extension_target_available")}</div>}
 			{!isOwner ? (
 				<Button className="text-lg leading-snug !font-extrabold" disabled>
-					Not your position
+					{t("mint.not_your_position")}
 				</Button>
 			) : !isNativeWrappedPosition && !collateralAllowance ? (
 				<Button

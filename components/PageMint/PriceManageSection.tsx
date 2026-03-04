@@ -238,7 +238,7 @@ export const PriceManageSection = () => {
 				isLoading={isTxOnGoing}
 				disabled={!isOwner || Boolean(error) || !newPrice || newPrice === currentPrice.toString() || minPrice === maxPrice}
 			>
-				{!isOwner ? "Not your position" : t("mint.adjust_price")}
+				{!isOwner ? t("mint.not_your_position") : t("mint.adjust_price")}
 			</Button>
 
 			<DetailsExpandablePanel

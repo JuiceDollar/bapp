@@ -321,7 +321,7 @@ export const AdjustLiqPrice = ({
 		(activeStrategy === StrategyKey.REPAY_DEBT && !canAffordRepayDebt);
 
 	const getButtonLabel = () => {
-		if (!isOwner) return "Not your position";
+		if (!isOwner) return t("mint.not_your_position");
 		if (needsApproval) return t("common.approve");
 		if (delta === 0n) return t("mint.set_new_price");
 		if (activeStrategy === StrategyKey.ADD_COLLATERAL) return `${t("mint.add_collateral")} & ${t("mint.set_new_price")}`;

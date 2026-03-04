@@ -233,6 +233,8 @@
 		"adjust_liq_price_btn": "Modifica prezzo di liquidazione",
 		"close_position": "Chiudi Posizione",
 		"cooldown_ends_at": "Termina: {{date}}",
+		"not_your_position": "Non è la tua posizione",
+		"non_owner_repay_info": "Puoi rimborsare il debito di questa posizione. Solo il proprietario può prelevare il collaterale.",
 		"cooldown_please_wait": "Questa posizione è in periodo di attesa, attendi ({{remaining}})",
 		"cooldown_active": "Periodo di attesa attivo",
 		"cooldown_increase_info": "Dopo aver aumentato il prezzo di liquidazione, si applica un periodo di attesa di 3 giorni prima di poter aumentare il prestito.",

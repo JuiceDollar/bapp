@@ -406,11 +406,14 @@ export const AdjustLoan = ({
 				</div>
 			)}
 
+			{!isIncrease && !isOwner && delta > 0n && <div className="text-xs text-text-muted2 px-4">{t("mint.non_owner_repay_info")}</div>}
+
 			<Button
 				className="w-full text-lg leading-snug !font-extrabold"
 				onClick={needsApproval ? handleApprove : handleExecute}
 				disabled={
 					(isIncrease && !isOwner) ||
+					(isFullRepay && !isOwner) ||
 					!outcome ||
 					!outcome.isValid ||
 					isTxOnGoing ||
@@ -422,8 +425,8 @@ export const AdjustLoan = ({
 				}
 				isLoading={isTxOnGoing}
 			>
-				{isIncrease && !isOwner
-					? "Not your position"
+				{(isIncrease && !isOwner) || (isFullRepay && !isOwner)
+					? t("mint.not_your_position")
 					: needsApproval
 					? t("common.approve")
 					: isFullRepay

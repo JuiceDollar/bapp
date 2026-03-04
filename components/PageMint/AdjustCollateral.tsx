@@ -354,7 +354,7 @@ export const AdjustCollateral = ({
 		(!isIncrease && collateralBalance <= requiredCollateral && !isClosingPosition);
 
 	const getButtonLabel = () => {
-		if (!isOwner) return "Not your position";
+		if (!isOwner) return t("mint.not_your_position");
 		if (needsApproval) return t("common.approve");
 		if (delta === 0n) return isIncrease ? t("common.add") : t("common.remove");
 		const formattedDelta = formatCurrency(formatUnits(delta, collateralDecimals), 4, 4);

@@ -414,7 +414,7 @@ export const BorrowedManageSection = () => {
 					disabled={!amount || !BigInt(amount) || Boolean(error) || (isBorrowMore && !isOwner)}
 				>
 					{isBorrowMore && !isOwner
-						? "Not your position"
+						? t("mint.not_your_position")
 						: t(
 								isBorrowMore
 									? "mint.borrow_more"
