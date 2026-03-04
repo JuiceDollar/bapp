@@ -178,7 +178,7 @@ export const AdjustCollateral = ({
 
 	const isBelowMinCollateral = (col: bigint) => col > 0n && col < BigInt(position.minimumCollateral || 0) && newDebt > 0n;
 
-	const formatValue = (value: bigint) => formatCurrency(formatUnits(value, collateralDecimals), 4, 4) + " " + collateralSymbol;
+	const formatValue = (value: bigint) => formatCurrency(formatUnits(value, collateralDecimals), 4, 8) + " " + collateralSymbol;
 
 	const maxRemovable = hasAnyStrategy || maxRemovableWithoutAdjustment === 0n ? collateralBalance : maxRemovableWithoutAdjustment;
 
@@ -353,7 +353,7 @@ export const AdjustCollateral = ({
 	const getButtonLabel = () => {
 		if (needsApproval) return t("common.approve");
 		if (delta === 0n) return isIncrease ? t("common.add") : t("common.remove");
-		const formattedDelta = formatCurrency(formatUnits(delta, collateralDecimals), 4, 4);
+		const formattedDelta = formatCurrency(formatUnits(delta, collateralDecimals), 4, 8);
 		if (strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n) {
 			const formattedRepay = formatCurrency(formatUnits(calculatedRepayAmount, 18), 2, 2);
 			if (isClosingPosition) {
@@ -402,7 +402,7 @@ export const AdjustCollateral = ({
 									{formatCurrency(
 										formatUnits(isIncrease ? maxWalletForAdd : collateralBalance, collateralDecimals),
 										4,
-										4
+										8
 									)}{" "}
 									{collateralSymbol}
 								</div>
@@ -483,13 +483,13 @@ export const AdjustCollateral = ({
 					<span className="text-text-muted2">{isIncrease ? t("mint.you_add") : t("mint.you_remove")}</span>
 					<span className={`font-medium ${isIncrease ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
 						{isIncrease ? "+" : "-"}
-						{formatCurrency(formatUnits(delta, collateralDecimals), 4, 4)} {collateralSymbol}
+						{formatCurrency(formatUnits(delta, collateralDecimals), 4, 8)} {collateralSymbol}
 					</span>
 				</div>
 				<div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
 					<span className="font-bold text-text-title">{t("mint.new_collateral")}</span>
 					<span className="font-bold text-text-title">
-						{formatCurrency(formatUnits(newCollateral, collateralDecimals), 4, 4)} {collateralSymbol}
+						{formatCurrency(formatUnits(newCollateral, collateralDecimals), 4, 8)} {collateralSymbol}
 					</span>
 				</div>
 			</div>

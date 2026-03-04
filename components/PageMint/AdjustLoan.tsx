@@ -375,15 +375,17 @@ export const AdjustLoan = ({
 							<span className="text-text-muted2">{t("mint.you_pay_from_wallet")}</span>
 							<span className="font-medium text-text-title">{formatCurrency(formatUnits(delta, 18), 2, 2)} JUSD</span>
 						</div>
-						<div className="flex justify-between text-sm">
-							<span className="text-text-muted2">{t("mint.reserve_covers")}</span>
-							<span className="font-medium text-text-title">
-								{formatCurrency(formatUnits(debtReduction - delta, 18), 2, 2)} JUSD
-							</span>
-						</div>
+						{debtReduction - delta > 0n && (
+							<div className="flex justify-between text-sm">
+								<span className="text-text-muted2">{t("mint.reserve_covers")}</span>
+								<span className="font-medium text-green-600 dark:text-green-400">
+									+{formatCurrency(formatUnits(debtReduction - delta, 18), 2, 2)} JUSD
+								</span>
+							</div>
+						)}
 						<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
-							<span className="text-text-title">{t("mint.debt_reduction")}</span>
-							<span className="text-red-500">-{formatCurrency(formatUnits(debtReduction, 18), 2, 2)} JUSD</span>
+							<span className="font-bold text-text-title">{t("mint.debt_reduction")}</span>
+							<span className="font-bold text-red-500">-{formatCurrency(formatUnits(debtReduction, 18), 2, 2)} JUSD</span>
 						</div>
 						<div className="flex justify-between text-sm">
 							<span className="font-bold text-text-title">{t("mint.new_debt")}</span>
