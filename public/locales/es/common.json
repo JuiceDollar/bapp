@@ -245,6 +245,7 @@
 		"tooltip_remove_liq_price": "Remover precio de liquidación",
 		"tooltip_remove_repay": "Quitar opción de pago",
 		"close_position": "Cerrar Posición",
+		"repay_and_close_position": "Pagar y Cerrar Posición",
 		"add_collateral_to_increase_limit": "Agrega más colateral para aumentar el límite",
 		"withdraw_all_collateral": "Retirar todo el colateral",
 		"collateral_returned": "Colateral devuelto",

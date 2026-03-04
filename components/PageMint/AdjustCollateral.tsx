@@ -361,9 +361,7 @@ export const AdjustCollateral = ({
 		if (strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n) {
 			const formattedRepay = formatCurrency(formatUnits(calculatedRepayAmount, 18), 2, 2);
 			if (isClosingPosition) {
-				return `${t("mint.repay")} ${formattedRepay} ${position.stablecoinSymbol}, ${t("common.remove")} & ${t(
-					"mint.close_position"
-				)}`;
+				return t("mint.repay_and_close_position");
 			}
 			return `${t("mint.repay")} ${formattedRepay} ${position.stablecoinSymbol} & ${t(
 				"common.remove"

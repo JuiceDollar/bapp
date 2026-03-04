@@ -245,6 +245,7 @@
 		"tooltip_remove_liq_price": "Retirer le prix de liquidation",
 		"tooltip_remove_repay": "Retirer l'option de remboursement",
 		"close_position": "Fermer la Position",
+		"repay_and_close_position": "Rembourser et fermer la position",
 		"add_collateral_to_increase_limit": "Ajoutez plus de garantie pour augmenter la limite",
 		"withdraw_all_collateral": "Retirer toute la garantie",
 		"collateral_returned": "Garantie retournée",

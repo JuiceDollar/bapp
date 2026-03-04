@@ -232,6 +232,7 @@
 		"price_below_collateral_limit": "Il prezzo non può scendere sotto {{min}} {{symbol}} (limite di garanzia).",
 		"adjust_liq_price_btn": "Modifica prezzo di liquidazione",
 		"close_position": "Chiudi Posizione",
+		"repay_and_close_position": "Rimborsa e chiudi posizione",
 		"cooldown_ends_at": "Termina: {{date}}",
 		"not_your_position": "Non sei il proprietario di questa posizione",
 		"non_owner_repay_info": "Puoi rimborsare il debito di questa posizione. Solo il proprietario può prelevare il collaterale.",
