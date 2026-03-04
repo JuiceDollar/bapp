@@ -150,7 +150,11 @@ export const AdjustLiqPrice = ({
 	}, [needsStrategy]);
 
 	const handleSliderChange = (val: string) => {
-		const newPriceValue = val ? BigInt(val) : liqPrice;
+		if (!val) {
+			setDeltaAmount("");
+			return;
+		}
+		const newPriceValue = BigInt(val);
 		if (!isIncrease && newPriceValue >= liqPrice) {
 			setDeltaAmount("");
 			return;
@@ -346,7 +350,7 @@ export const AdjustLiqPrice = ({
 
 				{showSlider && (
 					<SliderInputOutlined
-						value={newPriceForDisplay.toString()}
+						value={delta > 0n ? newPriceForDisplay.toString() : ""}
 						onChange={handleSliderChange}
 						min={isIncrease ? liqPrice : sliderDecreaseMin}
 						max={isIncrease ? maxPriceIncrease : liqPrice}

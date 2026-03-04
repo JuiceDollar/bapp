@@ -34,10 +34,15 @@ export function BigNumberInput({
 	hideTrailingZeros,
 }: BigNumberInputProps) {
 	const inputRef = React.useRef<any>(null);
+	const inputValueRef = React.useRef("");
 
 	const [inputValue, setInputvalue] = React.useState("");
 
-	// update current value
+	// Keep ref in sync so the effect below can read the latest inputValue without depending on it
+	inputValueRef.current = inputValue;
+
+	// Sync external value prop → local inputValue. Must NOT depend on inputValue
+	// to avoid overwriting user keystrokes mid-typing.
 	React.useEffect(() => {
 		if (!value) {
 			setInputvalue("");
@@ -45,7 +50,7 @@ export function BigNumberInput({
 			let parseInputValue;
 
 			try {
-				parseInputValue = parseUnits(inputValue || "0", decimals);
+				parseInputValue = parseUnits(inputValueRef.current || "0", decimals);
 			} catch {
 				// do nothing
 			}
@@ -58,7 +63,7 @@ export function BigNumberInput({
 				setInputvalue(formatted);
 			}
 		}
-	}, [value, decimals, inputValue, hideTrailingZeros]);
+	}, [value, decimals, hideTrailingZeros]);
 
 	React.useEffect(() => {
 		if (!renderInput && autofocus && inputRef) {
