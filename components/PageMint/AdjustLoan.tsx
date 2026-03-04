@@ -20,6 +20,7 @@ import { ADDRESS } from "@juicedollar/jusd";
 import { mainnet, testnet } from "@config";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
+import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { getAmountLended, getRetainedReserve, walletAmountToDebtReduction } from "../../utils/loanCalculations";
 
 enum StrategyKey {
@@ -71,6 +72,7 @@ export const AdjustLoan = ({
 	const router = useRouter();
 	const chainId = useChainId();
 	const { address: userAddress } = useAccount();
+	const isOwner = useIsPositionOwner(position);
 	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol?.toLowerCase() || "");
 	const [isTxOnGoing, setIsTxOnGoing] = useState(false);
 	const [deltaAmount, setDeltaAmount] = useState<string>("");
@@ -407,6 +409,7 @@ export const AdjustLoan = ({
 				className="w-full text-lg leading-snug !font-extrabold"
 				onClick={needsApproval ? handleApprove : handleExecute}
 				disabled={
+					(isIncrease && !isOwner) ||
 					!outcome ||
 					!outcome.isValid ||
 					isTxOnGoing ||
@@ -418,7 +421,9 @@ export const AdjustLoan = ({
 				}
 				isLoading={isTxOnGoing}
 			>
-				{needsApproval
+				{isIncrease && !isOwner
+					? "Not your position"
+					: needsApproval
 					? t("common.approve")
 					: isFullRepay
 					? t("mint.confirm_close_position")
