@@ -27,6 +27,7 @@ import { DetailsExpandablePanel } from "@components/PageMint/DetailsExpandablePa
 import { SvgIconButton } from "./PlusMinusButtons";
 import Link from "next/link";
 import { useContractUrl } from "../../hooks/useContractUrl";
+import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { calculateOptimalRepayAmount, calculateTimeBuffer } from "../../utils/dynamicRepayCalculations";
 import { ErrorDisplay } from "@components/ErrorDisplay";
 import { mainnet, testnet } from "@config";
@@ -45,6 +46,7 @@ export const BorrowedManageSection = () => {
 	const prices = useSelector((state: RootState) => state.prices.coingecko || {});
 	const positions = useSelector((state: RootState) => state.positions.list?.list || []);
 	const position = positions.find((p) => p.position == addressQuery);
+	const isOwner = useIsPositionOwner(position);
 
 	const { balancesByAddress, refetchBalances } = useWalletERC20Balances(
 		position
@@ -409,15 +411,17 @@ export const BorrowedManageSection = () => {
 					className="text-lg leading-snug !font-extrabold"
 					onClick={isBorrowMore ? handleBorrowMore : handlePayBack}
 					isLoading={isTxOnGoing}
-					disabled={!amount || !BigInt(amount) || Boolean(error)}
+					disabled={!amount || !BigInt(amount) || Boolean(error) || (isBorrowMore && !isOwner)}
 				>
-					{t(
-						isBorrowMore
-							? "mint.borrow_more"
-							: amount && BigInt(amount) && amount.toString() === debt.toString()
-							? "mint.pay_back_and_close"
-							: "mint.pay_back"
-					)}
+					{isBorrowMore && !isOwner
+						? "Not your position"
+						: t(
+								isBorrowMore
+									? "mint.borrow_more"
+									: amount && BigInt(amount) && amount.toString() === debt.toString()
+									? "mint.pay_back_and_close"
+									: "mint.pay_back"
+						  )}
 				</Button>
 			)}
 			<DetailsExpandablePanel

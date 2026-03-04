@@ -21,6 +21,7 @@ import { store } from "../../redux/redux.store";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { Tooltip } from "flowbite-react";
 import { approveToken } from "../../hooks/useApproveToken";
+import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { mainnet, testnet } from "@config";
 import { getAmountLended, getRetainedReserve } from "../../utils/loanCalculations";
 
@@ -70,6 +71,7 @@ export const AdjustCollateral = ({
 	const router = useRouter();
 	const chainId = useChainId() ?? WAGMI_CHAIN.id;
 	const { address: userAddress } = useAccount();
+	const isOwner = useIsPositionOwner(position);
 	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol?.toLowerCase() || "");
 	const maxWalletForAdd = isNativeWrappedPosition
 		? walletBalance > NATIVE_GAS_BUFFER
@@ -341,6 +343,7 @@ export const AdjustCollateral = ({
 	};
 
 	const isDisabled =
+		!isOwner ||
 		!deltaAmount ||
 		delta === 0n ||
 		Boolean(deltaAmountError) ||
@@ -351,6 +354,7 @@ export const AdjustCollateral = ({
 		(!isIncrease && collateralBalance <= requiredCollateral && !isClosingPosition);
 
 	const getButtonLabel = () => {
+		if (!isOwner) return "Not your position";
 		if (needsApproval) return t("common.approve");
 		if (delta === 0n) return isIncrease ? t("common.add") : t("common.remove");
 		const formattedDelta = formatCurrency(formatUnits(delta, collateralDecimals), 4, 4);

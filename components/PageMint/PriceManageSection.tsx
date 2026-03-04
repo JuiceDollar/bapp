@@ -18,6 +18,7 @@ import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
 import Button from "@components/Button";
 import Link from "next/link";
 import { useContractUrl } from "../../hooks/useContractUrl";
+import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { getLoanDetailsByCollateralAndLiqPrice } from "../../utils/loanCalculations";
 import { erc20Abi } from "viem";
 import { mainnet, testnet } from "@config";
@@ -196,6 +197,7 @@ export const PriceManageSection = () => {
 		}
 	};
 
+	const isOwner = useIsPositionOwner(position);
 	const loanDetails = getLoanDetailsByCollateralAndLiqPrice(position, collateralBalance, BigInt(newPrice || currentPrice.toString()));
 	const isMintingExhausted = availableForMinting === 0n && principal > 0n;
 
@@ -233,9 +235,9 @@ export const PriceManageSection = () => {
 				className="text-lg leading-snug !font-extrabold"
 				onClick={handleAdjustPrice}
 				isLoading={isTxOnGoing}
-				disabled={Boolean(error) || !newPrice || newPrice === currentPrice.toString() || minPrice === maxPrice}
+				disabled={!isOwner || Boolean(error) || !newPrice || newPrice === currentPrice.toString() || minPrice === maxPrice}
 			>
-				{t("mint.adjust_price")}
+				{!isOwner ? "Not your position" : t("mint.adjust_price")}
 			</Button>
 
 			<DetailsExpandablePanel
