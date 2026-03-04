@@ -231,7 +231,7 @@
 		"price_below_collateral_limit": "El precio no puede bajar de {{min}} {{symbol}} (límite de colateral).",
 		"adjust_liq_price_btn": "Ajustar precio de liquidación",
 		"cooldown_ends_at": "Finaliza: {{date}}",
-		"not_your_position": "No es tu posición",
+		"not_your_position": "No eres el propietario de esta posición",
 		"non_owner_repay_info": "Puedes pagar la deuda de esta posición. Solo el propietario puede retirar el colateral.",
 		"cooldown_please_wait": "Esta posición está en cooldown, por favor espera ({{remaining}})",
 		"cooldown_active": "Cooldown activo",

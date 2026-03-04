@@ -233,7 +233,7 @@
 		"adjust_liq_price_btn": "Adjust liquidation price",
 		"close_position": "Close Position",
 		"cooldown_ends_at": "Ends: {{date}}",
-		"not_your_position": "Not your position",
+		"not_your_position": "You don't own this position",
 		"non_owner_repay_info": "You can repay debt on this position. Only the owner can withdraw collateral.",
 		"cooldown_please_wait": "This position is in cooldown, please wait ({{remaining}})",
 		"cooldown_active": "Cooldown active",

@@ -232,7 +232,7 @@
 		"adjust_liq_price_btn": "Liquidationspreis anpassen",
 		"close_position": "Position schließen",
 		"cooldown_ends_at": "Endet: {{date}}",
-		"not_your_position": "Nicht deine Position",
+		"not_your_position": "Du besitzt diese Position nicht",
 		"non_owner_repay_info": "Du kannst die Schulden dieser Position zurückzahlen. Nur der Eigentümer kann Sicherheiten abheben.",
 		"cooldown_please_wait": "Diese Position ist in der Abkühlphase, bitte warten ({{remaining}})",
 		"cooldown_active": "Abkühlphase aktiv",
