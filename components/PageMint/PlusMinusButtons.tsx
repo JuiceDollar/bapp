@@ -25,7 +25,7 @@ export const SvgIconButton = ({
 					isSelected
 						? "text-button-textGroup-primary-text"
 						: "text-button-textGroup-secondary-text group-hover:text-button-textGroup-hover-text"
-				} text-base font-extrabold leading-tight`}
+				} text-sm font-semibold sm:text-base sm:font-extrabold leading-tight`}
 			>
 				{children}
 			</span>

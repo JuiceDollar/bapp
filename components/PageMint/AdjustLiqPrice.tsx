@@ -335,8 +335,8 @@ export const AdjustLiqPrice = ({
 		<div className="flex flex-col gap-y-4">
 			<div className="flex flex-col gap-y-3">
 				<div className="flex flex-row justify-between items-center">
-					<div className="text-lg font-bold">
-						{t("mint.adjust")} {t("mint.liquidation_price")}
+					<div className="text-base font-bold sm:text-lg leading-tight">
+						{t("mint.adjust")} <span className="whitespace-nowrap">{t("mint.liquidation_price")}</span>
 					</div>
 					<div className="flex flex-row items-center">
 						<SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
@@ -418,11 +418,15 @@ export const AdjustLiqPrice = ({
 				</div>
 			)}
 
-			<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
+			<div className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2.5 space-y-1.5 sm:px-4 sm:py-4 sm:space-y-2">
 				{activeStrategy === StrategyKey.ADD_COLLATERAL && requiredCollateralAdd > 0n && (
-					<div className="flex justify-between text-sm">
-						<span className="text-text-muted2">{t("mint.add_collateral")}</span>
-						<span className={`font-medium ${canAffordAddCollateral ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
+					<div className="flex justify-between items-center gap-3 text-xs sm:text-sm">
+						<span className="text-text-muted2 flex-shrink-0">{t("mint.add_collateral")}</span>
+						<span
+							className={`font-medium text-right flex-1 min-w-0 ${
+								canAffordAddCollateral ? "text-green-600 dark:text-green-400" : "text-red-500"
+							}`}
+						>
 							+{formatCurrency(formatUnits(requiredCollateralAdd, collateralDecimals), 4, 4)} {collateralSymbol}
 						</span>
 					</div>
@@ -430,51 +434,55 @@ export const AdjustLiqPrice = ({
 
 				{activeStrategy === StrategyKey.REPAY_DEBT && requiredDebtReduction > 0n && (
 					<>
-						<div className="flex justify-between text-sm">
-							<span className="text-text-muted2">{t("mint.you_pay_from_wallet")}</span>
-							<span className={`font-medium ${canAffordRepayDebt ? "text-text-title" : "text-red-500"}`}>
+						<div className="flex justify-between items-center gap-3 text-xs sm:text-sm">
+							<span className="text-text-muted2 flex-shrink-0">{t("mint.you_pay_from_wallet")}</span>
+							<span
+								className={`font-medium text-right flex-1 min-w-0 ${
+									canAffordRepayDebt ? "text-text-title" : "text-red-500"
+								}`}
+							>
 								{formatCurrency(formatUnits(repayWalletCost, 18), 2, 2)} {position.stablecoinSymbol}
 							</span>
 						</div>
-						<div className="flex justify-between text-sm">
-							<span className="text-text-muted2">{t("mint.reserve_covers")}</span>
-							<span className="font-medium text-text-title">
+						<div className="flex justify-between items-center gap-3 text-xs sm:text-sm">
+							<span className="text-text-muted2 flex-shrink-0">{t("mint.reserve_covers")}</span>
+							<span className="font-medium text-text-title text-right flex-1 min-w-0">
 								{formatCurrency(formatUnits(repayReserveCover, 18), 2, 2)} {position.stablecoinSymbol}
 							</span>
 						</div>
-						<div className="flex justify-between text-sm">
-							<span className="text-text-muted2">{t("mint.new_debt")}</span>
-							<span className="font-medium text-text-title">
+						<div className="flex justify-between items-center gap-3 text-xs sm:text-sm">
+							<span className="text-text-muted2 flex-shrink-0">{t("mint.new_debt")}</span>
+							<span className="font-medium text-text-title text-right flex-1 min-w-0">
 								{formatCurrency(formatUnits(repayNewDebt, 18), 2, 2)} {position.stablecoinSymbol}
 							</span>
 						</div>
 					</>
 				)}
 
-				<div className="flex justify-between text-sm">
-					<span className="text-text-muted2">{t("mint.current_liquidation_price")}</span>
-					<span className="font-medium text-text-title">
+				<div className="flex justify-between items-center gap-3 text-xs sm:text-sm">
+					<span className="text-text-muted2 flex-shrink-0">{t("mint.current_liquidation_price")}</span>
+					<span className="font-medium text-text-title text-right flex-1 min-w-0">
 						{formatCurrency(formatUnits(positionPrice, priceDecimals), 2, 2)} {pairNotation}
 					</span>
 				</div>
-				<div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
-					<span className="font-bold text-text-title">{t("mint.new_liq_price")}</span>
-					<span className="font-bold text-text-title">
+				<div className="flex justify-between items-center gap-3 text-xs sm:text-base pt-1.5 sm:pt-2 border-t border-gray-300 dark:border-gray-600">
+					<span className="font-semibold sm:font-bold text-text-title flex-shrink-0">{t("mint.new_liq_price")}</span>
+					<span className="font-semibold sm:font-bold text-text-title text-right flex-1 min-w-0">
 						{formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} {pairNotation}
 					</span>
 				</div>
 			</div>
 
 			{isIncrease && isInCooldown && (
-				<div className="text-xs text-text-muted2 px-4">
+				<div className="text-xs sm:text-sm text-text-muted2 px-3 sm:px-4">
 					{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
 					<br />
 					{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
 				</div>
 			)}
 			{showCooldownMessage && (
-				<div className="text-sm text-text-muted2 px-4">
-					<div className="font-semibold mb-1">{t("mint.cooldown_active")}</div>
+				<div className="text-xs sm:text-sm text-text-muted2 px-3 sm:px-4">
+					<div className="font-semibold mb-0.5 sm:mb-1">{t("mint.cooldown_active")}</div>
 					{t("mint.cooldown_increase_info")}
 					<br />
 					{t("mint.cooldown_reference_info")}
@@ -482,7 +490,7 @@ export const AdjustLiqPrice = ({
 			)}
 
 			<Button
-				className="w-full text-lg leading-snug !font-extrabold"
+				className="w-full text-base sm:text-lg leading-snug !font-bold sm:!font-extrabold"
 				onClick={needsApproval ? handleApprove : handleExecute}
 				isLoading={isTxOnGoing}
 				disabled={isDisabled}
