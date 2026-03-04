@@ -178,7 +178,7 @@ export async function traceTransaction(params: TraceParams): Promise<TraceResult
 		const metadata = await fetchTokenMetadata(tokenAddresses);
 		const userAddr = account.toLowerCase();
 
-		const transfers: BalanceChange[] = rawTransfers
+		const filteredTransfers = rawTransfers
 			.filter((t) => t.amount > 0n && (t.from.toLowerCase() === userAddr || t.to.toLowerCase() === userAddr))
 			.map((t) => {
 				const meta = metadata.get(t.token) ?? { symbol: "???", decimals: 18 };
@@ -195,6 +195,20 @@ export async function traceTransaction(params: TraceParams): Promise<TraceResult
 			})
 			// Filter dust: amounts below 0.0001 of the token's unit (e.g. < 10^14 for 18-decimal tokens)
 			.filter((t) => t.amount >= 10n ** BigInt(Math.max(0, t.decimals - 4)));
+
+		// Aggregate transfers by (token, direction) so multiple events for the same
+		// token collapse into a single line (e.g. interest + principal repayment).
+		const aggregated = new Map<string, BalanceChange>();
+		for (const t of filteredTransfers) {
+			const key = `${t.token}-${t.direction}`;
+			const existing = aggregated.get(key);
+			if (existing) {
+				existing.amount += t.amount;
+			} else {
+				aggregated.set(key, { ...t });
+			}
+		}
+		const transfers: BalanceChange[] = [...aggregated.values()];
 
 		const approvals: ApprovalChange[] = rawApprovals.map((a) => {
 			const meta = metadata.get(a.token) ?? { symbol: "???", decimals: 18 };
