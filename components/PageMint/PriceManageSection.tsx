@@ -146,6 +146,8 @@ export const PriceManageSection = () => {
 		}
 	}, [newPrice, minPrice, maxPrice, position, t]);
 
+	const isOwner = useIsPositionOwner(position);
+
 	// Show loading if position not found
 	if (!position) {
 		return (
@@ -197,7 +199,6 @@ export const PriceManageSection = () => {
 		}
 	};
 
-	const isOwner = useIsPositionOwner(position);
 	const loanDetails = getLoanDetailsByCollateralAndLiqPrice(position, collateralBalance, BigInt(newPrice || currentPrice.toString()));
 	const isMintingExhausted = availableForMinting === 0n && principal > 0n;
 
