@@ -231,6 +231,8 @@
 		"price_below_collateral_limit": "Le prix ne peut pas descendre en dessous de {{min}} {{symbol}} (limite de collatéral).",
 		"adjust_liq_price_btn": "Ajuster le prix de liquidation",
 		"cooldown_ends_at": "Fin: {{date}}",
+		"not_your_position": "Vous ne possédez pas cette position",
+		"non_owner_repay_info": "Vous pouvez rembourser la dette de cette position. Seul le propriétaire peut retirer le collatéral.",
 		"cooldown_please_wait": "Cette position est en refroidissement, veuillez patienter ({{remaining}})",
 		"cooldown_active": "Refroidissement actif",
 		"cooldown_increase_info": "Après avoir augmenté votre prix de liquidation, une période de refroidissement de 3 jours s'applique avant que vous puissiez augmenter votre prêt.",

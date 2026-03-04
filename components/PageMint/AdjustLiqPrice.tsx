@@ -19,6 +19,7 @@ import { TxToast, toastTxError } from "@components/TxToast";
 import { store } from "../../redux/redux.store";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { useReferencePosition } from "../../hooks/useReferencePosition";
+import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { approveToken } from "../../hooks/useApproveToken";
 import { getAmountLended, walletAmountToDebtReduction } from "../../utils/loanCalculations";
 import { mainnet, testnet } from "@config";
@@ -106,6 +107,7 @@ export const AdjustLiqPrice = ({
 	const rawSliderMin = minPriceViaAddCollateral < minPriceViaRepayDebt ? minPriceViaAddCollateral : minPriceViaRepayDebt;
 	const sliderDecreaseMin = rawSliderMin > 0n ? (rawSliderMin / PRICE_SCALE + 1n) * PRICE_SCALE : PRICE_SCALE;
 
+	const isOwner = useIsPositionOwner(position);
 	const reference = useReferencePosition(position, positionPrice);
 	const maxPriceIncrease = liqPrice * 2n;
 	const deltaIncrease = maxPriceIncrease - liqPrice;
@@ -311,6 +313,7 @@ export const AdjustLiqPrice = ({
 	};
 
 	const isDisabled =
+		!isOwner ||
 		delta === 0n ||
 		(isIncrease && isInCooldown) ||
 		(needsStrategy && activeStrategy === null) ||
@@ -318,6 +321,7 @@ export const AdjustLiqPrice = ({
 		(activeStrategy === StrategyKey.REPAY_DEBT && !canAffordRepayDebt);
 
 	const getButtonLabel = () => {
+		if (!isOwner) return t("mint.not_your_position");
 		if (needsApproval) return t("common.approve");
 		if (delta === 0n) return t("mint.set_new_price");
 		if (activeStrategy === StrategyKey.ADD_COLLATERAL) return `${t("mint.add_collateral")} & ${t("mint.set_new_price")}`;

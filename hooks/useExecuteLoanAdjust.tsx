@@ -14,6 +14,7 @@ interface ExecuteLoanAdjustParams {
 	outcome: SolverOutcome;
 	position: PositionQuery;
 	principal: bigint;
+	isOwner: boolean;
 	isNativeWrappedPosition: boolean;
 	t: (key: string, params?: Record<string, string>) => string;
 	onSuccess: () => void;
@@ -24,6 +25,7 @@ export const executeLoanAdjust = async ({
 	outcome,
 	position,
 	principal,
+	isOwner,
 	isNativeWrappedPosition,
 	t,
 	onSuccess,
@@ -34,11 +36,7 @@ export const executeLoanAdjust = async ({
 	const isRepayOnly = outcome.deltaDebt < 0n && outcome.deltaCollateral === 0n;
 	const LiqPrice = isRepayOnly ? BigInt(position.price) : outcome.next.liqPrice;
 
-	// Contract: repay branch executes when newPrincipal < principal
 	const isFullClose = outcome.next.debt === 0n && principal > 0n;
-
-	// Case 3: repay ≤ interest → need separate repay() call first
-	const needsSeparateRepay = !isFullClose && outcome.deltaDebt < 0n && outcome.next.debt >= principal;
 
 	const newPrincipal = isFullClose
 		? 0n // Case 1: close position
@@ -71,35 +69,51 @@ export const executeLoanAdjust = async ({
 		? `${t("mint.lending")} ${formatPositionValue(outcome.deltaDebt, 18, position.stablecoinSymbol)}`
 		: t("mint.adjust_position");
 
-	// Case 3: call repay() first
-	if (needsSeparateRepay) {
+	if (isRepayOnly) {
+		if (isFullClose && isOwner) {
+			// Owner full close: adjust() returns collateral in same tx
+			await executeTx({
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				contractParams: {
+					address: posAddr,
+					abi: PositionV2ABI,
+					functionName: "adjust",
+					args: [0n, outcome.next.collateral, LiqPrice, isWithdrawing && isNativeWrappedPosition],
+				},
+				pendingTitle: txTitle,
+				successTitle: txTitle,
+				rows,
+			});
+		} else {
+			// Non-owner full close OR any partial repay: permissionless repayFull() or repay()
+			await executeTx({
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				contractParams: {
+					address: posAddr,
+					abi: PositionV2ABI,
+					functionName: isFullClose ? "repayFull" : "repay",
+					args: isFullClose ? [] : [-outcome.deltaDebt],
+				},
+				pendingTitle: t("mint.txs.pay_back", { symbol: position.stablecoinSymbol }),
+				successTitle: t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol }),
+				rows,
+			});
+		}
+	} else {
 		await executeTx({
 			chainId: chainId as typeof mainnet.id | typeof testnet.id,
 			contractParams: {
 				address: posAddr,
 				abi: PositionV2ABI,
-				functionName: "repay",
-				args: [-outcome.deltaDebt],
+				functionName: "adjust",
+				args: [newPrincipal, outcome.next.collateral, LiqPrice, isWithdrawing && isNativeWrappedPosition],
+				value: isNativeWrappedPosition && depositAmount > 0n ? depositAmount : undefined,
 			},
-			pendingTitle: t("mint.txs.pay_back", { symbol: position.stablecoinSymbol }),
-			successTitle: t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol }),
-			rows: [{ title: t("common.txs.amount"), value: formatPositionValue(-outcome.deltaDebt, 18, position.stablecoinSymbol) }],
+			pendingTitle: txTitle,
+			successTitle: txTitle,
+			rows,
 		});
 	}
-
-	await executeTx({
-		chainId: chainId as typeof mainnet.id | typeof testnet.id,
-		contractParams: {
-			address: posAddr,
-			abi: PositionV2ABI,
-			functionName: "adjust",
-			args: [newPrincipal, outcome.next.collateral, LiqPrice, isWithdrawing && isNativeWrappedPosition],
-			value: isNativeWrappedPosition && depositAmount > 0n ? depositAmount : undefined,
-		},
-		pendingTitle: txTitle,
-		successTitle: txTitle,
-		rows,
-	});
 
 	store.dispatch(fetchPositionsList(chainId));
 	onSuccess();
