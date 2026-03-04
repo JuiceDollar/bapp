@@ -283,7 +283,11 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 				/>
 			</div>
 			{!targetPosition && <div className="text-xs text-text-muted2 px-4">{t("mint.no_extension_target_available")}</div>}
-			{!isNativeWrappedPosition && !collateralAllowance ? (
+			{!isOwner ? (
+				<Button className="text-lg leading-snug !font-extrabold" disabled>
+					Not your position
+				</Button>
+			) : !isNativeWrappedPosition && !collateralAllowance ? (
 				<Button
 					className="text-lg leading-snug !font-extrabold"
 					onClick={handleApproveCollateral}
@@ -348,19 +352,17 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 						className="text-lg leading-snug !font-extrabold"
 						onClick={handleAdjustExpiration}
 						isLoading={isTxOnGoing}
-						disabled={!isOwner || isTxOnGoing || !expirationDate || !isExtending || !targetPosition || hasInsufficientBalance}
+						disabled={isTxOnGoing || !expirationDate || !isExtending || !targetPosition || hasInsufficientBalance}
 					>
-						{!isOwner
-							? "Not your position"
-							: `${t("mint.extend_roll_borrowing")} ${
-									expirationDate
-										? `to ${expirationDate.toLocaleDateString(router?.locale || "en", {
-												year: "numeric",
-												month: "short",
-												day: "numeric",
-										  })}`
-										: ""
-							  }`}
+						{`${t("mint.extend_roll_borrowing")} ${
+							expirationDate
+								? `to ${expirationDate.toLocaleDateString(router?.locale || "en", {
+										year: "numeric",
+										month: "short",
+										day: "numeric",
+								  })}`
+								: ""
+						}`}
 					</Button>
 				</>
 			)}
