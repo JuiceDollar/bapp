@@ -244,6 +244,7 @@ export const AdjustLoan = ({
 			outcome,
 			position,
 			principal,
+			isOwner,
 			isNativeWrappedPosition,
 			t,
 			onSuccess: isFullRepay
