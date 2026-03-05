@@ -265,16 +265,23 @@ export const AdjustLoan = ({
 	return (
 		<div className="flex flex-col gap-y-4">
 			<div className="flex flex-col gap-y-3">
-				<div className="flex flex-row justify-between items-center">
-					<div className="text-lg font-bold">{isIncrease ? t("mint.borrow_more") : t("mint.repay_loan")}</div>
-					<div className="flex flex-row items-center">
-						<SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
-							{t("mint.borrow_more")}
-						</SvgIconButton>
-						<SvgIconButton isSelected={!isIncrease} onClick={() => setIsIncrease(false)} SvgComponent={RemoveCircleOutlineIcon}>
-							{t("mint.repay_loan")}
-						</SvgIconButton>
-					</div>
+				<div className="flex flex-row items-center justify-end">
+					<SvgIconButton
+						isSelected={isIncrease}
+						onClick={() => setIsIncrease(true)}
+						SvgComponent={AddCircleOutlineIcon}
+						labelClassName="!text-sm !font-bold sm:!text-base sm:!font-extrabold"
+					>
+						<span className="whitespace-nowrap">{t("mint.borrow_more")}</span>
+					</SvgIconButton>
+					<SvgIconButton
+						isSelected={!isIncrease}
+						onClick={() => setIsIncrease(false)}
+						SvgComponent={RemoveCircleOutlineIcon}
+						labelClassName="!text-sm !font-bold sm:!text-base sm:!font-extrabold"
+					>
+						<span className="whitespace-nowrap">{t("mint.repay_loan")}</span>
+					</SvgIconButton>
 				</div>
 				<NormalInputOutlined
 					value={deltaAmount}
