@@ -62,14 +62,20 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 			? [
 					{ chainId, address: position.position as Address, abi: PositionV2ABI, functionName: "principal" },
 					{ chainId, address: position.position as Address, abi: PositionV2ABI, functionName: "getDebt" },
-					{ chainId, address: position.position as Address, abi: PositionV2ABI, functionName: "getInterest" },
+					{
+						chainId,
+						address: position.collateral as Address,
+						abi: erc20Abi,
+						functionName: "balanceOf",
+						args: [position.position as Address],
+					},
 			  ]
 			: [],
 	});
 
 	const principal = contractData?.[0]?.result || 0n;
 	const currentDebt = contractData?.[1]?.result || 0n;
-	const positionInterest = contractData?.[2]?.result || 0n;
+	const sourceCollateralBalance = (contractData?.[2]?.result as bigint) || 0n;
 
 	const openPositions = useSelector((state: RootState) => state.positions.openPositions);
 
@@ -95,26 +101,65 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 
 	const currentExpirationDate = new Date(position.expiration * 1000);
 	const isExtending = !!(expirationDate && expirationDate.getTime() > currentExpirationDate.getTime());
-	const currentCollateralBalance = BigInt(position.collateralBalance);
-	const targetMinCollateral = targetPosition ? BigInt(targetPosition.minimumCollateral) : 0n;
+
+	const walletCollateralBalance = position ? BigInt(balancesByAddress[position.collateral]?.balanceOf || 0) : 0n;
+
+	const rollParams = useMemo(() => {
+		if (!targetPosition || sourceCollateralBalance === 0n) return null;
+
+		const interest = currentDebt > principal ? currentDebt - principal : 0n;
+		const interestBuffer = interest / 10n + BigInt(1e16);
+		const repayAmount = principal + interest + interestBuffer;
+		const sourceReservePPM = BigInt(position.reserveContribution);
+		const targetReservePPM = BigInt(targetPosition.reserveContribution);
+		const targetPrice = BigInt(targetPosition.price);
+		const targetMinColl = BigInt(targetPosition.minimumCollateral);
+
+		// Replicate _calculateRollParams: source.getUsableMint(principal) + interest
+		const usableMintFromPrincipal = (principal * (1_000_000n - sourceReservePPM)) / 1_000_000n;
+		const usableMint = usableMintFromPrincipal + interest;
+
+		// target.getMintAmount(usableMint) = _ceilDivPPM(usableMint, targetReservePPM)
+		let mintAmount = usableMint === 0n ? 0n : (usableMint * 1_000_000n - 1n) / (1_000_000n - targetReservePPM) + 1n;
+
+		// depositAmount = ceil(mintAmount * 1e18 / targetPrice)
+		let depositAmount = targetPrice > 0n ? (mintAmount * 10n ** 18n + targetPrice - 1n) / targetPrice : 0n;
+
+		// Cap to available collateral (before enforcing minimum)
+		if (depositAmount > sourceCollateralBalance) {
+			depositAmount = sourceCollateralBalance;
+			mintAmount = (depositAmount * targetPrice) / 10n ** 18n;
+		}
+
+		// Enforce minimumCollateral floor — the core fix
+		if (depositAmount < targetMinColl) {
+			depositAmount = targetMinColl;
+			mintAmount = (depositAmount * targetPrice) / 10n ** 18n;
+		}
+
+		const extraCollateral = depositAmount > sourceCollateralBalance ? depositAmount - sourceCollateralBalance : 0n;
+
+		return { repay: repayAmount, collWithdraw: sourceCollateralBalance, mint: mintAmount, collDeposit: depositAmount, extraCollateral };
+	}, [principal, currentDebt, sourceCollateralBalance, position, targetPosition]);
+
+	const hasInsufficientCollateral =
+		!isNativeWrappedPosition &&
+		rollParams !== null &&
+		rollParams.extraCollateral > 0n &&
+		walletCollateralBalance < rollParams.extraCollateral;
 
 	const handleAdjustExpiration = async () => {
 		try {
 			setIsTxOnGoing(true);
 
-			if (!targetPosition) {
+			if (!targetPosition || !rollParams) {
 				toast.error(t("mint.no_extension_target_available"));
 				return;
 			}
 
 			const newExpirationTimestamp = toTimestamp(expirationDate as Date);
-			const target = targetPosition.position;
-			const interestBuffer = positionInterest / 10n + BigInt(1e16);
-			const repay = principal + positionInterest + interestBuffer;
-			const collWithdraw = currentCollateralBalance;
-			const depositAmount = collWithdraw < targetMinCollateral ? targetMinCollateral : collWithdraw;
-			const mintForDeposit = principal;
-			const extraNeeded = depositAmount > collWithdraw ? depositAmount - collWithdraw : 0n;
+			const target = targetPosition.position as Address;
+			const source = position.position as Address;
 
 			let txHash: `0x${string}`;
 
@@ -125,15 +170,15 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					abi: PositionRollerABI,
 					functionName: "rollNative",
 					args: [
-						position.position as Address,
-						repay,
-						collWithdraw,
-						target as Address,
-						mintForDeposit,
-						depositAmount,
+						source,
+						rollParams.repay,
+						rollParams.collWithdraw,
+						target,
+						rollParams.mint,
+						rollParams.collDeposit,
 						newExpirationTimestamp,
 					],
-					value: extraNeeded,
+					value: rollParams.extraCollateral,
 				});
 			} else {
 				txHash = await simulateAndWrite({
@@ -142,12 +187,12 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					abi: PositionRollerABI,
 					functionName: "roll",
 					args: [
-						position.position as Address,
-						repay,
-						collWithdraw,
-						target as Address,
-						mintForDeposit,
-						depositAmount,
+						source,
+						rollParams.repay,
+						rollParams.collWithdraw,
+						target,
+						rollParams.mint,
+						rollParams.collDeposit,
 						newExpirationTimestamp,
 					],
 				});
@@ -342,11 +387,36 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 							)}
 						</div>
 					)}
+					{hasInsufficientCollateral && rollParams && (
+						<div className="p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+							<div className="text-xs font-medium text-red-600 dark:text-red-400">
+								{t("mint.insufficient_balance", { symbol: normalizeTokenSymbol(position.collateralSymbol) })}
+							</div>
+							<div className="text-xs text-red-500 mt-1">
+								{t("mint.you_have", {
+									amount: formatNumber(walletCollateralBalance, position.collateralDecimals),
+									symbol: normalizeTokenSymbol(position.collateralSymbol),
+								})}
+								<br />
+								{t("mint.you_need", {
+									amount: formatNumber(rollParams.extraCollateral, position.collateralDecimals),
+									symbol: normalizeTokenSymbol(position.collateralSymbol),
+								})}
+							</div>
+						</div>
+					)}
 					<Button
 						className="text-lg leading-snug !font-extrabold"
 						onClick={handleAdjustExpiration}
 						isLoading={isTxOnGoing}
-						disabled={isTxOnGoing || !expirationDate || !isExtending || !targetPosition || hasInsufficientBalance}
+						disabled={
+							isTxOnGoing ||
+							!expirationDate ||
+							!isExtending ||
+							!targetPosition ||
+							hasInsufficientBalance ||
+							hasInsufficientCollateral
+						}
 					>
 						{t("mint.extend_roll_borrowing")}{" "}
 						{expirationDate &&
