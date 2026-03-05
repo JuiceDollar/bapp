@@ -363,9 +363,17 @@ export const AdjustCollateral = ({
 			if (isClosingPosition) {
 				return t("mint.repay_and_close_position");
 			}
-			return `${t("mint.repay")} ${formattedRepay} ${position.stablecoinSymbol} & ${t(
-				"common.remove"
-			)} ${formattedDelta} ${collateralSymbol}`;
+			return (
+				<>
+					<span className="sm:hidden">
+						{t("mint.repay")} {position.stablecoinSymbol} & {t("common.remove")} {collateralSymbol}
+					</span>
+					<span className="hidden sm:inline">
+						{t("mint.repay")} {formattedRepay} {position.stablecoinSymbol} & {t("common.remove")} {formattedDelta}{" "}
+						{collateralSymbol}
+					</span>
+				</>
+			);
 		}
 		if (strategies[StrategyKey.HIGHER_PRICE] && newPrice > positionPrice) {
 			return t("mint.adjust_liq_price_btn");
