@@ -21,7 +21,7 @@ import { mainnet, testnet } from "@config";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
-import { getAmountLended, getRetainedReserve, walletAmountToDebtReduction } from "../../utils/loanCalculations";
+import { getAmountLended, getRetainedReserve, walletAmountToDebtReduction, getAvailableToBorrow } from "../../utils/loanCalculations";
 
 enum StrategyKey {
 	ADD_COLLATERAL = "addCollateral",
@@ -98,17 +98,13 @@ export const AdjustLoan = ({
 
 	const hasAnyStrategy = strategies[StrategyKey.ADD_COLLATERAL];
 
-	const rawMaxDebt = (liqPrice * collateralBalance) / BigInt(1e18);
-	const maxDebtAtCurrentParams = rawMaxDebt - rawMaxDebt / 10000n; // 0.01% buffer for precision
-	const availableWithoutAdjustment = maxDebtAtCurrentParams > collateralRequirement ? maxDebtAtCurrentParams - collateralRequirement : 0n;
+	const availableWithoutAdjustment = getAvailableToBorrow(liqPrice, collateralBalance, collateralRequirement);
 
 	const maxDelta = useMemo(() => {
 		if (!isIncrease) return getAmountLended(currentDebt, position.reserveContribution);
-		if (!hasAnyStrategy) return availableWithoutAdjustment;
+		if (!hasAnyStrategy && availableWithoutAdjustment > 0n) return availableWithoutAdjustment;
 		const maxCollateral = strategies[StrategyKey.ADD_COLLATERAL] ? collateralBalance + walletBalance : collateralBalance;
-		const rawMaxDebtStrategy = (liqPrice * maxCollateral) / BigInt(1e18);
-		const maxDebt = rawMaxDebtStrategy - rawMaxDebtStrategy / 10000n;
-		const deltaFromStrategies = maxDebt > currentDebt ? maxDebt - currentDebt : 0n;
+		const deltaFromStrategies = getAvailableToBorrow(liqPrice, maxCollateral, collateralRequirement);
 		return deltaFromStrategies > availableWithoutAdjustment ? deltaFromStrategies : availableWithoutAdjustment;
 	}, [
 		isIncrease,
@@ -119,6 +115,7 @@ export const AdjustLoan = ({
 		currentDebt,
 		walletBalance,
 		availableWithoutAdjustment,
+		collateralRequirement,
 		position.reserveContribution,
 	]);
 
@@ -206,7 +203,17 @@ export const AdjustLoan = ({
 		collateralAllowance < collateralDepositAmount;
 	const needsJusdApproval = !isIncrease && delta > 0n && jusdAllowance < delta;
 	const needsApproval = needsCollateralApproval || needsJusdApproval;
-	const handleMaxClick = () => setDeltaAmount(maxDelta.toString());
+	const handleDeltaChange = (value: string) => {
+		if (!value || value === "0") setStrategies({ [StrategyKey.ADD_COLLATERAL]: false });
+		setDeltaAmount(value);
+	};
+
+	const handleMaxClick = () => {
+		if (availableWithoutAdjustment === 0n && walletBalance > 0n) {
+			setStrategies({ [StrategyKey.ADD_COLLATERAL]: true });
+		}
+		setDeltaAmount(maxDelta.toString());
+	};
 
 	const handleApproveCollateral = async () => {
 		if (collateralDepositAmount <= 0n) return;
@@ -276,7 +283,7 @@ export const AdjustLoan = ({
 				</div>
 				<NormalInputOutlined
 					value={deltaAmount}
-					onChange={setDeltaAmount}
+					onChange={handleDeltaChange}
 					decimals={18}
 					unit={position.stablecoinSymbol}
 					isError={Boolean(deltaAmountError)}
@@ -340,7 +347,7 @@ export const AdjustLoan = ({
 								</Tooltip>
 							</div>
 							<span className="font-medium text-text-title">
-								{formatCurrency(formatUnits(outcome.deltaCollateral, collateralDecimals), 3, 3)} {collateralSymbol}
+								{formatCurrency(formatUnits(outcome.deltaCollateral, collateralDecimals), 3, 8)} {collateralSymbol}
 							</span>
 						</div>
 					)}

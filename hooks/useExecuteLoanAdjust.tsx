@@ -8,6 +8,8 @@ import { store } from "../redux/redux.store";
 import { mainnet, testnet } from "@config";
 import { executeTx } from "./useApproveToken";
 import { SolverOutcome } from "../utils/positionSolver";
+import { readContract } from "wagmi/actions";
+import { WAGMI_CONFIG } from "../app.config";
 
 interface ExecuteLoanAdjustParams {
 	chainId: number;
@@ -68,6 +70,42 @@ export const executeLoanAdjust = async ({
 		: outcome.deltaDebt > 0n
 		? `${t("mint.lending")} ${formatPositionValue(outcome.deltaDebt, 18, position.stablecoinSymbol)}`
 		: t("mint.adjust_position");
+
+	if (newPrincipal > principal) {
+		const freshDebt = await readContract(WAGMI_CONFIG, {
+			address: posAddr,
+			abi: PositionV2ABI,
+			functionName: "getDebt",
+		});
+		// _checkCollateral in _mint uses the current stored price (before any price adjustment)
+		const currentPrice = BigInt(position.price);
+		const freshTotalReq = freshDebt + outcome.deltaDebt;
+		const collateralCapacity = (currentPrice * outcome.next.collateral) / BigInt(1e18);
+
+		console.log("[pre-tx]", {
+			freshDebt: freshDebt.toString(),
+			deltaDebt: outcome.deltaDebt.toString(),
+			freshTotalReq: freshTotalReq.toString(),
+			collateralCapacity: collateralCapacity.toString(),
+			outcomeCollateral: outcome.next.collateral.toString(),
+			newPrincipal: newPrincipal.toString(),
+			LiqPrice: LiqPrice.toString(),
+		});
+
+		if (collateralCapacity < freshTotalReq) {
+			// Compute exact minimum collateral needed (ceiling division)
+			const freshMinCollateral = (freshTotalReq * BigInt(1e18) + currentPrice - 1n) / currentPrice;
+			const shortfall = freshMinCollateral - outcome.next.collateral;
+
+			console.log("[collateral-bump]", { shortfall: shortfall.toString(), freshMinCollateral: freshMinCollateral.toString() });
+
+			if (shortfall > outcome.next.collateral / 100n) {
+				throw new Error(t("mint.error.amount_exceeds_capacity"));
+			}
+			outcome.next.collateral = freshMinCollateral;
+			outcome.deltaCollateral = freshMinCollateral - BigInt(position.collateralBalance);
+		}
+	}
 
 	if (isRepayOnly) {
 		if (isFullClose && isOwner) {

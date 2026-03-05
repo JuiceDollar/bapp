@@ -12,6 +12,12 @@ export const walletAmountToDebtReduction = (walletAmount: bigint, reserveContrib
 	return rc < 1_000_000n ? (walletAmount * 1_000_000n) / (1_000_000n - rc) : walletAmount;
 };
 
+export const getAvailableToBorrow = (liqPrice: bigint, collateral: bigint, requirement: bigint): bigint => {
+	const rawMax = (liqPrice * collateral) / BigInt(1e18);
+	const maxWithBuffer = rawMax - rawMax / 1000000n;
+	return maxWithBuffer > requirement ? maxWithBuffer - requirement : 0n;
+};
+
 export type LoanDetails = {
 	loanAmount: bigint;
 	apr: number;

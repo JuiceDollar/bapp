@@ -141,8 +141,8 @@ export function solveManage(pos: SolverPosition, target: Target, strategy: Strat
 
 			if (strategy === Strategy.KEEP_LIQ_PRICE) {
 				newLiqPrice = currentLiqPrice;
-				const baseCollateral = (k * newDebt) / newLiqPrice;
-				newCollateral = baseCollateral + baseCollateral / 100n;
+				const minCollateral = (newDebt * BigInt(1e18)) / newLiqPrice;
+				newCollateral = minCollateral > currentCollateral ? minCollateral : currentCollateral;
 			} else {
 				newCollateral = currentCollateral;
 				const maxDebtAtCurrentParams = (currentLiqPrice * currentCollateral) / BigInt(1e18);
