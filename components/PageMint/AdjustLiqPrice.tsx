@@ -334,16 +334,23 @@ export const AdjustLiqPrice = ({
 	return (
 		<div className="flex flex-col gap-y-4">
 			<div className="flex flex-col gap-y-3">
-				<div className="flex flex-row justify-between items-center">
-					<div className="text-base font-bold sm:text-lg leading-tight">
-						{t("mint.adjust")} <span className="whitespace-nowrap">{t("mint.liquidation_price")}</span>
-					</div>
+				<div className="flex flex-row justify-end items-center">
 					<div className="flex flex-row items-center">
-						<SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
-							{t("mint.increase")}
+						<SvgIconButton
+							isSelected={isIncrease}
+							onClick={() => setIsIncrease(true)}
+							SvgComponent={AddCircleOutlineIcon}
+							labelClassName="!text-sm !font-bold sm:!text-base sm:!font-extrabold"
+						>
+							<span className="whitespace-nowrap">{t("mint.increase")}</span>
 						</SvgIconButton>
-						<SvgIconButton isSelected={!isIncrease} onClick={() => setIsIncrease(false)} SvgComponent={RemoveCircleOutlineIcon}>
-							{t("mint.decrease")}
+						<SvgIconButton
+							isSelected={!isIncrease}
+							onClick={() => setIsIncrease(false)}
+							SvgComponent={RemoveCircleOutlineIcon}
+							labelClassName="!text-sm !font-bold sm:!text-base sm:!font-extrabold"
+						>
+							<span className="whitespace-nowrap">{t("mint.decrease")}</span>
 						</SvgIconButton>
 					</div>
 				</div>
