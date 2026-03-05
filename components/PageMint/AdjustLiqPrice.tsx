@@ -429,7 +429,7 @@ export const AdjustLiqPrice = ({
 					<div className="flex justify-between text-sm">
 						<span className="text-text-muted2">{t("mint.add_collateral")}</span>
 						<span className={`font-medium ${canAffordAddCollateral ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
-							+{formatCurrency(formatUnits(requiredCollateralAdd, collateralDecimals), 4, 4)} {collateralSymbol}
+							+{formatCurrency(formatUnits(requiredCollateralAdd, collateralDecimals), 4, 8)} {collateralSymbol}
 						</span>
 					</div>
 				)}
