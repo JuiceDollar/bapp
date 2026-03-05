@@ -354,15 +354,20 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 						isLoading={isTxOnGoing}
 						disabled={isTxOnGoing || !expirationDate || !isExtending || !targetPosition || hasInsufficientBalance}
 					>
-						{`${t("mint.extend_roll_borrowing")} ${
-							expirationDate
-								? `to ${expirationDate.toLocaleDateString(router?.locale || "en", {
-										year: "numeric",
-										month: "short",
-										day: "numeric",
-								  })}`
-								: ""
-						}`}
+						<>
+							<span className="sm:hidden">{t("mint.extend_roll_borrowing_short")}</span>
+							<span className="hidden sm:inline">
+								{`${t("mint.extend_roll_borrowing")} ${
+									expirationDate
+										? `to ${expirationDate.toLocaleDateString(router?.locale || "en", {
+												year: "numeric",
+												month: "short",
+												day: "numeric",
+										  })}`
+										: ""
+								}`}
+							</span>
+						</>
 					</Button>
 				</>
 			)}
