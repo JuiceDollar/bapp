@@ -21,7 +21,7 @@ import { mainnet, testnet } from "@config";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
-import { getAmountLended, getRetainedReserve, walletAmountToDebtReduction, walletAmountToDebt } from "../../utils/loanCalculations";
+import { getAmountLended, getRetainedReserve, walletAmountToDebt } from "../../utils/loanCalculations";
 
 enum StrategyKey {
 	ADD_COLLATERAL = "addCollateral",
@@ -125,7 +125,7 @@ export const AdjustLoan = ({
 
 	const delta = BigInt(deltaAmount || 0);
 	const debtDelta = isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
-	const debtReduction = !isIncrease && delta > 0n ? walletAmountToDebtReduction(delta, position.reserveContribution) : 0n;
+	const debtReduction = !isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
 
 	const showStrategyOptions = isIncrease && debtDelta > availableWithoutAdjustment;
 	const FULL_REPAY_THRESHOLD = currentDebt / 1000n;
@@ -137,7 +137,7 @@ export const AdjustLoan = ({
 			const walletInput = BigInt(deltaAmount);
 			if (walletInput === 0n) return setOutcome(null);
 			if (!isIncrease) {
-				const debtRed = walletAmountToDebtReduction(walletInput, position.reserveContribution);
+				const debtRed = walletAmountToDebt(walletInput, position.reserveContribution);
 				const isFullRepayNow = debtRed >= currentDebt || currentDebt - debtRed <= currentDebt / 1000n;
 				if (isFullRepayNow) {
 					return setOutcome({
