@@ -21,7 +21,7 @@ import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { useReferencePosition } from "../../hooks/useReferencePosition";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { approveToken } from "../../hooks/useApproveToken";
-import { getAmountLended, walletAmountToDebtReduction } from "../../utils/loanCalculations";
+import { getAmountLended, walletAmountToDebt } from "../../utils/loanCalculations";
 import { mainnet, testnet } from "@config";
 
 enum StrategyKey {
@@ -99,7 +99,7 @@ export const AdjustLiqPrice = ({
 		collateralBalance + maxWalletForAdd > 0n ? (currentDebt * PRICE_SCALE) / (collateralBalance + maxWalletForAdd) : liqPrice;
 
 	const maxRepayableForPriceAdjust = (currentDebt * 95n) / 100n;
-	const maxDebtRepayableByWallet = walletAmountToDebtReduction(jusdBalance, rc);
+	const maxDebtRepayableByWallet = walletAmountToDebt(jusdBalance, rc);
 	const effectiveMaxRepay = maxDebtRepayableByWallet < maxRepayableForPriceAdjust ? maxDebtRepayableByWallet : maxRepayableForPriceAdjust;
 	const residualDebt = currentDebt > effectiveMaxRepay ? currentDebt - effectiveMaxRepay : (currentDebt * 5n) / 100n;
 	const minPriceViaRepayDebt = residualDebt > 0n && collateralBalance > 0n ? (residualDebt * PRICE_SCALE) / collateralBalance : liqPrice;
