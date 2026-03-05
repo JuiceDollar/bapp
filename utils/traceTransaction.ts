@@ -1,5 +1,6 @@
 import { readContracts } from "@wagmi/core";
-import { WAGMI_CONFIG, CONFIG_RPC } from "../app.config";
+import { WAGMI_CONFIG } from "../app.config";
+import { CONFIG } from "@config";
 import { Address, erc20Abi, encodeFunctionData, Abi } from "viem";
 import { mainnet, testnet } from "@config";
 import { normalizeTokenSymbol } from "./tokenDisplay";
@@ -95,11 +96,11 @@ async function fetchTokenMetadata(tokenAddresses: Address[]): Promise<Map<Addres
 }
 
 export async function traceTransaction(params: TraceParams): Promise<TraceResult> {
-	const { address, abi, functionName, args, value, account } = params;
+	const { chainId, address, abi, functionName, args, value, account } = params;
 
 	const calldata = encodeFunctionData({ abi, functionName, args: args ?? [] });
 
-	const rpcUrl = CONFIG_RPC();
+	const rpcUrl = chainId === mainnet.id ? CONFIG.network.mainnet : CONFIG.network.testnet;
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), TRACE_TIMEOUT_MS);
 
