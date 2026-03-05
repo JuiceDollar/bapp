@@ -12,6 +12,11 @@ export const walletAmountToDebtReduction = (walletAmount: bigint, reserveContrib
 	return rc < 1_000_000n ? (walletAmount * 1_000_000n) / (1_000_000n - rc) : walletAmount;
 };
 
+export const walletAmountToDebt = (walletAmount: bigint, reserveContribution: number): bigint => {
+	const rc = BigInt(reserveContribution);
+	return rc < 1_000_000n ? (walletAmount * 1_000_000n) / (1_000_000n - rc) : walletAmount;
+};
+
 export type LoanDetails = {
 	loanAmount: bigint;
 	apr: number;
