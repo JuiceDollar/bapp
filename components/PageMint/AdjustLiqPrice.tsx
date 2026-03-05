@@ -350,7 +350,7 @@ export const AdjustLiqPrice = ({
 
 				{showSlider && (
 					<SliderInputOutlined
-						value={delta > 0n ? newPriceForDisplay.toString() : ""}
+						value={newPriceForDisplay.toString()}
 						onChange={handleSliderChange}
 						min={isIncrease ? liqPrice : sliderDecreaseMin}
 						max={isIncrease ? maxPriceIncrease : liqPrice}
@@ -460,7 +460,7 @@ export const AdjustLiqPrice = ({
 				<div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
 					<span className="font-bold text-text-title">{t("mint.new_liq_price")}</span>
 					<span className="font-bold text-text-title">
-						{formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} {pairNotation}
+						{formatCurrency(formatUnits(delta > 0n ? newPrice : positionPrice, priceDecimals), 2, 2)} {pairNotation}
 					</span>
 				</div>
 			</div>
