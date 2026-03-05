@@ -149,6 +149,8 @@ export const AdjustLiqPrice = ({
 		if (!needsStrategy) setActiveStrategy(null);
 	}, [needsStrategy]);
 
+	const liqPriceRounded = (liqPrice / PRICE_SCALE) * PRICE_SCALE;
+
 	const handleSliderChange = (val: string) => {
 		if (!val) {
 			setDeltaAmount("");
@@ -160,6 +162,10 @@ export const AdjustLiqPrice = ({
 			return;
 		}
 		const rounded = (newPriceValue / PRICE_SCALE) * PRICE_SCALE;
+		if (!isIncrease && rounded >= liqPriceRounded) {
+			setDeltaAmount("");
+			return;
+		}
 		const newDelta = isIncrease ? rounded - liqPrice : liqPrice - rounded;
 		setDeltaAmount(newDelta > 0n ? newDelta.toString() : "");
 	};
