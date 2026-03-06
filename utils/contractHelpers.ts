@@ -72,8 +72,8 @@ export async function simulateAndWrite({
 		throw new SimulationError(error);
 	}
 
-	// Trace + Preview — only show for transactions with balance changes,
-	// skip for approve-only transactions (low risk, adds unnecessary friction)
+	// Trace + Preview — show for transactions with balance changes or approvals,
+	// skip only for simple approve-only calls (low risk, adds unnecessary friction)
 	const connectedAccount = account ?? getAccount(WAGMI_CONFIG).address;
 	if (connectedAccount) {
 		try {
@@ -87,8 +87,10 @@ export async function simulateAndWrite({
 				account: connectedAccount,
 			});
 			const nativeValue = value && value >= NATIVE_DUST_THRESHOLD ? value : undefined;
-			const hasBalanceChanges = traceResult.transfers.length > 0 || nativeValue;
-			if (hasBalanceChanges) {
+			const isApproveOnly = functionName === "approve";
+			const hasPreviewContent =
+				traceResult.transfers.length > 0 || nativeValue || (!isApproveOnly && traceResult.approvals.length > 0);
+			if (hasPreviewContent) {
 				const confirmed = await requestPreview(traceResult, nativeValue);
 				if (!confirmed) throw new UserCancelledError();
 			}

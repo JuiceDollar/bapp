@@ -69,6 +69,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 						functionName: "balanceOf",
 						args: [position.position as Address],
 					},
+					{ chainId, address: position.position as Address, abi: PositionV2ABI, functionName: "reserveContribution" },
 			  ]
 			: [],
 	});
@@ -76,6 +77,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	const principal = contractData?.[0]?.result || 0n;
 	const currentDebt = contractData?.[1]?.result || 0n;
 	const sourceCollateralBalance = (contractData?.[2]?.result as bigint) || 0n;
+	const sourceReservePPM = BigInt(contractData?.[3]?.result ?? position?.reserveContribution ?? 0);
 
 	const openPositions = useSelector((state: RootState) => state.positions.openPositions);
 
@@ -93,6 +95,31 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 		);
 	}, [openPositions, position]);
 
+	// Read target position parameters from chain to ensure consistency with trace execution
+	const { data: targetContractData } = useReadContracts({
+		contracts: targetPosition
+			? [
+					{
+						chainId,
+						address: targetPosition.position as Address,
+						abi: PositionV2ABI,
+						functionName: "reserveContribution",
+					},
+					{ chainId, address: targetPosition.position as Address, abi: PositionV2ABI, functionName: "price" },
+					{
+						chainId,
+						address: targetPosition.position as Address,
+						abi: PositionV2ABI,
+						functionName: "minimumCollateral",
+					},
+			  ]
+			: [],
+	});
+
+	const targetReservePPM = BigInt(targetContractData?.[0]?.result ?? targetPosition?.reserveContribution ?? 0);
+	const targetPrice = BigInt(targetContractData?.[1]?.result ?? targetPosition?.price ?? 0);
+	const targetMinColl = BigInt(targetContractData?.[2]?.result ?? targetPosition?.minimumCollateral ?? 0);
+
 	useEffect(() => {
 		if (position && targetPosition) {
 			setExpirationDate((date) => date ?? new Date(targetPosition.expiration * 1000));
@@ -105,15 +132,11 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	const walletCollateralBalance = position ? BigInt(balancesByAddress[position.collateral]?.balanceOf || 0) : 0n;
 
 	const rollParams = useMemo(() => {
-		if (!targetPosition || sourceCollateralBalance === 0n) return null;
+		if (!targetPosition || sourceCollateralBalance === 0n || sourceReservePPM === 0n) return null;
 
 		const interest = currentDebt > principal ? currentDebt - principal : 0n;
 		const interestBuffer = interest / 10n + BigInt(1e16);
 		const repayAmount = principal + interest + interestBuffer;
-		const sourceReservePPM = BigInt(position.reserveContribution);
-		const targetReservePPM = BigInt(targetPosition.reserveContribution);
-		const targetPrice = BigInt(targetPosition.price);
-		const targetMinColl = BigInt(targetPosition.minimumCollateral);
 
 		// Replicate _calculateRollParams: source.getUsableMint(principal) + interest
 		const usableMintFromPrincipal = (principal * (1_000_000n - sourceReservePPM)) / 1_000_000n;
@@ -131,16 +154,17 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 			mintAmount = (depositAmount * targetPrice) / 10n ** 18n;
 		}
 
-		// Enforce minimumCollateral floor — the core fix
+		// Enforce minimumCollateral floor so the clone doesn't revert.
+		// Only bump depositAmount — keep mintAmount derived from source economics
+		// so the user's net JUSD impact stays ~0 (no phantom surplus).
 		if (depositAmount < targetMinColl) {
 			depositAmount = targetMinColl;
-			mintAmount = (depositAmount * targetPrice) / 10n ** 18n;
 		}
 
 		const extraCollateral = depositAmount > sourceCollateralBalance ? depositAmount - sourceCollateralBalance : 0n;
 
 		return { repay: repayAmount, collWithdraw: sourceCollateralBalance, mint: mintAmount, collDeposit: depositAmount, extraCollateral };
-	}, [principal, currentDebt, sourceCollateralBalance, position, targetPosition]);
+	}, [principal, currentDebt, sourceCollateralBalance, sourceReservePPM, targetReservePPM, targetPrice, targetMinColl, targetPosition]);
 
 	const hasInsufficientCollateral =
 		!isNativeWrappedPosition &&
