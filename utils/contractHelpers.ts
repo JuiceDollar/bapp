@@ -6,8 +6,8 @@ import { traceTransaction } from "./traceTransaction";
 import { requestPreview } from "./txPreviewManager";
 import { extractRevertReason } from "./errorUtils";
 
-/** Native value below 0.0001 cBTC is treated as dust and hidden from preview */
-const NATIVE_DUST_THRESHOLD = 10n ** 14n;
+/** Threshold removed: msg.value is always explicitly set by our code (collateral deposits),
+ *  so any non-zero amount is intentional and should appear in the TX preview. */
 
 export class UserCancelledError extends Error {
 	constructor() {
@@ -86,7 +86,7 @@ export async function simulateAndWrite({
 				value,
 				account: connectedAccount,
 			});
-			const nativeValue = value && value >= NATIVE_DUST_THRESHOLD ? value : undefined;
+			const nativeValue = value && value > 0n ? value : undefined;
 			const isApproveOnly = functionName === "approve";
 			const hasPreviewContent =
 				traceResult.transfers.length > 0 || nativeValue || (!isApproveOnly && traceResult.approvals.length > 0);
