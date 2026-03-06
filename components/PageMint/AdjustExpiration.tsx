@@ -14,6 +14,7 @@ import { getCarryOnQueryParams, toQueryString, toTimestamp, normalizeTokenSymbol
 import { toast } from "react-toastify";
 import { TxToast } from "@components/TxToast";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
+import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/redux.store";
 import Button from "@components/Button";
@@ -29,6 +30,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	const [expirationDate, setExpirationDate] = useState<Date | undefined | null>(undefined);
 	const [isTxOnGoing, setIsTxOnGoing] = useState(false);
 	const { t } = useTranslation();
+	const isOwner = useIsPositionOwner(position);
 	const chainId = useChainId();
 	const router = useRouter();
 
@@ -350,7 +352,11 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 				/>
 			</div>
 			{!targetPosition && <div className="text-xs text-text-muted2 px-4">{t("mint.no_extension_target_available")}</div>}
-			{!isNativeWrappedPosition && !collateralAllowance ? (
+			{!isOwner ? (
+				<Button className="text-lg leading-snug !font-extrabold" disabled>
+					{t("mint.not_your_position")}
+				</Button>
+			) : !isNativeWrappedPosition && !collateralAllowance ? (
 				<Button
 					className="text-lg leading-snug !font-extrabold"
 					onClick={handleApproveCollateral}
@@ -442,13 +448,15 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 							hasInsufficientCollateral
 						}
 					>
-						{t("mint.extend_roll_borrowing")}{" "}
-						{expirationDate &&
-							`to ${expirationDate.toLocaleDateString(router?.locale || "en", {
-								year: "numeric",
-								month: "short",
-								day: "numeric",
-							})}`}
+						{`${t("mint.extend_roll_borrowing")} ${
+							expirationDate
+								? `to ${expirationDate.toLocaleDateString(router?.locale || "en", {
+										year: "numeric",
+										month: "short",
+										day: "numeric",
+								  })}`
+								: ""
+						}`}
 					</Button>
 				</>
 			)}
