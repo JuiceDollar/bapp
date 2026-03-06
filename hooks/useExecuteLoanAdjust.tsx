@@ -33,7 +33,6 @@ export const executeLoanAdjust = async ({
 	onSuccess,
 }: ExecuteLoanAdjustParams): Promise<void> => {
 	const posAddr = position.position as Address;
-	const depositAmount = outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
 	const isWithdrawing = outcome.deltaCollateral < 0n;
 	const isRepayOnly = outcome.deltaDebt < 0n && outcome.deltaCollateral === 0n;
 	const LiqPrice = isRepayOnly ? BigInt(position.price) : outcome.next.liqPrice;
@@ -82,22 +81,10 @@ export const executeLoanAdjust = async ({
 		const freshTotalReq = freshDebt + outcome.deltaDebt;
 		const collateralCapacity = (currentPrice * outcome.next.collateral) / BigInt(1e18);
 
-		console.log("[pre-tx]", {
-			freshDebt: freshDebt.toString(),
-			deltaDebt: outcome.deltaDebt.toString(),
-			freshTotalReq: freshTotalReq.toString(),
-			collateralCapacity: collateralCapacity.toString(),
-			outcomeCollateral: outcome.next.collateral.toString(),
-			newPrincipal: newPrincipal.toString(),
-			LiqPrice: LiqPrice.toString(),
-		});
-
 		if (collateralCapacity < freshTotalReq) {
-			// Compute exact minimum collateral needed (ceiling division)
-			const freshMinCollateral = (freshTotalReq * BigInt(1e18) + currentPrice - 1n) / currentPrice;
+			const bufferedReq = freshTotalReq + freshTotalReq / 10000n;
+			const freshMinCollateral = (bufferedReq * BigInt(1e18) + currentPrice - 1n) / currentPrice;
 			const shortfall = freshMinCollateral - outcome.next.collateral;
-
-			console.log("[collateral-bump]", { shortfall: shortfall.toString(), freshMinCollateral: freshMinCollateral.toString() });
 
 			if (shortfall > outcome.next.collateral / 100n) {
 				throw new Error(t("mint.error.amount_exceeds_capacity"));
@@ -145,7 +132,7 @@ export const executeLoanAdjust = async ({
 				abi: PositionV2ABI,
 				functionName: "adjust",
 				args: [newPrincipal, outcome.next.collateral, LiqPrice, isWithdrawing && isNativeWrappedPosition],
-				value: isNativeWrappedPosition && depositAmount > 0n ? depositAmount : undefined,
+				value: isNativeWrappedPosition && outcome.deltaCollateral > 0n ? outcome.deltaCollateral : undefined,
 			},
 			pendingTitle: txTitle,
 			successTitle: txTitle,
