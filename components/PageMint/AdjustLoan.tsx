@@ -21,7 +21,7 @@ import { mainnet, testnet } from "@config";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
-import { getAmountLended, getRetainedReserve, walletAmountToDebt } from "../../utils/loanCalculations";
+import { getAmountLended, walletAmountToDebt, getNetDebt, walletRepayToDebtReduction } from "../../utils/loanCalculations";
 
 enum StrategyKey {
 	ADD_COLLATERAL = "addCollateral",
@@ -33,6 +33,8 @@ interface AdjustLoanProps {
 	position: PositionQuery;
 	collateralBalance: bigint;
 	currentDebt: bigint;
+	interest: bigint;
+	netDebt: bigint;
 	collateralRequirement: bigint;
 	liqPrice: bigint;
 	principal: bigint;
@@ -53,6 +55,8 @@ export const AdjustLoan = ({
 	position,
 	collateralBalance,
 	currentDebt,
+	interest,
+	netDebt,
 	collateralRequirement,
 	liqPrice,
 	principal,
@@ -86,8 +90,6 @@ export const AdjustLoan = ({
 	const collateralDecimals = position.collateralDecimals || 18;
 	const collateralSymbol = normalizeTokenSymbol(position.collateralSymbol || "");
 	const cooldownDays = Math.ceil(position.challengePeriod / 60 / 60 / 24);
-	const amountLended = getAmountLended(principal, position.reserveContribution);
-	const retainedReserve = getRetainedReserve(principal, position.reserveContribution);
 
 	useEffect(() => {
 		setDeltaAmount("");
@@ -103,7 +105,7 @@ export const AdjustLoan = ({
 	const availableWithoutAdjustment = maxDebtAtCurrentParams > collateralRequirement ? maxDebtAtCurrentParams - collateralRequirement : 0n;
 
 	const maxDelta = useMemo(() => {
-		if (!isIncrease) return getAmountLended(currentDebt, position.reserveContribution);
+		if (!isIncrease) return getNetDebt(principal, interest, position.reserveContribution);
 		if (!hasAnyStrategy) return getAmountLended(availableWithoutAdjustment, position.reserveContribution);
 		const maxCollateral = strategies[StrategyKey.ADD_COLLATERAL] ? collateralBalance + walletBalance : collateralBalance;
 		const rawMaxDebtStrategy = (liqPrice * maxCollateral) / BigInt(1e18);
@@ -118,6 +120,8 @@ export const AdjustLoan = ({
 		liqPrice,
 		collateralBalance,
 		currentDebt,
+		principal,
+		interest,
 		walletBalance,
 		availableWithoutAdjustment,
 		position.reserveContribution,
@@ -125,11 +129,10 @@ export const AdjustLoan = ({
 
 	const delta = BigInt(deltaAmount || 0);
 	const debtDelta = isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
-	const debtReduction = !isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
 
 	const showStrategyOptions = isIncrease && debtDelta > availableWithoutAdjustment;
-	const FULL_REPAY_THRESHOLD = currentDebt / 1000n;
-	const isFullRepay = !isIncrease && delta > 0n && (debtReduction >= currentDebt || currentDebt - debtReduction <= FULL_REPAY_THRESHOLD);
+	const FULL_REPAY_THRESHOLD = netDebt / 1000n;
+	const isFullRepay = !isIncrease && delta > 0n && (delta >= netDebt || netDebt - delta <= FULL_REPAY_THRESHOLD);
 
 	useEffect(() => {
 		if (!deltaAmount) return setOutcome(null);
@@ -137,8 +140,8 @@ export const AdjustLoan = ({
 			const walletInput = BigInt(deltaAmount);
 			if (walletInput === 0n) return setOutcome(null);
 			if (!isIncrease) {
-				const debtRed = walletAmountToDebt(walletInput, position.reserveContribution);
-				const isFullRepayNow = debtRed >= currentDebt || currentDebt - debtRed <= currentDebt / 1000n;
+				const debtRed = walletRepayToDebtReduction(walletInput, interest, position.reserveContribution);
+				const isFullRepayNow = walletInput >= netDebt || netDebt - walletInput <= netDebt / 1000n;
 				if (isFullRepayNow) {
 					return setOutcome({
 						next: {
@@ -181,7 +184,7 @@ export const AdjustLoan = ({
 		} catch {
 			setOutcome(null);
 		}
-	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, collateralBalance, liqPrice]);
+	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, collateralBalance, liqPrice, interest, netDebt]);
 
 	const repayAmount = useMemo(() => (!outcome || outcome.deltaDebt >= 0n ? 0n : -outcome.deltaDebt), [outcome]);
 
@@ -248,6 +251,7 @@ export const AdjustLoan = ({
 			principal,
 			isOwner,
 			isNativeWrappedPosition,
+			walletDelta: delta,
 			t,
 			onSuccess: isFullRepay
 				? onFullRepaySuccess
@@ -352,17 +356,9 @@ export const AdjustLoan = ({
 							+{formatCurrency(formatUnits(delta, 18), 2, 2)} JUSD
 						</span>
 					</div>
-					<div className="flex justify-between text-sm">
-						<span className="text-text-muted2">{t("mint.goes_to_reserve")}</span>
-						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(getRetainedReserve(debtDelta, position.reserveContribution), 18), 2, 2)} JUSD
-						</span>
-					</div>
 					<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
 						<span className="font-bold text-text-title">{t("mint.new_total_debt")}</span>
-						<span className="font-bold text-text-title">
-							{formatCurrency(formatUnits(currentDebt + debtDelta, 18), 2, 2)} JUSD
-						</span>
+						<span className="font-bold text-text-title">{formatCurrency(formatUnits(netDebt + delta, 18), 2, 2)} JUSD</span>
 					</div>
 				</div>
 			)}
@@ -379,25 +375,13 @@ export const AdjustLoan = ({
 							</div>
 						)}
 						<div className="flex justify-between text-sm">
-							<span className="text-text-muted2">{t("mint.you_pay_from_wallet")}</span>
-							<span className="font-medium text-text-title">{formatCurrency(formatUnits(delta, 18), 2, 2)} JUSD</span>
+							<span className="text-text-muted2">{t("mint.repay")}</span>
+							<span className="font-medium text-red-500">-{formatCurrency(formatUnits(delta, 18), 2, 2)} JUSD</span>
 						</div>
-						{debtReduction - delta > 0n && (
-							<div className="flex justify-between text-sm">
-								<span className="text-text-muted2">{t("mint.reserve_covers")}</span>
-								<span className="font-medium text-green-600 dark:text-green-400">
-									+{formatCurrency(formatUnits(debtReduction - delta, 18), 2, 2)} JUSD
-								</span>
-							</div>
-						)}
 						<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
-							<span className="font-bold text-text-title">{t("mint.debt_reduction")}</span>
-							<span className="font-bold text-red-500">-{formatCurrency(formatUnits(debtReduction, 18), 2, 2)} JUSD</span>
-						</div>
-						<div className="flex justify-between text-sm">
 							<span className="font-bold text-text-title">{t("mint.new_debt")}</span>
 							<span className="font-bold text-text-title">
-								{formatCurrency(formatUnits(isFullRepay ? 0n : currentDebt - debtReduction, 18), 2, 2)} JUSD
+								{formatCurrency(formatUnits(isFullRepay ? 0n : netDebt - delta, 18), 2, 2)} JUSD
 							</span>
 						</div>
 					</div>

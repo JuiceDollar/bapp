@@ -16,6 +16,7 @@ interface ExecuteLoanAdjustParams {
 	principal: bigint;
 	isOwner: boolean;
 	isNativeWrappedPosition: boolean;
+	walletDelta?: bigint;
 	t: (key: string, params?: Record<string, string>) => string;
 	onSuccess: () => void;
 }
@@ -27,6 +28,7 @@ export const executeLoanAdjust = async ({
 	principal,
 	isOwner,
 	isNativeWrappedPosition,
+	walletDelta,
 	t,
 	onSuccess,
 }: ExecuteLoanAdjustParams): Promise<void> => {
@@ -53,6 +55,8 @@ export const executeLoanAdjust = async ({
 		? rawNewPrincipal
 		: 0n;
 
+	const debtDisplayAmount = walletDelta != null ? walletDelta : outcome.deltaDebt > 0n ? outcome.deltaDebt : -outcome.deltaDebt;
+
 	const rows = [
 		outcome.deltaCollateral !== 0n && {
 			title: outcome.deltaCollateral > 0n ? t("mint.deposit_collateral") : t("mint.withdraw_collateral"),
@@ -64,16 +68,16 @@ export const executeLoanAdjust = async ({
 		},
 		outcome.deltaDebt !== 0n && {
 			title: outcome.deltaDebt > 0n ? t("mint.borrow_more") : t("mint.repay"),
-			value: formatPositionValue(outcome.deltaDebt > 0n ? outcome.deltaDebt : -outcome.deltaDebt, 18, position.stablecoinSymbol),
+			value: formatPositionValue(debtDisplayAmount, 18, position.stablecoinSymbol),
 		},
 	].filter(Boolean) as { title: string; value: string }[];
 
 	const txTitle = isFullClose
 		? t("mint.close_position")
 		: outcome.deltaDebt < 0n
-		? `${t("mint.repay")} ${formatPositionValue(-outcome.deltaDebt, 18, position.stablecoinSymbol)}`
+		? `${t("mint.repay")} ${formatPositionValue(debtDisplayAmount, 18, position.stablecoinSymbol)}`
 		: outcome.deltaDebt > 0n
-		? `${t("mint.lending")} ${formatPositionValue(outcome.deltaDebt, 18, position.stablecoinSymbol)}`
+		? `${t("mint.lending")} ${formatPositionValue(debtDisplayAmount, 18, position.stablecoinSymbol)}`
 		: t("mint.adjust_position");
 
 	if (isRepayOnly) {

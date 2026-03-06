@@ -12,6 +12,27 @@ export const walletAmountToDebt = (walletAmount: bigint, reserveContribution: nu
 	return rc < 1_000_000n ? (walletAmount * 1_000_000n) / (1_000_000n - rc) : walletAmount;
 };
 
+/** Net debt visible to the user: principal after reserve discount + accrued interest */
+export const getNetDebt = (principal: bigint, interest: bigint, reserveContribution: number): bigint =>
+	getAmountLended(principal, reserveContribution) + interest;
+
+/**
+ * Convert a wallet repayment amount to the raw debt reduction it achieves.
+ * Interest is paid 1:1 from wallet. Principal portion gets the reserve discount (burns more debt per wallet unit).
+ */
+export const walletRepayToDebtReduction = (walletAmount: bigint, interest: bigint, reserveContribution: number): bigint => {
+	if (walletAmount <= interest) return walletAmount;
+	const principalPayment = walletAmount - interest;
+	return interest + walletAmountToDebt(principalPayment, reserveContribution);
+};
+
+/** Inverse of walletRepayToDebtReduction: how much wallet JUSD to reduce debt by `debtReduction`. */
+export const debtReductionToWalletCost = (debtReduction: bigint, interest: bigint, reserveContribution: number): bigint => {
+	if (debtReduction <= interest) return debtReduction;
+	const principalReduction = debtReduction - interest;
+	return interest + getAmountLended(principalReduction, reserveContribution);
+};
+
 export type LoanDetails = {
 	loanAmount: bigint;
 	apr: number;

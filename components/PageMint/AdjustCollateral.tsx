@@ -23,7 +23,7 @@ import { Tooltip } from "flowbite-react";
 import { approveToken } from "../../hooks/useApproveToken";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { mainnet, testnet } from "@config";
-import { getAmountLended, getRetainedReserve } from "../../utils/loanCalculations";
+import { debtReductionToWalletCost } from "../../utils/loanCalculations";
 
 enum StrategyKey {
 	HIGHER_PRICE = "higherPrice",
@@ -39,6 +39,7 @@ interface AdjustCollateralProps {
 	collateralRequirement: bigint;
 	positionPrice: bigint;
 	principal: bigint;
+	interest: bigint;
 	walletBalance: bigint;
 	minimumCollateral: bigint;
 	jusdBalance: bigint;
@@ -57,6 +58,7 @@ export const AdjustCollateral = ({
 	collateralRequirement,
 	positionPrice,
 	principal,
+	interest,
 	walletBalance,
 	minimumCollateral,
 	jusdBalance,
@@ -131,8 +133,7 @@ export const AdjustCollateral = ({
 	const newDebt = strategies[StrategyKey.REPAY_LOAN] ? currentDebt - calculatedRepayAmount : currentDebt;
 	const newPrice = strategies[StrategyKey.HIGHER_PRICE] ? calculatedNewPrice : positionPrice;
 
-	const walletRepayAmount = getAmountLended(calculatedRepayAmount, position.reserveContribution);
-	const reserveCoversAmount = getRetainedReserve(calculatedRepayAmount, position.reserveContribution);
+	const walletRepayAmount = debtReductionToWalletCost(calculatedRepayAmount, interest, position.reserveContribution);
 	const jusdInsufficientError =
 		!isIncrease && strategies[StrategyKey.REPAY_LOAN] && walletRepayAmount > 0n && walletRepayAmount > jusdBalance
 			? t("mint.insufficient_balance", { symbol: position.stablecoinSymbol })
@@ -368,7 +369,7 @@ export const AdjustCollateral = ({
 		if (delta === 0n) return isIncrease ? t("common.add") : t("common.remove");
 		const formattedDelta = formatCurrency(formatUnits(delta, collateralDecimals), 4, 8);
 		if (strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n) {
-			const formattedRepay = formatCurrency(formatUnits(calculatedRepayAmount, 18), 2, 2);
+			const formattedRepay = formatCurrency(formatUnits(walletRepayAmount, 18), 2, 2);
 			if (isClosingPosition) {
 				return `${t("mint.repay")} ${formattedRepay} ${position.stablecoinSymbol}, ${t("common.remove")} & ${t(
 					"mint.close_position"
@@ -478,17 +479,9 @@ export const AdjustCollateral = ({
 				)}
 				{strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n && (
 					<div className="flex justify-between text-sm">
-						<span className="text-text-muted2">{t("mint.you_pay_from_wallet")}</span>
+						<span className="text-text-muted2">{t("mint.repay")}</span>
 						<span className="font-medium text-text-title">
 							{formatCurrency(formatUnits(walletRepayAmount, 18), 2, 2)} {position.stablecoinSymbol}
-						</span>
-					</div>
-				)}
-				{strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n && (
-					<div className="flex justify-between text-sm">
-						<span className="text-text-muted2">{t("mint.reserve_covers")}</span>
-						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(reserveCoversAmount, 18), 2, 2)} {position.stablecoinSymbol}
 						</span>
 					</div>
 				)}
