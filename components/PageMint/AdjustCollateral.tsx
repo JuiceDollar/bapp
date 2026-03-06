@@ -254,10 +254,16 @@ export const AdjustCollateral = ({
 				const needsSeparateRepay =
 					!isFullClose && strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n && targetDebt >= principal;
 
+				// Use principal - calculatedRepayAmount (not currentDebt - calculatedRepayAmount)
+				// so the principal reduction is a clean number. The contract pays interest
+				// separately in _payDownDebt, so stale interest should not leak into newPrincipal.
+				const rawNewPrincipal = principal - calculatedRepayAmount;
 				const newPrincipal = isFullClose
 					? 0n // Case 1: close position
 					: strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n && targetDebt < principal
-					? targetDebt // Case 2: repay > interest
+					? rawNewPrincipal > 0n
+						? rawNewPrincipal
+						: 0n // Case 2: repay > interest
 					: principal; // Case 3 & 4: no principal change in adjust()
 
 				const isWithinDelta = delta <= maxRemovableWithoutAdjustment;
