@@ -390,11 +390,19 @@ export const AdjustLiqPrice = ({
 						}
 						className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
 					>
-						{activeStrategy === StrategyKey.REPAY_DEBT ? (
-							<RemoveCircleOutlineIcon color="#F57F00" />
-						) : (
-							<AddCircleOutlineIcon color="#8B92A8" />
-						)}
+						<span
+							className={`flex items-center ${
+								activeStrategy === StrategyKey.REPAY_DEBT
+									? "text-button-textGroup-primary-text"
+									: "text-button-textGroup-secondary-text"
+							}`}
+						>
+							{activeStrategy === StrategyKey.REPAY_DEBT ? (
+								<RemoveCircleOutlineIcon color="currentColor" />
+							) : (
+								<AddCircleOutlineIcon color="currentColor" />
+							)}
+						</span>
 						<span
 							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
 								activeStrategy === StrategyKey.REPAY_DEBT
@@ -415,11 +423,19 @@ export const AdjustLiqPrice = ({
 						}
 						className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
 					>
-						{activeStrategy === StrategyKey.ADD_COLLATERAL ? (
-							<RemoveCircleOutlineIcon color="#F57F00" />
-						) : (
-							<AddCircleOutlineIcon color="#8B92A8" />
-						)}
+						<span
+							className={`flex items-center ${
+								activeStrategy === StrategyKey.ADD_COLLATERAL
+									? "text-button-textGroup-primary-text"
+									: "text-button-textGroup-secondary-text"
+							}`}
+						>
+							{activeStrategy === StrategyKey.ADD_COLLATERAL ? (
+								<RemoveCircleOutlineIcon color="currentColor" />
+							) : (
+								<AddCircleOutlineIcon color="currentColor" />
+							)}
+						</span>
 						<span
 							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
 								activeStrategy === StrategyKey.ADD_COLLATERAL

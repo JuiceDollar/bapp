@@ -445,11 +445,19 @@ export const AdjustCollateral = ({
 						onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.REPAY_LOAN)}
 						className="flex items-center gap-x-1 cursor-pointer hover:opacity-80 transition-opacity py-1"
 					>
-						{strategies[StrategyKey.REPAY_LOAN] ? (
-							<RemoveCircleOutlineIcon color="#F57F00" />
-						) : (
-							<AddCircleOutlineIcon color="#8B92A8" />
-						)}
+						<span
+							className={`flex items-center ${
+								strategies[StrategyKey.REPAY_LOAN]
+									? "text-button-textGroup-primary-text"
+									: "text-button-textGroup-secondary-text"
+							}`}
+						>
+							{strategies[StrategyKey.REPAY_LOAN] ? (
+								<RemoveCircleOutlineIcon color="currentColor" />
+							) : (
+								<AddCircleOutlineIcon color="currentColor" />
+							)}
+						</span>
 						<span
 							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight ${
 								strategies[StrategyKey.REPAY_LOAN]

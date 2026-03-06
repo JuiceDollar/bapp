@@ -322,14 +322,14 @@ export const AdjustLoan = ({
 					>
 						{strategies[StrategyKey.ADD_COLLATERAL] ? (
 							<Tooltip content={t("mint.tooltip_remove_collateral")} arrow style="light">
-								<span className="flex items-center">
-									<RemoveCircleOutlineIcon color="#F57F00" />
+								<span className="flex items-center text-button-textGroup-primary-text">
+									<RemoveCircleOutlineIcon color="currentColor" />
 								</span>
 							</Tooltip>
 						) : (
 							<Tooltip content={t("mint.tooltip_add_collateral")} arrow style="light">
-								<span className="flex items-center">
-									<AddCircleOutlineIcon color="#8B92A8" />
+								<span className="flex items-center text-button-textGroup-secondary-text">
+									<AddCircleOutlineIcon color="currentColor" />
 								</span>
 							</Tooltip>
 						)}
