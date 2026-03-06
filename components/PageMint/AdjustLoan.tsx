@@ -21,7 +21,7 @@ import { mainnet, testnet } from "@config";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
-import { getAmountLended, getRetainedReserve, walletAmountToDebtReduction, getAvailableToBorrow } from "../../utils/loanCalculations";
+import { getAmountLended, getRetainedReserve, walletAmountToDebt } from "../../utils/loanCalculations";
 
 enum StrategyKey {
 	ADD_COLLATERAL = "addCollateral",
@@ -102,10 +102,13 @@ export const AdjustLoan = ({
 
 	const maxDelta = useMemo(() => {
 		if (!isIncrease) return getAmountLended(currentDebt, position.reserveContribution);
-		if (!hasAnyStrategy && availableWithoutAdjustment > 0n) return availableWithoutAdjustment;
+		if (!hasAnyStrategy) return getAmountLended(availableWithoutAdjustment, position.reserveContribution);
 		const maxCollateral = strategies[StrategyKey.ADD_COLLATERAL] ? collateralBalance + walletBalance : collateralBalance;
-		const deltaFromStrategies = getAvailableToBorrow(liqPrice, maxCollateral, collateralRequirement);
-		return deltaFromStrategies > availableWithoutAdjustment ? deltaFromStrategies : availableWithoutAdjustment;
+		const rawMaxDebtStrategy = (liqPrice * maxCollateral) / BigInt(1e18);
+		const maxDebt = rawMaxDebtStrategy - rawMaxDebtStrategy / 10000n;
+		const deltaFromStrategies = maxDebt > currentDebt ? maxDebt - currentDebt : 0n;
+		const maxDebtDelta = deltaFromStrategies > availableWithoutAdjustment ? deltaFromStrategies : availableWithoutAdjustment;
+		return getAmountLended(maxDebtDelta, position.reserveContribution);
 	}, [
 		isIncrease,
 		hasAnyStrategy,
@@ -120,9 +123,10 @@ export const AdjustLoan = ({
 	]);
 
 	const delta = BigInt(deltaAmount || 0);
-	const debtReduction = !isIncrease && delta > 0n ? walletAmountToDebtReduction(delta, position.reserveContribution) : 0n;
+	const debtDelta = isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
+	const debtReduction = !isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
 
-	const showStrategyOptions = isIncrease && delta > availableWithoutAdjustment;
+	const showStrategyOptions = isIncrease && debtDelta > availableWithoutAdjustment;
 	const FULL_REPAY_THRESHOLD = currentDebt / 1000n;
 	const isFullRepay = !isIncrease && delta > 0n && (debtReduction >= currentDebt || currentDebt - debtReduction <= FULL_REPAY_THRESHOLD);
 
@@ -132,7 +136,7 @@ export const AdjustLoan = ({
 			const walletInput = BigInt(deltaAmount);
 			if (walletInput === 0n) return setOutcome(null);
 			if (!isIncrease) {
-				const debtRed = walletAmountToDebtReduction(walletInput, position.reserveContribution);
+				const debtRed = walletAmountToDebt(walletInput, position.reserveContribution);
 				const isFullRepayNow = debtRed >= currentDebt || currentDebt - debtRed <= currentDebt / 1000n;
 				if (isFullRepayNow) {
 					return setOutcome({
@@ -151,8 +155,8 @@ export const AdjustLoan = ({
 				}
 				return setOutcome(solveManage(currentPosition, Target.LOAN, Strategy.KEEP_COLLATERAL, currentDebt - debtRed));
 			}
-			const delta = walletInput;
-			const newDebt = currentDebt + delta;
+			const debtIncrease = walletAmountToDebt(walletInput, position.reserveContribution);
+			const newDebt = currentDebt + debtIncrease;
 			const maxDebtNoAdjust = (liqPrice * collateralBalance) / BigInt(1e18);
 			const canBorrowWithoutAdjustment = newDebt <= maxDebtNoAdjust;
 			if (!strategies[StrategyKey.ADD_COLLATERAL] && !canBorrowWithoutAdjustment) return setOutcome(null);
@@ -165,7 +169,7 @@ export const AdjustLoan = ({
 						expiration: currentPosition.expiration,
 					},
 					deltaCollateral: 0n,
-					deltaDebt: delta,
+					deltaDebt: debtIncrease,
 					deltaLiqPrice: 0n,
 					txPlan: [TxAction.BORROW],
 					isValid: true,
@@ -354,18 +358,20 @@ export const AdjustLoan = ({
 					<div className="flex justify-between text-sm">
 						<span className="text-text-muted2">{t("mint.you_receive_now")}</span>
 						<span className="font-medium text-green-600 dark:text-green-400">
-							+{formatCurrency(formatUnits(getAmountLended(delta, position.reserveContribution), 18), 2, 2)} JUSD
+							+{formatCurrency(formatUnits(delta, 18), 2, 2)} JUSD
 						</span>
 					</div>
 					<div className="flex justify-between text-sm">
 						<span className="text-text-muted2">{t("mint.goes_to_reserve")}</span>
 						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(getRetainedReserve(delta, position.reserveContribution), 18), 2, 2)} JUSD
+							{formatCurrency(formatUnits(getRetainedReserve(debtDelta, position.reserveContribution), 18), 2, 2)} JUSD
 						</span>
 					</div>
 					<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
 						<span className="font-bold text-text-title">{t("mint.new_total_debt")}</span>
-						<span className="font-bold text-text-title">{formatCurrency(formatUnits(currentDebt + delta, 18), 2, 2)} JUSD</span>
+						<span className="font-bold text-text-title">
+							{formatCurrency(formatUnits(currentDebt + debtDelta, 18), 2, 2)} JUSD
+						</span>
 					</div>
 				</div>
 			)}
