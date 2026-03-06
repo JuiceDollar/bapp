@@ -5,11 +5,13 @@ export const SvgIconButton = ({
 	onClick,
 	SvgComponent,
 	children,
+	labelClassName,
 }: {
 	isSelected: boolean;
 	onClick: () => void;
 	SvgComponent: React.ComponentType<{ color?: string; className?: string }>;
 	children: React.ReactNode;
+	labelClassName?: string;
 }) => {
 	const [isHover, setIsHover] = useState(false);
 	return (
@@ -25,7 +27,7 @@ export const SvgIconButton = ({
 					isSelected
 						? "text-button-textGroup-primary-text"
 						: "text-button-textGroup-secondary-text group-hover:text-button-textGroup-hover-text"
-				} text-base font-extrabold leading-tight`}
+				} leading-tight ${labelClassName ?? "text-sm font-semibold sm:text-base sm:font-extrabold"}`}
 			>
 				{children}
 			</span>
