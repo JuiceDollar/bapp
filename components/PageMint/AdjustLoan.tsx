@@ -21,7 +21,7 @@ import { mainnet, testnet } from "@config";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
-import { getAmountLended, getRetainedReserve, walletAmountToDebt } from "../../utils/loanCalculations";
+import { getAmountLended, getRetainedReserve, walletAmountToDebt, getAvailableToBorrow } from "../../utils/loanCalculations";
 
 enum StrategyKey {
 	ADD_COLLATERAL = "addCollateral",
