@@ -307,23 +307,23 @@ export const AdjustLoan = ({
 
 			{showStrategyOptions && !hasAnyStrategy && (
 				<div className="space-y-1 px-4">
-					<div className="text-sm font-medium text-text-title">{t("mint.position_needs_adjustments")}</div>
+					<div className="text-sm font-medium text-text-muted2">{t("mint.position_needs_adjustments")}</div>
 					{!strategies[StrategyKey.ADD_COLLATERAL] && (
 						<div
 							role="button"
 							tabIndex={0}
 							onClick={() => toggleStrategy(StrategyKey.ADD_COLLATERAL)}
 							onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.ADD_COLLATERAL)}
-							className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+							className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
 						>
-							<div className="flex items-center gap-1">
-								<span className="text-sm text-text-title">{t("mint.more_collateral")}</span>
-								<Tooltip content={t("mint.tooltip_add_collateral")} arrow style="light">
-									<span className="w-4 h-4 text-primary flex items-center">
-										<AddCircleOutlineIcon color="currentColor" />
-									</span>
-								</Tooltip>
-							</div>
+							<Tooltip content={t("mint.tooltip_add_collateral")} arrow style="light">
+								<span className="flex items-center">
+									<AddCircleOutlineIcon color="#8B92A8" />
+								</span>
+							</Tooltip>
+							<span className="!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 text-button-textGroup-secondary-text">
+								{t("mint.more_collateral")}
+							</span>
 						</div>
 					)}
 				</div>
@@ -336,19 +336,24 @@ export const AdjustLoan = ({
 			{isIncrease && (
 				<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
 					{strategies[StrategyKey.ADD_COLLATERAL] && outcome && (
-						<div className="flex justify-between text-sm">
-							<div className="flex items-center gap-1">
-								<span className="text-text-muted2">{t("mint.more_collateral")}</span>
+						<div className="flex justify-between items-center gap-3 text-sm">
+							<div
+								role="button"
+								tabIndex={0}
+								onClick={() => toggleStrategy(StrategyKey.ADD_COLLATERAL)}
+								onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.ADD_COLLATERAL)}
+								className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity min-w-0"
+							>
 								<Tooltip content={t("mint.tooltip_remove_collateral")} arrow style="light">
-									<span
-										className="w-4 h-4 text-primary cursor-pointer hover:opacity-80 flex items-center"
-										onClick={() => toggleStrategy(StrategyKey.ADD_COLLATERAL)}
-									>
-										<RemoveCircleOutlineIcon color="currentColor" />
+									<span className="flex items-center">
+										<RemoveCircleOutlineIcon color="#F57F00" />
 									</span>
 								</Tooltip>
+								<span className="!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 text-button-textGroup-primary-text">
+									{t("mint.more_collateral")}
+								</span>
 							</div>
-							<span className="font-medium text-text-title">
+							<span className="font-medium text-text-title flex-shrink-0">
 								{formatCurrency(formatUnits(outcome.deltaCollateral, collateralDecimals), 3, 3)} {collateralSymbol}
 							</span>
 						</div>

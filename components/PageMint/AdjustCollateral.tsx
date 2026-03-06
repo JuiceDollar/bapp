@@ -437,24 +437,28 @@ export const AdjustCollateral = ({
 					{jusdInsufficientError && strategies[StrategyKey.REPAY_LOAN] && (
 						<div className="text-xs text-red-500 mb-1">{jusdInsufficientError}</div>
 					)}
-					<div className="text-sm font-medium text-text-title">{t("mint.position_needs_adjustments")}</div>
+					<div className="text-sm font-medium text-text-muted2">{t("mint.position_needs_adjustments")}</div>
 					<div
 						role="button"
 						tabIndex={0}
 						onClick={() => toggleStrategy(StrategyKey.REPAY_LOAN)}
 						onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.REPAY_LOAN)}
-						className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+						className="flex items-center gap-x-1 cursor-pointer hover:opacity-80 transition-opacity py-1"
 					>
-						<div className="flex items-center gap-1">
-							<span className="text-sm text-text-title">{t("mint.repay_loan")}</span>
-							<span className="w-4 h-4 text-primary flex items-center">
-								{strategies[StrategyKey.REPAY_LOAN] ? (
-									<RemoveCircleOutlineIcon color="currentColor" />
-								) : (
-									<AddCircleOutlineIcon color="currentColor" />
-								)}
-							</span>
-						</div>
+						{strategies[StrategyKey.REPAY_LOAN] ? (
+							<RemoveCircleOutlineIcon color="#F57F00" />
+						) : (
+							<AddCircleOutlineIcon color="#8B92A8" />
+						)}
+						<span
+							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight ${
+								strategies[StrategyKey.REPAY_LOAN]
+									? "text-button-textGroup-primary-text"
+									: "text-button-textGroup-secondary-text"
+							}`}
+						>
+							{t("mint.repay_loan")}
+						</span>
 					</div>
 				</div>
 			)}

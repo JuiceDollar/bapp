@@ -379,7 +379,7 @@ export const AdjustLiqPrice = ({
 							{t("mint.insufficient_balance", { symbol: position.stablecoinSymbol })}
 						</div>
 					)}
-					<div className="text-sm font-medium text-text-title">{t("mint.position_needs_adjustments")}</div>
+					<div className="text-sm font-medium text-text-muted2">{t("mint.position_needs_adjustments")}</div>
 					<div
 						role="button"
 						tabIndex={0}
@@ -388,18 +388,22 @@ export const AdjustLiqPrice = ({
 							e.key === "Enter" &&
 							setActiveStrategy(activeStrategy === StrategyKey.REPAY_DEBT ? null : StrategyKey.REPAY_DEBT)
 						}
-						className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+						className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
 					>
-						<div className="flex items-center gap-1">
-							<span className="text-sm text-text-title">{t("mint.repay_debt_strategy")}</span>
-							<span className="w-4 h-4 text-primary flex items-center">
-								{activeStrategy === StrategyKey.REPAY_DEBT ? (
-									<RemoveCircleOutlineIcon color="currentColor" />
-								) : (
-									<AddCircleOutlineIcon color="currentColor" />
-								)}
-							</span>
-						</div>
+						{activeStrategy === StrategyKey.REPAY_DEBT ? (
+							<RemoveCircleOutlineIcon color="#F57F00" />
+						) : (
+							<AddCircleOutlineIcon color="#8B92A8" />
+						)}
+						<span
+							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
+								activeStrategy === StrategyKey.REPAY_DEBT
+									? "text-button-textGroup-primary-text"
+									: "text-button-textGroup-secondary-text"
+							}`}
+						>
+							{t("mint.repay_debt_strategy")}
+						</span>
 					</div>
 					<div
 						role="button"
@@ -409,18 +413,22 @@ export const AdjustLiqPrice = ({
 							e.key === "Enter" &&
 							setActiveStrategy(activeStrategy === StrategyKey.ADD_COLLATERAL ? null : StrategyKey.ADD_COLLATERAL)
 						}
-						className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+						className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
 					>
-						<div className="flex items-center gap-1">
-							<span className="text-sm text-text-title">{t("mint.add_collateral")}</span>
-							<span className="w-4 h-4 text-primary flex items-center">
-								{activeStrategy === StrategyKey.ADD_COLLATERAL ? (
-									<RemoveCircleOutlineIcon color="currentColor" />
-								) : (
-									<AddCircleOutlineIcon color="currentColor" />
-								)}
-							</span>
-						</div>
+						{activeStrategy === StrategyKey.ADD_COLLATERAL ? (
+							<RemoveCircleOutlineIcon color="#F57F00" />
+						) : (
+							<AddCircleOutlineIcon color="#8B92A8" />
+						)}
+						<span
+							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
+								activeStrategy === StrategyKey.ADD_COLLATERAL
+									? "text-button-textGroup-primary-text"
+									: "text-button-textGroup-secondary-text"
+							}`}
+						>
+							{t("mint.add_collateral")}
+						</span>
 					</div>
 				</div>
 			)}
