@@ -371,13 +371,19 @@ export const AdjustCollateral = ({
 		if (strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n) {
 			const formattedRepay = formatCurrency(formatUnits(walletRepayAmount, 18), 2, 2);
 			if (isClosingPosition) {
-				return `${t("mint.repay")} ${formattedRepay} ${position.stablecoinSymbol}, ${t("common.remove")} & ${t(
-					"mint.close_position"
-				)}`;
+				return t("mint.repay_and_close_position");
 			}
-			return `${t("mint.repay")} ${formattedRepay} ${position.stablecoinSymbol} & ${t(
-				"common.remove"
-			)} ${formattedDelta} ${collateralSymbol}`;
+			return (
+				<>
+					<span className="sm:hidden">
+						{t("mint.repay")} {position.stablecoinSymbol} & {t("common.remove")} {collateralSymbol}
+					</span>
+					<span className="hidden sm:inline">
+						{t("mint.repay")} {formattedRepay} {position.stablecoinSymbol} & {t("common.remove")} {formattedDelta}{" "}
+						{collateralSymbol}
+					</span>
+				</>
+			);
 		}
 		if (strategies[StrategyKey.HIGHER_PRICE] && newPrice > positionPrice) {
 			return t("mint.adjust_liq_price_btn");
@@ -388,18 +394,23 @@ export const AdjustCollateral = ({
 	return (
 		<div className="flex flex-col gap-y-4">
 			<div className="flex flex-col gap-y-3">
-				<div className="flex flex-row justify-between items-center">
-					<div className="text-lg font-bold">
-						{t("mint.adjust")} {t("mint.collateral")}
-					</div>
-					<div className="flex flex-row items-center">
-						<SvgIconButton isSelected={isIncrease} onClick={() => setIsIncrease(true)} SvgComponent={AddCircleOutlineIcon}>
-							{t("common.add")}
-						</SvgIconButton>
-						<SvgIconButton isSelected={!isIncrease} onClick={() => setIsIncrease(false)} SvgComponent={RemoveCircleOutlineIcon}>
-							{t("common.remove")}
-						</SvgIconButton>
-					</div>
+				<div className="flex flex-row items-center justify-end">
+					<SvgIconButton
+						isSelected={isIncrease}
+						onClick={() => setIsIncrease(true)}
+						SvgComponent={AddCircleOutlineIcon}
+						labelClassName="!text-sm !font-bold sm:!text-base sm:!font-extrabold"
+					>
+						<span className="whitespace-nowrap">{t("mint.add_collateral")}</span>
+					</SvgIconButton>
+					<SvgIconButton
+						isSelected={!isIncrease}
+						onClick={() => setIsIncrease(false)}
+						SvgComponent={RemoveCircleOutlineIcon}
+						labelClassName="!text-sm !font-bold sm:!text-base sm:!font-extrabold"
+					>
+						<span className="whitespace-nowrap">{t("mint.remove_collateral")}</span>
+					</SvgIconButton>
 				</div>
 
 				<NormalInputOutlined
@@ -436,24 +447,36 @@ export const AdjustCollateral = ({
 					{jusdInsufficientError && strategies[StrategyKey.REPAY_LOAN] && (
 						<div className="text-xs text-red-500 mb-1">{jusdInsufficientError}</div>
 					)}
-					<div className="text-sm font-medium text-text-title">{t("mint.position_needs_adjustments")}</div>
+					<div className="text-sm font-medium text-text-muted2">{t("mint.position_needs_adjustments")}</div>
 					<div
 						role="button"
 						tabIndex={0}
 						onClick={() => toggleStrategy(StrategyKey.REPAY_LOAN)}
 						onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.REPAY_LOAN)}
-						className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+						className="flex items-center gap-x-1 cursor-pointer hover:opacity-80 transition-opacity py-1"
 					>
-						<div className="flex items-center gap-1">
-							<span className="text-sm text-text-title">{t("mint.repay_loan")}</span>
-							<span className="w-4 h-4 text-primary flex items-center">
-								{strategies[StrategyKey.REPAY_LOAN] ? (
-									<RemoveCircleOutlineIcon color="currentColor" />
-								) : (
-									<AddCircleOutlineIcon color="currentColor" />
-								)}
-							</span>
-						</div>
+						<span
+							className={`flex items-center ${
+								strategies[StrategyKey.REPAY_LOAN]
+									? "text-button-textGroup-primary-text"
+									: "text-button-textGroup-secondary-text"
+							}`}
+						>
+							{strategies[StrategyKey.REPAY_LOAN] ? (
+								<RemoveCircleOutlineIcon color="currentColor" />
+							) : (
+								<AddCircleOutlineIcon color="currentColor" />
+							)}
+						</span>
+						<span
+							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight ${
+								strategies[StrategyKey.REPAY_LOAN]
+									? "text-button-textGroup-primary-text"
+									: "text-button-textGroup-secondary-text"
+							}`}
+						>
+							{t("mint.repay_loan")}
+						</span>
 					</div>
 				</div>
 			)}

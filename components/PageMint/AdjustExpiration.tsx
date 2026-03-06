@@ -448,15 +448,20 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 							hasInsufficientCollateral
 						}
 					>
-						{`${t("mint.extend_roll_borrowing")} ${
-							expirationDate
-								? `to ${expirationDate.toLocaleDateString(router?.locale || "en", {
-										year: "numeric",
-										month: "short",
-										day: "numeric",
-								  })}`
-								: ""
-						}`}
+						<>
+							<span className="sm:hidden">{t("mint.extend_roll_borrowing_short")}</span>
+							<span className="hidden sm:inline">
+								{`${t("mint.extend_roll_borrowing")} ${
+									expirationDate
+										? `to ${expirationDate.toLocaleDateString(router?.locale || "en", {
+												year: "numeric",
+												month: "short",
+												day: "numeric",
+										  })}`
+										: ""
+								}`}
+							</span>
+						</>
 					</Button>
 				</>
 			)}
