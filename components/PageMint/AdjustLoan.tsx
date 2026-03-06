@@ -305,55 +305,53 @@ export const AdjustLoan = ({
 				{jusdInsufficientError && <div className="ml-1 text-red-500 text-sm">{jusdInsufficientError}</div>}
 			</div>
 
-			{showStrategyOptions && !hasAnyStrategy && (
+			{showStrategyOptions && (
 				<div className="space-y-1 px-4">
+					{insufficientCollateral && (
+						<div className="text-xs text-red-500 mb-1">
+							{t("common.error.insufficient_balance", { symbol: collateralSymbol })}
+						</div>
+					)}
 					<div className="text-sm font-medium text-text-muted2">{t("mint.position_needs_adjustments")}</div>
-					{!strategies[StrategyKey.ADD_COLLATERAL] && (
-						<div
-							role="button"
-							tabIndex={0}
-							onClick={() => toggleStrategy(StrategyKey.ADD_COLLATERAL)}
-							onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.ADD_COLLATERAL)}
-							className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
-						>
+					<div
+						role="button"
+						tabIndex={0}
+						onClick={() => toggleStrategy(StrategyKey.ADD_COLLATERAL)}
+						onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.ADD_COLLATERAL)}
+						className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
+					>
+						{strategies[StrategyKey.ADD_COLLATERAL] ? (
+							<Tooltip content={t("mint.tooltip_remove_collateral")} arrow style="light">
+								<span className="flex items-center">
+									<RemoveCircleOutlineIcon color="#F57F00" />
+								</span>
+							</Tooltip>
+						) : (
 							<Tooltip content={t("mint.tooltip_add_collateral")} arrow style="light">
 								<span className="flex items-center">
 									<AddCircleOutlineIcon color="#8B92A8" />
 								</span>
 							</Tooltip>
-							<span className="!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 text-button-textGroup-secondary-text">
-								{t("mint.more_collateral")}
-							</span>
-						</div>
-					)}
+						)}
+						<span
+							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
+								strategies[StrategyKey.ADD_COLLATERAL]
+									? "text-button-textGroup-primary-text"
+									: "text-button-textGroup-secondary-text"
+							}`}
+						>
+							{t("mint.more_collateral")}
+						</span>
+					</div>
 				</div>
-			)}
-
-			{insufficientCollateral && (
-				<div className="ml-1 text-text-warning text-sm">{t("common.error.insufficient_balance", { symbol: collateralSymbol })}</div>
 			)}
 
 			{isIncrease && (
 				<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
 					{strategies[StrategyKey.ADD_COLLATERAL] && outcome && (
-						<div className="flex justify-between items-center gap-3 text-sm">
-							<div
-								role="button"
-								tabIndex={0}
-								onClick={() => toggleStrategy(StrategyKey.ADD_COLLATERAL)}
-								onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.ADD_COLLATERAL)}
-								className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity min-w-0"
-							>
-								<Tooltip content={t("mint.tooltip_remove_collateral")} arrow style="light">
-									<span className="flex items-center">
-										<RemoveCircleOutlineIcon color="#F57F00" />
-									</span>
-								</Tooltip>
-								<span className="!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 text-button-textGroup-primary-text">
-									{t("mint.more_collateral")}
-								</span>
-							</div>
-							<span className="font-medium text-text-title flex-shrink-0">
+						<div className="flex justify-between text-sm">
+							<span className="text-text-muted2">{t("mint.more_collateral")}</span>
+							<span className="font-medium text-text-title">
 								{formatCurrency(formatUnits(outcome.deltaCollateral, collateralDecimals), 3, 3)} {collateralSymbol}
 							</span>
 						</div>
