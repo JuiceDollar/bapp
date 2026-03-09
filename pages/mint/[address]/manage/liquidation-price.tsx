@@ -25,6 +25,7 @@ export default function ManageLiquidationPrice() {
 		collateralBalance,
 		currentDebt,
 		principal,
+		interest,
 		walletBalance,
 		jusdBalance,
 		jusdAllowance,
@@ -67,6 +68,7 @@ export default function ManageLiquidationPrice() {
 						collateralBalance={collateralBalance}
 						currentDebt={currentDebt}
 						principal={principal}
+						interest={interest}
 						walletBalance={walletBalance}
 						jusdBalance={jusdBalance}
 						jusdAllowance={jusdAllowance}

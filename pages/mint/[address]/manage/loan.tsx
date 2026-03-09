@@ -18,6 +18,8 @@ export default function ManageLoan() {
 		principal,
 		collateralBalance,
 		currentDebt,
+		interest,
+		netDebt,
 		collateralRequirement,
 		liqPrice,
 		walletBalance,
@@ -58,6 +60,8 @@ export default function ManageLoan() {
 						position={position}
 						collateralBalance={collateralBalance}
 						currentDebt={currentDebt}
+						interest={interest}
+						netDebt={netDebt}
 						collateralRequirement={collateralRequirement}
 						liqPrice={liqPrice}
 						principal={principal}
