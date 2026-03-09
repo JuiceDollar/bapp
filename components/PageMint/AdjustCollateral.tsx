@@ -93,9 +93,6 @@ export const AdjustCollateral = ({
 	const collateralDecimals = position.collateralDecimals || 18;
 	const collateralSymbol = normalizeTokenSymbol(position.collateralSymbol || "");
 	const priceDecimals = 36 - collateralDecimals;
-	const PRICE_SCALE = BigInt(10 ** priceDecimals);
-	const debtRatio = collateralBalance > 0n ? (currentDebt * PRICE_SCALE) / collateralBalance : 0n;
-	const liqPrice = debtRatio > positionPrice ? debtRatio : positionPrice;
 
 	useEffect(() => {
 		setDeltaAmount("");
@@ -246,7 +243,7 @@ export const AdjustCollateral = ({
 					address: position.position as Address,
 					abi: PositionV2ABI,
 					functionName: "adjust",
-					args: [principal, newCollateral, liqPrice, false],
+					args: [principal, newCollateral, positionPrice, false],
 					value: isNativeWrappedPosition ? delta : undefined,
 				});
 
