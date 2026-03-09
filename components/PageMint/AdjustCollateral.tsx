@@ -119,7 +119,6 @@ export const AdjustCollateral = ({
 	const needsStrategy = showStrategyOptions && !hasAnyStrategy;
 
 	const newCollateral = isIncrease ? collateralBalance + delta : collateralBalance - delta;
-	const isClosingPosition = !isIncrease && newCollateral === 0n;
 
 	const calculatedNewPrice = useMemo(() => {
 		if (isIncrease || !strategies[StrategyKey.HIGHER_PRICE] || newCollateral === 0n) return positionPrice;
@@ -141,6 +140,12 @@ export const AdjustCollateral = ({
 	const newDebt = strategies[StrategyKey.REPAY_LOAN] ? currentDebt - calculatedRepayAmount : currentDebt;
 	const newPrice = strategies[StrategyKey.HIGHER_PRICE] ? calculatedNewPrice : positionPrice;
 
+	// Snap dust collateral to full withdrawal when full debt is being repaid
+	const snapToClose = !isIncrease && belowMinimumCollateral && strategies[StrategyKey.REPAY_LOAN];
+	const effectiveNewCollateral = snapToClose ? 0n : newCollateral;
+	const effectiveDelta = snapToClose ? collateralBalance : delta;
+	const isClosingPosition = !isIncrease && effectiveNewCollateral === 0n;
+
 	const walletRepayAmount = debtReductionToWalletCost(calculatedRepayAmount, interest, position.reserveContribution);
 	const jusdInsufficientError =
 		!isIncrease && strategies[StrategyKey.REPAY_LOAN] && walletRepayAmount > 0n && walletRepayAmount > jusdBalance
@@ -154,7 +159,6 @@ export const AdjustCollateral = ({
 		}
 
 		const delta = BigInt(deltaAmount || 0);
-		const newCollateral = isIncrease ? collateralBalance + delta : collateralBalance - delta;
 		const validationDebt = strategies[StrategyKey.REPAY_LOAN] ? currentDebt - calculatedRepayAmount : currentDebt;
 		const formattedMinCollateral = formatCurrency(formatUnits(minimumCollateral, collateralDecimals), 3, 8);
 
@@ -168,7 +172,7 @@ export const AdjustCollateral = ({
 				error: t("common.error.insufficient_balance", { symbol: collateralSymbol }),
 			},
 			{
-				condition: !isIncrease && newCollateral > 0n && newCollateral < minimumCollateral && validationDebt > 0n,
+				condition: !isIncrease && effectiveNewCollateral > 0n && effectiveNewCollateral < minimumCollateral && validationDebt > 0n,
 				error: `${t("mint.error.collateral_below_min")} (${formattedMinCollateral} ${collateralSymbol})`,
 			},
 		];
@@ -184,6 +188,7 @@ export const AdjustCollateral = ({
 		strategies,
 		calculatedRepayAmount,
 		minimumCollateral,
+		effectiveNewCollateral,
 		t,
 		currentDebt,
 		collateralDecimals,
@@ -227,7 +232,7 @@ export const AdjustCollateral = ({
 		if (!position || !userAddress || delta === 0n) return;
 		if (needsStrategy) return;
 
-		if (!strategies[StrategyKey.REPAY_LOAN] && isBelowMinCollateral(newCollateral)) {
+		if (!strategies[StrategyKey.REPAY_LOAN] && isBelowMinCollateral(effectiveNewCollateral)) {
 			toast.error(t("mint.error.collateral_below_min"));
 			return;
 		}
@@ -257,7 +262,7 @@ export const AdjustCollateral = ({
 			} else {
 				// Calculate newPrincipal for adjust() call
 				// Contract: repay branch executes when newPrincipal < principal
-				const isFullClose = newCollateral === 0n && principal > 0n;
+				const isFullClose = effectiveNewCollateral === 0n && principal > 0n;
 				const targetDebt = currentDebt - calculatedRepayAmount;
 
 				// Case 3: repay ≤ interest → need separate repay() call first
@@ -318,7 +323,7 @@ export const AdjustCollateral = ({
 							address: position.position as Address,
 							abi: PositionV2ABI,
 							functionName: "adjust",
-							args: [newPrincipal, newCollateral, adjustPrice, isNativeWrappedPosition],
+							args: [newPrincipal, effectiveNewCollateral, adjustPrice, isNativeWrappedPosition],
 							account: userAddress,
 						})
 						.catch(() => 300_000n)) ?? 300_000n;
@@ -328,12 +333,12 @@ export const AdjustCollateral = ({
 					address: position.position as Address,
 					abi: PositionV2ABI,
 					functionName: "adjust",
-					args: [newPrincipal, newCollateral, adjustPrice, isNativeWrappedPosition],
+					args: [newPrincipal, effectiveNewCollateral, adjustPrice, isNativeWrappedPosition],
 					gas: (estimatedGas * 150n) / 100n,
 				});
 
 				const toastContent = [
-					{ title: t("common.txs.amount"), value: formatValue(delta) },
+					{ title: t("common.txs.amount"), value: formatValue(effectiveDelta) },
 					{ title: t("common.txs.transaction"), hash: withdrawHash },
 				];
 
@@ -519,13 +524,13 @@ export const AdjustCollateral = ({
 					<span className="text-text-muted2">{isIncrease ? t("mint.you_add") : t("mint.you_remove")}</span>
 					<span className={`font-medium ${isIncrease ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
 						{isIncrease ? "+" : "-"}
-						{formatCurrency(formatUnits(delta, collateralDecimals), 4, 8)} {collateralSymbol}
+						{formatCurrency(formatUnits(effectiveDelta, collateralDecimals), 4, 8)} {collateralSymbol}
 					</span>
 				</div>
 				<div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
 					<span className="font-bold text-text-title">{t("mint.new_collateral")}</span>
 					<span className="font-bold text-text-title">
-						{formatCurrency(formatUnits(newCollateral, collateralDecimals), 4, 8)} {collateralSymbol}
+						{formatCurrency(formatUnits(effectiveNewCollateral, collateralDecimals), 4, 8)} {collateralSymbol}
 					</span>
 				</div>
 			</div>

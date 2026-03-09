@@ -399,13 +399,13 @@ export const AdjustLoan = ({
 						<div className="flex justify-between text-sm">
 							<span className="text-text-muted2">{t("mint.repay")}</span>
 							<span className="font-medium text-red-500">
-								-{formatCurrency(formatUnits(isFullRepay ? netDebt : delta, 18), 2, 2)} JUSD
+								-{formatCurrency(formatUnits(isFullRepay ? netDebt : delta, 18), 2, 4)} JUSD
 							</span>
 						</div>
 						<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
 							<span className="font-bold text-text-title">{t("mint.new_debt")}</span>
 							<span className="font-bold text-text-title">
-								{formatCurrency(formatUnits(isFullRepay ? 0n : netDebt - delta, 18), 2, 2)} JUSD
+								{formatCurrency(formatUnits(isFullRepay ? 0n : netDebt - delta, 18), 2, 4)} JUSD
 							</span>
 						</div>
 					</div>
