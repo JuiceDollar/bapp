@@ -373,7 +373,7 @@ export const AdjustCollateral = ({
 		isTxOnGoing ||
 		needsStrategy ||
 		(!isIncrease && isInCooldown) ||
-		(!isIncrease && collateralBalance <= requiredCollateral && !isClosingPosition && newDebt > 0n);
+		(!isIncrease && !hasAnyStrategy && collateralBalance <= requiredCollateral && !isClosingPosition && newDebt > 0n);
 
 	const getButtonLabel = () => {
 		if (!isOwner) return t("mint.not_your_position");
