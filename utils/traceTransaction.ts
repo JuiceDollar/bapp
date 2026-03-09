@@ -209,7 +209,28 @@ export async function traceTransaction(params: TraceParams): Promise<TraceResult
 				aggregated.set(key, { ...t });
 			}
 		}
-		const transfers: BalanceChange[] = [...aggregated.values()];
+		// Net cross-direction: if same token appears as both "in" and "out",
+		// collapse to a single entry showing the net direction and amount.
+		const tokens = new Set([...aggregated.keys()].map((k) => k.split("-")[0]));
+		for (const token of tokens) {
+			const outEntry = aggregated.get(`${token}-out`);
+			const inEntry = aggregated.get(`${token}-in`);
+			if (outEntry && inEntry) {
+				if (outEntry.amount > inEntry.amount) {
+					outEntry.amount -= inEntry.amount;
+					aggregated.delete(`${token}-in`);
+				} else if (inEntry.amount > outEntry.amount) {
+					inEntry.amount -= outEntry.amount;
+					aggregated.delete(`${token}-out`);
+				} else {
+					aggregated.delete(`${token}-in`);
+					aggregated.delete(`${token}-out`);
+				}
+			}
+		}
+
+		// Re-apply dust filter on netted results (netting may produce sub-dust amounts)
+		const transfers: BalanceChange[] = [...aggregated.values()].filter((t) => t.amount >= 10n ** BigInt(Math.max(0, t.decimals - 4)));
 
 		const approvals: ApprovalChange[] = rawApprovals.map((a) => {
 			const meta = metadata.get(a.token) ?? { symbol: "???", decimals: 18 };

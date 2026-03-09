@@ -18,6 +18,7 @@ interface ExecuteLoanAdjustParams {
 	principal: bigint;
 	isOwner: boolean;
 	isNativeWrappedPosition: boolean;
+	walletDelta?: bigint;
 	t: (key: string, params?: Record<string, string>) => string;
 	onSuccess: () => void;
 }
@@ -29,6 +30,7 @@ export const executeLoanAdjust = async ({
 	principal,
 	isOwner,
 	isNativeWrappedPosition,
+	walletDelta,
 	t,
 	onSuccess,
 }: ExecuteLoanAdjustParams): Promise<void> => {
@@ -39,13 +41,22 @@ export const executeLoanAdjust = async ({
 
 	const isFullClose = outcome.next.debt === 0n && principal > 0n;
 
+	// Case 3: repay ≤ interest → need separate repay() call first
+	const needsSeparateRepay = !isFullClose && outcome.deltaDebt < 0n && outcome.next.debt >= principal;
+
+	// Use principal + deltaDebt (not outcome.next.debt) so the principal
+	// reduction sent to the contract is a clean number.  outcome.next.debt
+	// includes stale interest which produces fractional on-chain burns.
+	const rawNewPrincipal = principal + outcome.deltaDebt;
 	const newPrincipal = isFullClose
-		? 0n // Case 1: close position
-		: outcome.deltaDebt >= 0n
-		? principal + outcome.deltaDebt // Borrow
-		: outcome.next.debt < principal
-		? outcome.next.debt // Case 2: repay > interest
-		: principal; // Case 3 & 4: no principal change in adjust()
+		? 0n
+		: needsSeparateRepay
+		? principal // repay ≤ interest: principal unchanged in adjust()
+		: rawNewPrincipal > 0n
+		? rawNewPrincipal
+		: 0n;
+
+	const debtDisplayAmount = walletDelta != null ? walletDelta : outcome.deltaDebt > 0n ? outcome.deltaDebt : -outcome.deltaDebt;
 
 	const rows = [
 		outcome.deltaCollateral !== 0n && {
@@ -58,16 +69,16 @@ export const executeLoanAdjust = async ({
 		},
 		outcome.deltaDebt !== 0n && {
 			title: outcome.deltaDebt > 0n ? t("mint.borrow_more") : t("mint.repay"),
-			value: formatPositionValue(outcome.deltaDebt > 0n ? outcome.deltaDebt : -outcome.deltaDebt, 18, position.stablecoinSymbol),
+			value: formatPositionValue(debtDisplayAmount, 18, position.stablecoinSymbol),
 		},
 	].filter(Boolean) as { title: string; value: string }[];
 
 	const txTitle = isFullClose
 		? t("mint.close_position")
 		: outcome.deltaDebt < 0n
-		? `${t("mint.repay")} ${formatPositionValue(-outcome.deltaDebt, 18, position.stablecoinSymbol)}`
+		? `${t("mint.repay")} ${formatPositionValue(debtDisplayAmount, 18, position.stablecoinSymbol)}`
 		: outcome.deltaDebt > 0n
-		? `${t("mint.lending")} ${formatPositionValue(outcome.deltaDebt, 18, position.stablecoinSymbol)}`
+		? `${t("mint.lending")} ${formatPositionValue(debtDisplayAmount, 18, position.stablecoinSymbol)}`
 		: t("mint.adjust_position");
 
 	if (newPrincipal > principal) {

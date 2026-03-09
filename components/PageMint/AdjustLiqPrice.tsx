@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "next-i18next";
 import { Address, formatUnits } from "viem";
-import { formatCurrency, normalizeTokenSymbol, NATIVE_GAS_BUFFER } from "@utils";
+import { formatCurrency, formatTokenAmount, normalizeTokenSymbol, NATIVE_GAS_BUFFER } from "@utils";
 import { isNativeWrappedToken } from "../../utils/tokenDisplay";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
@@ -21,7 +21,7 @@ import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { useReferencePosition } from "../../hooks/useReferencePosition";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { approveToken } from "../../hooks/useApproveToken";
-import { getAmountLended, walletAmountToDebt } from "../../utils/loanCalculations";
+import { debtReductionToWalletCost, walletRepayToDebtReduction, getNetDebt } from "../../utils/loanCalculations";
 import { mainnet, testnet } from "@config";
 
 enum StrategyKey {
@@ -40,6 +40,7 @@ interface AdjustLiqPriceProps {
 	collateralBalance: bigint;
 	currentDebt: bigint;
 	principal: bigint;
+	interest: bigint;
 	walletBalance: bigint;
 	jusdBalance: bigint;
 	jusdAllowance: bigint;
@@ -60,6 +61,7 @@ export const AdjustLiqPrice = ({
 	collateralBalance,
 	currentDebt,
 	principal,
+	interest,
 	walletBalance,
 	jusdBalance,
 	jusdAllowance,
@@ -99,7 +101,7 @@ export const AdjustLiqPrice = ({
 		collateralBalance + maxWalletForAdd > 0n ? (currentDebt * PRICE_SCALE) / (collateralBalance + maxWalletForAdd) : liqPrice;
 
 	const maxRepayableForPriceAdjust = (currentDebt * 95n) / 100n;
-	const maxDebtRepayableByWallet = walletAmountToDebt(jusdBalance, rc);
+	const maxDebtRepayableByWallet = walletRepayToDebtReduction(jusdBalance, interest, rc);
 	const effectiveMaxRepay = maxDebtRepayableByWallet < maxRepayableForPriceAdjust ? maxDebtRepayableByWallet : maxRepayableForPriceAdjust;
 	const residualDebt = currentDebt > effectiveMaxRepay ? currentDebt - effectiveMaxRepay : (currentDebt * 5n) / 100n;
 	const minPriceViaRepayDebt = residualDebt > 0n && collateralBalance > 0n ? (residualDebt * PRICE_SCALE) / collateralBalance : liqPrice;
@@ -126,9 +128,9 @@ export const AdjustLiqPrice = ({
 	const requiredDebtReduction =
 		rawBuffered > maxRepayableForPriceAdjust ? maxRepayableForPriceAdjust : rawBuffered > currentDebt ? currentDebt : rawBuffered;
 
-	const repayWalletCost = getAmountLended(requiredDebtReduction, rc);
-	const repayReserveCover = requiredDebtReduction - repayWalletCost;
-	const repayNewDebt = currentDebt > requiredDebtReduction ? currentDebt - requiredDebtReduction : 0n;
+	const netDebt = getNetDebt(principal, interest, rc);
+	const repayWalletCost = debtReductionToWalletCost(requiredDebtReduction, interest, rc);
+	const repayNewDebt = netDebt > repayWalletCost ? netDebt - repayWalletCost : 0n;
 
 	const canAffordAddCollateral = requiredCollateralAdd <= maxWalletForAdd;
 	const canAffordRepayDebt = repayWalletCost <= jusdBalance;
@@ -138,8 +140,7 @@ export const AdjustLiqPrice = ({
 		!isNativeWrappedPosition &&
 		requiredCollateralAdd > 0n &&
 		collateralAllowance < requiredCollateralAdd;
-	const needsJusdApproval =
-		activeStrategy === StrategyKey.REPAY_DEBT && requiredDebtReduction > 0n && jusdAllowance < requiredDebtReduction;
+	const needsJusdApproval = activeStrategy === StrategyKey.REPAY_DEBT && repayWalletCost > 0n && jusdAllowance < repayWalletCost;
 	const needsApproval = needsCollateralApproval || needsJusdApproval;
 
 	useEffect(() => {
@@ -151,13 +152,23 @@ export const AdjustLiqPrice = ({
 		if (!needsStrategy) setActiveStrategy(null);
 	}, [needsStrategy]);
 
+	const liqPriceRounded = (liqPrice / PRICE_SCALE) * PRICE_SCALE;
+
 	const handleSliderChange = (val: string) => {
-		const newPriceValue = val ? BigInt(val) : liqPrice;
+		if (!val) {
+			setDeltaAmount("");
+			return;
+		}
+		const newPriceValue = BigInt(val);
 		if (!isIncrease && newPriceValue >= liqPrice) {
 			setDeltaAmount("");
 			return;
 		}
 		const rounded = (newPriceValue / PRICE_SCALE) * PRICE_SCALE;
+		if (!isIncrease && rounded >= liqPriceRounded) {
+			setDeltaAmount("");
+			return;
+		}
 		const newDelta = isIncrease ? rounded - liqPrice : liqPrice - rounded;
 		setDeltaAmount(newDelta > 0n ? newDelta.toString() : "");
 	};
@@ -458,7 +469,7 @@ export const AdjustLiqPrice = ({
 								canAffordAddCollateral ? "text-green-600 dark:text-green-400" : "text-red-500"
 							}`}
 						>
-							+{formatCurrency(formatUnits(requiredCollateralAdd, collateralDecimals), 4, 4)} {collateralSymbol}
+							+{formatCurrency(formatUnits(requiredCollateralAdd, collateralDecimals), 4, 8)} {collateralSymbol}
 						</span>
 					</div>
 				)}
@@ -466,25 +477,15 @@ export const AdjustLiqPrice = ({
 				{activeStrategy === StrategyKey.REPAY_DEBT && requiredDebtReduction > 0n && (
 					<>
 						<div className="flex justify-between items-center gap-3 text-xs sm:text-sm">
-							<span className="text-text-muted2 flex-shrink-0">{t("mint.you_pay_from_wallet")}</span>
-							<span
-								className={`font-medium text-right flex-1 min-w-0 ${
-									canAffordRepayDebt ? "text-text-title" : "text-red-500"
-								}`}
-							>
-								{formatCurrency(formatUnits(repayWalletCost, 18), 2, 2)} {position.stablecoinSymbol}
-							</span>
-						</div>
-						<div className="flex justify-between items-center gap-3 text-xs sm:text-sm">
-							<span className="text-text-muted2 flex-shrink-0">{t("mint.reserve_covers")}</span>
-							<span className="font-medium text-text-title text-right flex-1 min-w-0">
-								{formatCurrency(formatUnits(repayReserveCover, 18), 2, 2)} {position.stablecoinSymbol}
+							<span className="text-text-muted2 flex-shrink-0">{t("mint.repay")}</span>
+							<span className="font-medium text-red-500 text-right flex-1 min-w-0">
+								-{formatTokenAmount(repayWalletCost, 18, 2, 2)} {position.stablecoinSymbol}
 							</span>
 						</div>
 						<div className="flex justify-between items-center gap-3 text-xs sm:text-sm">
 							<span className="text-text-muted2 flex-shrink-0">{t("mint.new_debt")}</span>
 							<span className="font-medium text-text-title text-right flex-1 min-w-0">
-								{formatCurrency(formatUnits(repayNewDebt, 18), 2, 2)} {position.stablecoinSymbol}
+								{formatTokenAmount(repayNewDebt, 18, 2, 2)} {position.stablecoinSymbol}
 							</span>
 						</div>
 					</>
@@ -499,7 +500,7 @@ export const AdjustLiqPrice = ({
 				<div className="flex justify-between items-center gap-3 text-xs sm:text-base pt-1.5 sm:pt-2 border-t border-gray-300 dark:border-gray-600">
 					<span className="font-semibold sm:font-bold text-text-title flex-shrink-0">{t("mint.new_liq_price")}</span>
 					<span className="font-semibold sm:font-bold text-text-title text-right flex-1 min-w-0">
-						{formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} {pairNotation}
+						{formatCurrency(formatUnits(delta > 0n ? newPrice : positionPrice, priceDecimals), 2, 2)} {pairNotation}
 					</span>
 				</div>
 			</div>

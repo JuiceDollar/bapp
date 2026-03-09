@@ -16,6 +16,7 @@ export default function ManageCollateral() {
 	const {
 		position,
 		principal,
+		interest,
 		positionPrice,
 		collateralBalance,
 		currentDebt,
@@ -61,6 +62,7 @@ export default function ManageCollateral() {
 						collateralRequirement={collateralRequirement}
 						positionPrice={positionPrice}
 						principal={principal}
+						interest={interest}
 						walletBalance={walletBalance}
 						minimumCollateral={minimumCollateral}
 						jusdBalance={jusdBalance}
