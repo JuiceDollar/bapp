@@ -131,8 +131,10 @@ export const AdjustLoan = ({
 	const debtDelta = isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
 
 	const showStrategyOptions = isIncrease && debtDelta > availableWithoutAdjustment;
-	const FULL_REPAY_THRESHOLD = netDebt / 1000n;
-	const isFullRepay = !isIncrease && delta > 0n && (delta >= netDebt || netDebt - delta <= FULL_REPAY_THRESHOLD);
+	// Snap to full repay when remainder is under 1 cent — not worth keeping a position open for.
+	// The contract has no minimum debt, so larger partial repays work fine without snapping.
+	const FULL_REPAY_DUST = BigInt(1e16); // 0.01 JUSD
+	const isFullRepay = !isIncrease && delta > 0n && (delta >= netDebt || netDebt - delta <= FULL_REPAY_DUST);
 
 	useEffect(() => {
 		if (!deltaAmount) return setOutcome(null);
@@ -141,7 +143,7 @@ export const AdjustLoan = ({
 			if (walletInput === 0n) return setOutcome(null);
 			if (!isIncrease) {
 				const debtRed = walletRepayToDebtReduction(walletInput, interest, position.reserveContribution);
-				const isFullRepayNow = walletInput >= netDebt || netDebt - walletInput <= netDebt / 1000n;
+				const isFullRepayNow = walletInput >= netDebt || netDebt - walletInput <= FULL_REPAY_DUST;
 				if (isFullRepayNow) {
 					return setOutcome({
 						next: {
@@ -251,7 +253,7 @@ export const AdjustLoan = ({
 			principal,
 			isOwner,
 			isNativeWrappedPosition,
-			walletDelta: delta,
+			walletDelta: isFullRepay ? netDebt : delta,
 			t,
 			onSuccess: isFullRepay
 				? onFullRepaySuccess
@@ -396,7 +398,9 @@ export const AdjustLoan = ({
 						)}
 						<div className="flex justify-between text-sm">
 							<span className="text-text-muted2">{t("mint.repay")}</span>
-							<span className="font-medium text-red-500">-{formatCurrency(formatUnits(delta, 18), 2, 2)} JUSD</span>
+							<span className="font-medium text-red-500">
+								-{formatCurrency(formatUnits(isFullRepay ? netDebt : delta, 18), 2, 2)} JUSD
+							</span>
 						</div>
 						<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
 							<span className="font-bold text-text-title">{t("mint.new_debt")}</span>
