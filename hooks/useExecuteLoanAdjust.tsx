@@ -8,6 +8,8 @@ import { store } from "../redux/redux.store";
 import { mainnet, testnet } from "@config";
 import { executeTx } from "./useApproveToken";
 import { SolverOutcome } from "../utils/positionSolver";
+import { readContract } from "wagmi/actions";
+import { WAGMI_CONFIG } from "../app.config";
 
 interface ExecuteLoanAdjustParams {
 	chainId: number;
@@ -33,7 +35,6 @@ export const executeLoanAdjust = async ({
 	onSuccess,
 }: ExecuteLoanAdjustParams): Promise<void> => {
 	const posAddr = position.position as Address;
-	const depositAmount = outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
 	const isWithdrawing = outcome.deltaCollateral < 0n;
 	const isRepayOnly = outcome.deltaDebt < 0n && outcome.deltaCollateral === 0n;
 	const LiqPrice = isRepayOnly ? BigInt(position.price) : outcome.next.liqPrice;
@@ -80,6 +81,30 @@ export const executeLoanAdjust = async ({
 		? `${t("mint.lending")} ${formatPositionValue(debtDisplayAmount, 18, position.stablecoinSymbol)}`
 		: t("mint.adjust_position");
 
+	if (newPrincipal > principal) {
+		const freshDebt = await readContract(WAGMI_CONFIG, {
+			address: posAddr,
+			abi: PositionV2ABI,
+			functionName: "getDebt",
+		});
+		// _checkCollateral in _mint uses the current stored price (before any price adjustment)
+		const currentPrice = BigInt(position.price);
+		const freshTotalReq = freshDebt + outcome.deltaDebt;
+		const collateralCapacity = (currentPrice * outcome.next.collateral) / BigInt(1e18);
+
+		if (collateralCapacity < freshTotalReq) {
+			const bufferedReq = freshTotalReq + freshTotalReq / 10000n;
+			const freshMinCollateral = (bufferedReq * BigInt(1e18) + currentPrice - 1n) / currentPrice;
+			const shortfall = freshMinCollateral - outcome.next.collateral;
+
+			if (shortfall > outcome.next.collateral / 100n) {
+				throw new Error(t("mint.error.amount_exceeds_capacity"));
+			}
+			outcome.next.collateral = freshMinCollateral;
+			outcome.deltaCollateral = freshMinCollateral - BigInt(position.collateralBalance);
+		}
+	}
+
 	if (isRepayOnly) {
 		if (isFullClose && isOwner) {
 			// Owner full close: adjust() returns collateral in same tx
@@ -118,7 +143,7 @@ export const executeLoanAdjust = async ({
 				abi: PositionV2ABI,
 				functionName: "adjust",
 				args: [newPrincipal, outcome.next.collateral, LiqPrice, isWithdrawing && isNativeWrappedPosition],
-				value: isNativeWrappedPosition && depositAmount > 0n ? depositAmount : undefined,
+				value: isNativeWrappedPosition && outcome.deltaCollateral > 0n ? outcome.deltaCollateral : undefined,
 			},
 			pendingTitle: txTitle,
 			successTitle: txTitle,

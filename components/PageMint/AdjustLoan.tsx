@@ -21,7 +21,13 @@ import { mainnet, testnet } from "@config";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
-import { getAmountLended, walletAmountToDebt, getNetDebt, walletRepayToDebtReduction } from "../../utils/loanCalculations";
+import {
+	getAmountLended,
+	walletAmountToDebt,
+	getAvailableToBorrow,
+	getNetDebt,
+	walletRepayToDebtReduction,
+} from "../../utils/loanCalculations";
 
 enum StrategyKey {
 	ADD_COLLATERAL = "addCollateral",
@@ -100,9 +106,7 @@ export const AdjustLoan = ({
 
 	const hasAnyStrategy = strategies[StrategyKey.ADD_COLLATERAL];
 
-	const rawMaxDebt = (liqPrice * collateralBalance) / BigInt(1e18);
-	const maxDebtAtCurrentParams = rawMaxDebt - rawMaxDebt / 10000n; // 0.01% buffer for precision
-	const availableWithoutAdjustment = maxDebtAtCurrentParams > collateralRequirement ? maxDebtAtCurrentParams - collateralRequirement : 0n;
+	const availableWithoutAdjustment = getAvailableToBorrow(liqPrice, collateralBalance, collateralRequirement);
 
 	const maxDelta = useMemo(() => {
 		if (!isIncrease) return getNetDebt(principal, interest, position.reserveContribution);
@@ -131,6 +135,7 @@ export const AdjustLoan = ({
 		interest,
 		walletBalance,
 		availableWithoutAdjustment,
+		collateralRequirement,
 		position.reserveContribution,
 	]);
 
@@ -220,7 +225,17 @@ export const AdjustLoan = ({
 		collateralAllowance < collateralDepositAmount;
 	const needsJusdApproval = !isIncrease && delta > 0n && jusdAllowance < delta;
 	const needsApproval = needsCollateralApproval || needsJusdApproval;
-	const handleMaxClick = () => setDeltaAmount(maxDelta.toString());
+	const handleDeltaChange = (value: string) => {
+		if (!value || value === "0") setStrategies({ [StrategyKey.ADD_COLLATERAL]: false });
+		setDeltaAmount(value);
+	};
+
+	const handleMaxClick = () => {
+		if (availableWithoutAdjustment === 0n && walletBalance > 0n) {
+			setStrategies({ [StrategyKey.ADD_COLLATERAL]: true });
+		}
+		setDeltaAmount(maxDelta.toString());
+	};
 
 	const handleApproveCollateral = async () => {
 		if (collateralDepositAmount <= 0n) return;
@@ -298,7 +313,7 @@ export const AdjustLoan = ({
 				</div>
 				<NormalInputOutlined
 					value={deltaAmount}
-					onChange={setDeltaAmount}
+					onChange={handleDeltaChange}
 					decimals={18}
 					unit={position.stablecoinSymbol}
 					isError={Boolean(deltaAmountError)}
