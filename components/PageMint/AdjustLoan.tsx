@@ -106,13 +106,20 @@ export const AdjustLoan = ({
 
 	const maxDelta = useMemo(() => {
 		if (!isIncrease) return getNetDebt(principal, interest, position.reserveContribution);
-		if (!hasAnyStrategy) return getAmountLended(availableWithoutAdjustment, position.reserveContribution);
+		// Largest wallet amount whose debt equivalent doesn't exceed the debt capacity.
+		// getAmountLended can round such that walletAmountToDebt(result) > capacity by 1 wei,
+		// which would incorrectly trigger the "needs more collateral" prompt.
+		const safeWalletMax = (debtCapacity: bigint) => {
+			const wallet = getAmountLended(debtCapacity, position.reserveContribution);
+			return wallet > 0n && walletAmountToDebt(wallet, position.reserveContribution) > debtCapacity ? wallet - 1n : wallet;
+		};
+		if (!hasAnyStrategy) return safeWalletMax(availableWithoutAdjustment);
 		const maxCollateral = strategies[StrategyKey.ADD_COLLATERAL] ? collateralBalance + walletBalance : collateralBalance;
 		const rawMaxDebtStrategy = (liqPrice * maxCollateral) / BigInt(1e18);
 		const maxDebt = rawMaxDebtStrategy - rawMaxDebtStrategy / 10000n;
 		const deltaFromStrategies = maxDebt > currentDebt ? maxDebt - currentDebt : 0n;
 		const maxDebtDelta = deltaFromStrategies > availableWithoutAdjustment ? deltaFromStrategies : availableWithoutAdjustment;
-		return getAmountLended(maxDebtDelta, position.reserveContribution);
+		return safeWalletMax(maxDebtDelta);
 	}, [
 		isIncrease,
 		hasAnyStrategy,
