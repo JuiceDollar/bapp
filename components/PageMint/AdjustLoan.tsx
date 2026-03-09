@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Address, formatUnits } from "viem";
-import { formatCurrency, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
+import { formatCurrency, formatTokenAmount, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { solveManage, SolverPosition, SolverOutcome, Strategy, TxAction } from "../../utils/positionSolver";
 import { Target } from "./AdjustPosition";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
@@ -358,24 +358,17 @@ export const AdjustLoan = ({
 						<div className="flex justify-between text-sm">
 							<span className="text-text-muted2">{t("mint.more_collateral")}</span>
 							<span className="font-medium text-text-title">
-								{(() => {
-									const num = parseFloat(formatUnits(outcome.deltaCollateral, collateralDecimals));
-									const dp = num > 0 && num < 0.01 ? Math.min(collateralDecimals, 8) : 3;
-									return formatCurrency(formatUnits(outcome.deltaCollateral, collateralDecimals), dp, dp);
-								})()}{" "}
-								{collateralSymbol}
+								{formatTokenAmount(outcome.deltaCollateral, collateralDecimals, 4, 8)} {collateralSymbol}
 							</span>
 						</div>
 					)}
 					<div className="flex justify-between text-sm">
 						<span className="text-text-muted2">{t("mint.you_receive_now")}</span>
-						<span className="font-medium text-green-600 dark:text-green-400">
-							+{formatCurrency(formatUnits(delta, 18), 2, 2)} JUSD
-						</span>
+						<span className="font-medium text-green-600 dark:text-green-400">+{formatTokenAmount(delta, 18, 2, 2)} JUSD</span>
 					</div>
 					<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
 						<span className="font-bold text-text-title">{t("mint.new_total_debt")}</span>
-						<span className="font-bold text-text-title">{formatCurrency(formatUnits(netDebt + delta, 18), 2, 2)} JUSD</span>
+						<span className="font-bold text-text-title">{formatTokenAmount(netDebt + delta, 18, 2, 2)} JUSD</span>
 					</div>
 				</div>
 			)}
@@ -387,25 +380,20 @@ export const AdjustLoan = ({
 							<div className="flex justify-between text-sm">
 								<span className="text-text-muted2">{t("mint.collateral_returned")}</span>
 								<span className="font-medium text-green-600 dark:text-green-400">
-									{(() => {
-										const num = parseFloat(formatUnits(collateralBalance, collateralDecimals));
-										const dp = num > 0 && num < 0.01 ? Math.min(collateralDecimals, 8) : 3;
-										return `+${formatCurrency(formatUnits(collateralBalance, collateralDecimals), dp, dp)}`;
-									})()}{" "}
-									{collateralSymbol}
+									+{formatTokenAmount(collateralBalance, collateralDecimals, 4, 8)} {collateralSymbol}
 								</span>
 							</div>
 						)}
 						<div className="flex justify-between text-sm">
 							<span className="text-text-muted2">{t("mint.repay")}</span>
 							<span className="font-medium text-red-500">
-								-{formatCurrency(formatUnits(isFullRepay ? netDebt : delta, 18), 2, 4)} JUSD
+								-{formatTokenAmount(isFullRepay ? netDebt : delta, 18, 2, 2)} JUSD
 							</span>
 						</div>
 						<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
 							<span className="font-bold text-text-title">{t("mint.new_debt")}</span>
 							<span className="font-bold text-text-title">
-								{formatCurrency(formatUnits(isFullRepay ? 0n : netDebt - delta, 18), 2, 4)} JUSD
+								{formatTokenAmount(isFullRepay ? 0n : netDebt - delta, 18, 2, 2)} JUSD
 							</span>
 						</div>
 					</div>

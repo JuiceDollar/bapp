@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Address, formatUnits } from "viem";
-import { formatCurrency, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS, NATIVE_GAS_BUFFER } from "@utils";
+import { formatCurrency, formatTokenAmount, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS, NATIVE_GAS_BUFFER } from "@utils";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
 import { RemoveCircleOutlineIcon } from "@components/SvgComponents/remove_circle_outline";
@@ -196,7 +196,7 @@ export const AdjustCollateral = ({
 
 	const isBelowMinCollateral = (col: bigint) => col > 0n && col < minimumCollateral && newDebt > 0n;
 
-	const formatValue = (value: bigint) => formatCurrency(formatUnits(value, collateralDecimals), 4, 8) + " " + collateralSymbol;
+	const formatValue = (value: bigint) => formatTokenAmount(value, collateralDecimals, 4, 8) + " " + collateralSymbol;
 
 	const maxRemovable = hasAnyStrategy || maxRemovableWithoutAdjustment === 0n ? collateralBalance : maxRemovableWithoutAdjustment;
 
@@ -379,7 +379,7 @@ export const AdjustCollateral = ({
 		if (!isOwner) return t("mint.not_your_position");
 		if (needsApproval) return t("common.approve");
 		if (delta === 0n) return isIncrease ? t("common.add") : t("common.remove");
-		const formattedDelta = formatCurrency(formatUnits(delta, collateralDecimals), 4, 8);
+		const formattedDelta = formatTokenAmount(delta, collateralDecimals, 4, 8);
 		if (strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n) {
 			const formattedRepay = formatCurrency(formatUnits(walletRepayAmount, 18), 2, 2);
 			if (isClosingPosition) {
@@ -429,6 +429,7 @@ export const AdjustCollateral = ({
 					value={deltaAmount}
 					onChange={setDeltaAmount}
 					decimals={collateralDecimals}
+					displayDecimals={8}
 					unit={collateralSymbol}
 					isError={Boolean(deltaAmountError)}
 					adornamentRow={
@@ -516,7 +517,7 @@ export const AdjustCollateral = ({
 					<div className="flex justify-between text-sm">
 						<span className="text-text-muted2">{t("mint.repay")}</span>
 						<span className="font-medium text-text-title">
-							{formatCurrency(formatUnits(walletRepayAmount, 18), 2, 2)} {position.stablecoinSymbol}
+							{formatTokenAmount(walletRepayAmount, 18, 2, 2)} {position.stablecoinSymbol}
 						</span>
 					</div>
 				)}
@@ -524,13 +525,13 @@ export const AdjustCollateral = ({
 					<span className="text-text-muted2">{isIncrease ? t("mint.you_add") : t("mint.you_remove")}</span>
 					<span className={`font-medium ${isIncrease ? "text-green-600 dark:text-green-400" : "text-red-500"}`}>
 						{isIncrease ? "+" : "-"}
-						{formatCurrency(formatUnits(effectiveDelta, collateralDecimals), 4, 8)} {collateralSymbol}
+						{formatTokenAmount(effectiveDelta, collateralDecimals, 4, 8)} {collateralSymbol}
 					</span>
 				</div>
 				<div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
 					<span className="font-bold text-text-title">{t("mint.new_collateral")}</span>
 					<span className="font-bold text-text-title">
-						{formatCurrency(formatUnits(effectiveNewCollateral, collateralDecimals), 4, 8)} {collateralSymbol}
+						{formatTokenAmount(effectiveNewCollateral, collateralDecimals, 4, 8)} {collateralSymbol}
 					</span>
 				</div>
 			</div>

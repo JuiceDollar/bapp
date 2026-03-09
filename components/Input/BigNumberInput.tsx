@@ -16,6 +16,7 @@ export type BigNumberInputProps = {
 	onFocus?: () => void;
 	onBlur?: () => void;
 	hideTrailingZeros?: boolean;
+	displayDecimals?: number;
 };
 
 export function BigNumberInput({
@@ -32,6 +33,7 @@ export function BigNumberInput({
 	onFocus,
 	onBlur,
 	hideTrailingZeros,
+	displayDecimals,
 }: BigNumberInputProps) {
 	const inputRef = React.useRef<any>(null);
 	const inputValueRef = React.useRef("");
@@ -57,13 +59,19 @@ export function BigNumberInput({
 
 			if (!parseInputValue || !parseInputValue.eq(value)) {
 				let formatted = formatUnits(value, decimals);
+				if (displayDecimals !== undefined) {
+					const dotIdx = formatted.indexOf(".");
+					if (dotIdx !== -1 && formatted.length - dotIdx - 1 > displayDecimals) {
+						formatted = formatted.slice(0, dotIdx + displayDecimals + 1);
+					}
+				}
 				if (hideTrailingZeros) {
 					formatted = formatted.replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
 				}
 				setInputvalue(formatted);
 			}
 		}
-	}, [value, decimals, hideTrailingZeros]);
+	}, [value, decimals, hideTrailingZeros, displayDecimals]);
 
 	React.useEffect(() => {
 		if (!renderInput && autofocus && inputRef) {
