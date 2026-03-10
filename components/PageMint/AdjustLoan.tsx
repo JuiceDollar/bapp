@@ -24,7 +24,7 @@ import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { useReferencePosition } from "../../hooks/useReferencePosition";
 import { toast } from "react-toastify";
 import { TxToast, toastTxError } from "@components/TxToast";
-import { waitForTransactionReceipt } from "wagmi/actions";
+import { waitForTransactionReceipt, readContract } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { store } from "../../redux/redux.store";
@@ -36,6 +36,7 @@ import {
 	getAvailableToBorrow,
 	getNetDebt,
 	walletRepayToDebtReduction,
+	getCappedMintAmount,
 } from "../../utils/loanCalculations";
 
 enum StrategyKey {
@@ -315,6 +316,13 @@ export const AdjustLoan = ({
 				setIsTxOnGoing(true);
 				const newLiqPrice = outcome.next.liqPrice;
 				const principalDelta = outcome.deltaDebt;
+				console.log("[AdjustLoan Tx1] before adjust price", {
+					newLiqPrice: newLiqPrice.toString(),
+					principalDelta: principalDelta.toString(),
+					principal: principal.toString(),
+					collateralBalance: collateralBalance.toString(),
+					position: position.position,
+				});
 
 				// Tx1: Set price first (contract checks collateral at current price before mint)
 				const priceHash = useReference
@@ -336,6 +344,49 @@ export const AdjustLoan = ({
 					pending: { render: <TxToast title={t("mint.txs.adjusting_price")} rows={[]} /> },
 					success: { render: <TxToast title={t("mint.txs.adjusting_price_success")} rows={[]} /> },
 				});
+				// Cap to on-chain available and collateral headroom (interest term causes InsufficientCollateral at boundary)
+				const [available, principalOnChain, priceOnChain, interestOnChain] = await Promise.all([
+					readContract(WAGMI_CONFIG, {
+						address: position.position as Address,
+						abi: PositionV2ABI,
+						functionName: "availableForMinting",
+					}),
+					readContract(WAGMI_CONFIG, {
+						address: position.position as Address,
+						abi: PositionV2ABI,
+						functionName: "principal",
+					}),
+					readContract(WAGMI_CONFIG, {
+						address: position.position as Address,
+						abi: PositionV2ABI,
+						functionName: "price",
+					}),
+					readContract(WAGMI_CONFIG, {
+						address: position.position as Address,
+						abi: PositionV2ABI,
+						functionName: "getInterest",
+					}),
+				]);
+				const mintAmount = getCappedMintAmount({
+					principalDelta,
+					available,
+					collateralBalance,
+					price: priceOnChain,
+					principalOnChain,
+					interestOnChain,
+					reserveContribution: position.reserveContribution ?? 0,
+				});
+				if (mintAmount === 0n) {
+					toastTxError(new Error("No amount available to mint after price update"));
+					return;
+				}
+				if (principalDelta > available && process.env.NODE_ENV === "development") {
+					console.warn("[AdjustLoan] mint capped by availableForMinting", {
+						principalDelta: principalDelta.toString(),
+						available: available.toString(),
+						mintAmount: mintAmount.toString(),
+					});
+				}
 
 				// Tx2: Mint (now price is updated, collateral check passes)
 				const mintHash = await simulateAndWrite({
@@ -343,8 +394,9 @@ export const AdjustLoan = ({
 					address: position.position as Address,
 					abi: PositionV2ABI,
 					functionName: "mint",
-					args: [userAddress, principalDelta],
+					args: [userAddress, mintAmount],
 				});
+				const receivedAmount = getAmountLended(mintAmount, position.reserveContribution ?? 0);
 				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: mintHash, confirmations: 1 }), {
 					pending: {
 						render: (
@@ -353,7 +405,7 @@ export const AdjustLoan = ({
 								rows={[
 									{
 										title: t("common.txs.amount"),
-										value: `${formatTokenAmount(delta, 18, 2, 2)} ${position.stablecoinSymbol}`,
+										value: `${formatTokenAmount(receivedAmount, 18, 2, 2)} ${position.stablecoinSymbol}`,
 									},
 								]}
 							/>
@@ -366,7 +418,7 @@ export const AdjustLoan = ({
 								rows={[
 									{
 										title: t("common.txs.amount"),
-										value: `${formatTokenAmount(delta, 18, 2, 2)} ${position.stablecoinSymbol}`,
+										value: `${formatTokenAmount(receivedAmount, 18, 2, 2)} ${position.stablecoinSymbol}`,
 									},
 								]}
 							/>

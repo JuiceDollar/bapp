@@ -21,6 +21,7 @@ import Button from "@components/Button";
 import { erc20Abi, maxUint256 } from "viem";
 import { PositionQuery } from "@juicedollar/api";
 import { mainnet, testnet } from "@config";
+import { ceilDivPPM } from "../../utils/loanCalculations";
 
 interface AdjustExpirationProps {
 	position: PositionQuery;
@@ -145,7 +146,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 		const usableMint = usableMintFromPrincipal + interest;
 
 		// target.getMintAmount(usableMint) = _ceilDivPPM(usableMint, targetReservePPM)
-		let mintAmount = usableMint === 0n ? 0n : (usableMint * 1_000_000n - 1n) / (1_000_000n - targetReservePPM) + 1n;
+		let mintAmount = ceilDivPPM(usableMint, targetReservePPM);
 
 		// depositAmount = ceil(mintAmount * 1e18 / targetPrice)
 		let depositAmount = targetPrice > 0n ? (mintAmount * 10n ** 18n + targetPrice - 1n) / targetPrice : 0n;

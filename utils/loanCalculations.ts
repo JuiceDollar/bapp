@@ -39,6 +39,42 @@ export const debtReductionToWalletCost = (debtReduction: bigint, interest: bigin
 	return interest + getAmountLended(principalReduction, reserveContribution);
 };
 
+/** Matches contract's _ceilDivPPM: ceil(amount / (1 - ppm/1000000)) */
+export const ceilDivPPM = (a: bigint, ppm: bigint): bigint => (a === 0n ? 0n : (a * 1_000_000n - 1n) / (1_000_000n - ppm) + 1n);
+
+/** Caps mint amount to avoid InsufficientCollateral (interest term + buffer for accrual between Tx1 and Tx2). */
+export const getCappedMintAmount = (params: {
+	principalDelta: bigint;
+	available: bigint;
+	collateralBalance: bigint;
+	price: bigint;
+	principalOnChain: bigint;
+	interestOnChain: bigint;
+	reserveContribution: number;
+	interestTermBufferPct?: number;
+}): bigint => {
+	const {
+		principalDelta,
+		available,
+		collateralBalance,
+		price,
+		principalOnChain,
+		interestOnChain,
+		reserveContribution,
+		interestTermBufferPct = 50,
+	} = params;
+	const rc = BigInt(reserveContribution);
+	const interestTerm = rc < 1_000_000n ? ceilDivPPM(interestOnChain, rc) : 0n;
+	const interestTermWithBuffer = interestTerm + (interestTerm * BigInt(interestTermBufferPct)) / 100n;
+	const maxPrincipalAtPrice = (collateralBalance * price) / BigInt(1e18);
+	const maxMintByCollateral =
+		maxPrincipalAtPrice > principalOnChain + interestTermWithBuffer
+			? maxPrincipalAtPrice - principalOnChain - interestTermWithBuffer
+			: 0n;
+	const mintAmountRaw = principalDelta > available ? available : principalDelta;
+	return mintAmountRaw > maxMintByCollateral && maxMintByCollateral > 0n ? maxMintByCollateral : mintAmountRaw;
+};
+
 export type LoanDetails = {
 	loanAmount: bigint;
 	apr: number;
