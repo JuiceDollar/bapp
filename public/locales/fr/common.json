@@ -282,6 +282,7 @@
 		"repay": "Rembourser",
 		"lend": "Emprunter",
 		"adjust_price_and_borrow": "Ajuster le prix et emprunter",
+		"add_collateral_and_borrow": "Ajouter des garanties et emprunter",
 		"increase": "Augmenter",
 		"reduce": "Réduire",
 		"decrease": "Diminuer",

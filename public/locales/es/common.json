@@ -282,6 +282,7 @@
 		"repay": "Pagar",
 		"lend": "Pedir prestado",
 		"adjust_price_and_borrow": "Ajustar precio y pedir prestado",
+		"add_collateral_and_borrow": "Añadir garantía y pedir prestado",
 		"increase": "Aumentar",
 		"reduce": "Reducir",
 		"decrease": "Disminuir",

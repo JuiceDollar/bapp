@@ -39,6 +39,14 @@ export const debtReductionToWalletCost = (debtReduction: bigint, interest: bigin
 	return interest + getAmountLended(principalReduction, reserveContribution);
 };
 
+/** Floors amount (18 decimals) to given display decimals. Use for MAX display/click to avoid rounding up. */
+export const floorToDisplayDecimals = (amount: bigint, displayDecimals = 2, tokenDecimals = 18): bigint => {
+	if (amount === 0n) return 0n;
+	const divisor = 10n ** BigInt(tokenDecimals - displayDecimals);
+	const floored = (amount / divisor) * divisor;
+	return floored > 0n ? floored : amount;
+};
+
 /** Matches contract's _ceilDivPPM: ceil(amount / (1 - ppm/1000000)) */
 export const ceilDivPPM = (a: bigint, ppm: bigint): bigint => (a === 0n ? 0n : (a * 1_000_000n - 1n) / (1_000_000n - ppm) + 1n);
 

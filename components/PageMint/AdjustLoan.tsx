@@ -12,7 +12,6 @@ import { SvgIconButton } from "./PlusMinusButtons";
 import { MaxButton } from "@components/Input/MaxButton";
 import { ErrorDisplay } from "@components/ErrorDisplay";
 import Button from "@components/Button";
-import { Tooltip } from "flowbite-react";
 import { PositionQuery } from "@juicedollar/api";
 import { useChainId, useAccount } from "wagmi";
 import { WAGMI_CHAIN } from "../../app.config";
@@ -37,6 +36,7 @@ import {
 	getNetDebt,
 	walletRepayToDebtReduction,
 	getCappedMintAmount,
+	floorToDisplayDecimals,
 } from "../../utils/loanCalculations";
 
 enum StrategyKey {
@@ -171,6 +171,8 @@ export const AdjustLoan = ({
 		position.reserveContribution,
 	]);
 
+	const maxDeltaForDisplayAndClick = useMemo(() => (isIncrease ? floorToDisplayDecimals(maxDelta) : maxDelta), [isIncrease, maxDelta]);
+
 	const delta = BigInt(deltaAmount || 0);
 	const debtDelta = isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
 
@@ -267,7 +269,7 @@ export const AdjustLoan = ({
 		if (availableWithoutAdjustment === 0n && walletBalance > 0n) {
 			setStrategies({ [StrategyKey.ADD_COLLATERAL]: true, [StrategyKey.INCREASE_LIQ_PRICE]: false });
 		}
-		setDeltaAmount(maxDelta.toString());
+		setDeltaAmount(maxDeltaForDisplayAndClick.toString());
 	};
 
 	const toggleStrategy = (strategy: StrategyKey) => {
@@ -482,6 +484,7 @@ export const AdjustLoan = ({
 					value={deltaAmount}
 					onChange={handleDeltaChange}
 					decimals={18}
+					displayDecimals={2}
 					unit={position.stablecoinSymbol}
 					isError={Boolean(deltaAmountError)}
 					adornamentRow={
@@ -489,7 +492,7 @@ export const AdjustLoan = ({
 							<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden"></div>
 							<div className="h-7 justify-end items-center gap-2.5 flex">
 								<div className="text-input-label text-xs font-medium leading-none">
-									{formatCurrency(formatUnits(maxDelta, 18), 2, 2)} {position.stablecoinSymbol}
+									{formatCurrency(formatUnits(maxDeltaForDisplayAndClick, 18), 2, 2)} {position.stablecoinSymbol}
 								</div>
 								<MaxButton disabled={maxDelta === 0n} onClick={handleMaxClick} />
 							</div>
@@ -516,17 +519,13 @@ export const AdjustLoan = ({
 						className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
 					>
 						{strategies[StrategyKey.ADD_COLLATERAL] ? (
-							<Tooltip content={t("mint.tooltip_remove_collateral")} arrow style="light">
-								<span className="flex items-center text-button-textGroup-primary-text">
-									<RemoveCircleOutlineIcon color="currentColor" />
-								</span>
-							</Tooltip>
+							<span className="flex items-center text-button-textGroup-primary-text">
+								<RemoveCircleOutlineIcon color="currentColor" />
+							</span>
 						) : (
-							<Tooltip content={t("mint.tooltip_add_collateral")} arrow style="light">
-								<span className="flex items-center text-button-textGroup-secondary-text">
-									<AddCircleOutlineIcon color="currentColor" />
-								</span>
-							</Tooltip>
+							<span className="flex items-center text-button-textGroup-secondary-text">
+								<AddCircleOutlineIcon color="currentColor" />
+							</span>
 						)}
 						<span
 							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
@@ -546,17 +545,13 @@ export const AdjustLoan = ({
 						className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
 					>
 						{strategies[StrategyKey.INCREASE_LIQ_PRICE] ? (
-							<Tooltip content={t("mint.tooltip_remove_liq_price")} arrow style="light">
-								<span className="flex items-center text-button-textGroup-primary-text">
-									<RemoveCircleOutlineIcon color="currentColor" />
-								</span>
-							</Tooltip>
+							<span className="flex items-center text-button-textGroup-primary-text">
+								<RemoveCircleOutlineIcon color="currentColor" />
+							</span>
 						) : (
-							<Tooltip content={t("mint.tooltip_add_liq_price")} arrow style="light">
-								<span className="flex items-center text-button-textGroup-secondary-text">
-									<AddCircleOutlineIcon color="currentColor" />
-								</span>
-							</Tooltip>
+							<span className="flex items-center text-button-textGroup-secondary-text">
+								<AddCircleOutlineIcon color="currentColor" />
+							</span>
 						)}
 						<span
 							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
@@ -673,6 +668,8 @@ export const AdjustLoan = ({
 					? t("mint.repay")
 					: strategies[StrategyKey.INCREASE_LIQ_PRICE]
 					? t("mint.adjust_price_and_borrow")
+					: strategies[StrategyKey.ADD_COLLATERAL]
+					? t("mint.add_collateral_and_borrow")
 					: t("mint.lend")}
 			</Button>
 		</div>

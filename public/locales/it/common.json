@@ -283,6 +283,7 @@
 		"repay": "Rimborsa",
 		"lend": "Prendi in prestito",
 		"adjust_price_and_borrow": "Modifica prezzo e prendi in prestito",
+		"add_collateral_and_borrow": "Aggiungi garanzia e prendi in prestito",
 		"increase": "Aumenta",
 		"reduce": "Riduci",
 		"decrease": "Diminuisci",
