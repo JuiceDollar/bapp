@@ -312,7 +312,8 @@
 			"collateral_below_min": "La garantie est inférieure au minimum requis",
 			"price_too_high": "Le prix ne peut pas dépasser le maximum autorisé",
 			"price_too_low": "Le prix ne peut pas être inférieur au minimum requis pour la garantie",
-			"insufficient_collateral_for_requirements": "Garantie insuffisante pour l'ajustement du prix"
+			"insufficient_collateral_for_requirements": "Garantie insuffisante pour l'ajustement du prix",
+			"liq_price_exceeds_max": "Le nouveau prix de liquidation dépasse le maximum autorisé (2x prix actuel)."
 		},
 		"txs": {
 			"creating_position": "Création d'une nouvelle position",

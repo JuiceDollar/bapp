@@ -144,8 +144,8 @@ export const AdjustLoan = ({
 		};
 		if (!hasAnyStrategy) return safeWalletMax(availableWithoutAdjustment);
 		if (strategies[StrategyKey.INCREASE_LIQ_PRICE]) {
-			// KEEP_COLLATERAL: max new debt = (liqPrice * collateral) / 1e18 (with buffer). Max 2x liq price per AdjustLiqPrice.
-			const rawMaxDebt = (liqPrice * collateralBalance) / BigInt(1e18);
+			const maxLiqPrice = liqPrice * 2n;
+			const rawMaxDebt = (maxLiqPrice * collateralBalance) / BigInt(1e18);
 			const maxDebt = rawMaxDebt - rawMaxDebt / 10000n;
 			const maxDebtDelta = maxDebt > currentDebt ? maxDebt - currentDebt : 0n;
 			return safeWalletMax(maxDebtDelta);
@@ -251,6 +251,11 @@ export const AdjustLoan = ({
 
 	const jusdInsufficientError =
 		!isIncrease && delta > 0n && delta > jusdBalance ? t("mint.insufficient_balance", { symbol: position.stablecoinSymbol }) : null;
+	const maxLiqPriceAllowed = liqPrice * 2n;
+	const liqPriceExceedsMax =
+		strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome && outcome.next.liqPrice > maxLiqPriceAllowed
+			? t("mint.error.liq_price_exceeds_max")
+			: null;
 	const collateralDepositAmount = outcome?.deltaCollateral && outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
 	const insufficientCollateral = collateralDepositAmount > 0n && collateralDepositAmount > walletBalance;
 	const needsCollateralApproval =
@@ -266,9 +271,6 @@ export const AdjustLoan = ({
 	};
 
 	const handleMaxClick = () => {
-		if (availableWithoutAdjustment === 0n && walletBalance > 0n) {
-			setStrategies({ [StrategyKey.ADD_COLLATERAL]: true, [StrategyKey.INCREASE_LIQ_PRICE]: false });
-		}
 		setDeltaAmount(maxDeltaForDisplayAndClick.toString());
 	};
 
@@ -501,6 +503,7 @@ export const AdjustLoan = ({
 				/>
 				<ErrorDisplay error={deltaAmountError} />
 				{jusdInsufficientError && <div className="ml-1 text-red-500 text-sm">{jusdInsufficientError}</div>}
+				{liqPriceExceedsMax && <div className="ml-1 text-red-500 text-sm">{liqPriceExceedsMax}</div>}
 			</div>
 
 			{showStrategyOptions && (
@@ -652,6 +655,7 @@ export const AdjustLoan = ({
 					isTxOnGoing ||
 					Boolean(deltaAmountError) ||
 					Boolean(jusdInsufficientError) ||
+					Boolean(liqPriceExceedsMax) ||
 					insufficientCollateral ||
 					(isIncrease && isInCooldown) ||
 					(!isIncrease && isFullRepay && isInCooldown)
