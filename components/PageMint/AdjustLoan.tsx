@@ -21,6 +21,15 @@ import { mainnet, testnet } from "@config";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
+import { useReferencePosition } from "../../hooks/useReferencePosition";
+import { toast } from "react-toastify";
+import { TxToast, toastTxError } from "@components/TxToast";
+import { waitForTransactionReceipt } from "wagmi/actions";
+import { simulateAndWrite } from "../../utils/contractHelpers";
+import { WAGMI_CONFIG } from "../../app.config";
+import { store } from "../../redux/redux.store";
+import { fetchPositionsList } from "../../redux/slices/positions.slice";
+import { PositionV2ABI } from "@juicedollar/jusd";
 import {
 	getAmountLended,
 	walletAmountToDebt,
@@ -31,6 +40,7 @@ import {
 
 enum StrategyKey {
 	ADD_COLLATERAL = "addCollateral",
+	INCREASE_LIQ_PRICE = "increaseLiqPrice",
 }
 
 type Strategies = Record<StrategyKey, boolean>;
@@ -89,6 +99,7 @@ export const AdjustLoan = ({
 	const [isIncrease, setIsIncrease] = useState(true);
 	const [strategies, setStrategies] = useState<Strategies>({
 		[StrategyKey.ADD_COLLATERAL]: false,
+		[StrategyKey.INCREASE_LIQ_PRICE]: false,
 	});
 	const [outcome, setOutcome] = useState<SolverOutcome | null>(null);
 	const [deltaAmountError, setDeltaAmountError] = useState<string | null>(null);
@@ -99,12 +110,19 @@ export const AdjustLoan = ({
 
 	useEffect(() => {
 		setDeltaAmount("");
-		setStrategies({ [StrategyKey.ADD_COLLATERAL]: false });
+		setStrategies({ [StrategyKey.ADD_COLLATERAL]: false, [StrategyKey.INCREASE_LIQ_PRICE]: false });
 		setOutcome(null);
 		setDeltaAmountError(null);
 	}, [isIncrease]);
 
-	const hasAnyStrategy = strategies[StrategyKey.ADD_COLLATERAL];
+	const hasAnyStrategy = strategies[StrategyKey.ADD_COLLATERAL] || strategies[StrategyKey.INCREASE_LIQ_PRICE];
+	const reference = useReferencePosition(
+		position,
+		strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome ? outcome.next.liqPrice : liqPrice
+	);
+	const useReference =
+		strategies[StrategyKey.INCREASE_LIQ_PRICE] && reference.address !== null && outcome && outcome.next.liqPrice <= reference.price;
+	const showCooldownMessage = strategies[StrategyKey.INCREASE_LIQ_PRICE] && !useReference && outcome && outcome.deltaDebt > 0n;
 
 	const availableWithoutAdjustment = getAvailableToBorrow(liqPrice, collateralBalance, collateralRequirement);
 
@@ -118,6 +136,13 @@ export const AdjustLoan = ({
 			return wallet > 0n && walletAmountToDebt(wallet, position.reserveContribution) > debtCapacity ? wallet - 1n : wallet;
 		};
 		if (!hasAnyStrategy) return safeWalletMax(availableWithoutAdjustment);
+		if (strategies[StrategyKey.INCREASE_LIQ_PRICE]) {
+			// KEEP_COLLATERAL: max new debt = (liqPrice * collateral) / 1e18 (with buffer). Max 2x liq price per AdjustLiqPrice.
+			const rawMaxDebt = (liqPrice * collateralBalance) / BigInt(1e18);
+			const maxDebt = rawMaxDebt - rawMaxDebt / 10000n;
+			const maxDebtDelta = maxDebt > currentDebt ? maxDebt - currentDebt : 0n;
+			return safeWalletMax(maxDebtDelta);
+		}
 		const maxCollateral = strategies[StrategyKey.ADD_COLLATERAL] ? collateralBalance + walletBalance : collateralBalance;
 		const rawMaxDebtStrategy = (liqPrice * maxCollateral) / BigInt(1e18);
 		const maxDebt = rawMaxDebtStrategy - rawMaxDebtStrategy / 10000n;
@@ -177,7 +202,8 @@ export const AdjustLoan = ({
 			const newDebt = currentDebt + debtIncrease;
 			const maxDebtNoAdjust = (liqPrice * collateralBalance) / BigInt(1e18);
 			const canBorrowWithoutAdjustment = newDebt <= maxDebtNoAdjust;
-			if (!strategies[StrategyKey.ADD_COLLATERAL] && !canBorrowWithoutAdjustment) return setOutcome(null);
+			if (!strategies[StrategyKey.ADD_COLLATERAL] && !strategies[StrategyKey.INCREASE_LIQ_PRICE] && !canBorrowWithoutAdjustment)
+				return setOutcome(null);
 			if (canBorrowWithoutAdjustment) {
 				return setOutcome({
 					next: {
@@ -226,15 +252,25 @@ export const AdjustLoan = ({
 	const needsJusdApproval = !isIncrease && delta > 0n && jusdAllowance < delta;
 	const needsApproval = needsCollateralApproval || needsJusdApproval;
 	const handleDeltaChange = (value: string) => {
-		if (!value || value === "0") setStrategies({ [StrategyKey.ADD_COLLATERAL]: false });
+		if (!value || value === "0") setStrategies({ [StrategyKey.ADD_COLLATERAL]: false, [StrategyKey.INCREASE_LIQ_PRICE]: false });
 		setDeltaAmount(value);
 	};
 
 	const handleMaxClick = () => {
 		if (availableWithoutAdjustment === 0n && walletBalance > 0n) {
-			setStrategies({ [StrategyKey.ADD_COLLATERAL]: true });
+			setStrategies({ [StrategyKey.ADD_COLLATERAL]: true, [StrategyKey.INCREASE_LIQ_PRICE]: false });
 		}
 		setDeltaAmount(maxDelta.toString());
+	};
+
+	const toggleStrategy = (strategy: StrategyKey) => {
+		setStrategies((prev) => {
+			const next = { ...prev, [strategy]: !prev[strategy] };
+			if (next[strategy]) {
+				next[strategy === StrategyKey.ADD_COLLATERAL ? StrategyKey.INCREASE_LIQ_PRICE : StrategyKey.ADD_COLLATERAL] = false;
+			}
+			return next;
+		});
 	};
 
 	const handleApproveCollateral = async () => {
@@ -266,29 +302,77 @@ export const AdjustLoan = ({
 		setIsTxOnGoing(false);
 	};
 
-	const handleExecute = () => {
+	const handleExecute = async () => {
 		if (!outcome || !outcome.isValid || !position || !userAddress) return;
-		handleLoanExecute({
-			chainId: chainId ?? WAGMI_CHAIN.id,
-			outcome,
-			position,
-			principal,
-			isOwner,
-			isNativeWrappedPosition,
-			walletDelta: isFullRepay ? netDebt : delta,
-			t,
-			onSuccess: isFullRepay
-				? onFullRepaySuccess
-				: () => {
-						setDeltaAmount("");
-						setStrategies({ [StrategyKey.ADD_COLLATERAL]: false });
-						router.push(`/mint/${position.position}/manage`);
-				  },
-			setIsTxOnGoing,
-		});
+		if (strategies[StrategyKey.INCREASE_LIQ_PRICE]) {
+			try {
+				setIsTxOnGoing(true);
+				const newPrincipal = principal + outcome.deltaDebt;
+				const newLiqPrice = outcome.next.liqPrice;
+				const adjustHash = useReference
+					? await simulateAndWrite({
+							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							address: position.position as Address,
+							abi: PositionV2ABI,
+							functionName: "adjustWithReference",
+							args: [newPrincipal, collateralBalance, newLiqPrice, reference.address!, false],
+					  })
+					: await simulateAndWrite({
+							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							address: position.position as Address,
+							abi: PositionV2ABI,
+							functionName: "adjust",
+							args: [newPrincipal, collateralBalance, newLiqPrice, false],
+					  });
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: adjustHash, confirmations: 1 }), {
+					pending: {
+						render: (
+							<TxToast
+								title={t("mint.txs.adjusting_price")}
+								rows={[{ title: t("common.txs.transaction"), hash: adjustHash }]}
+							/>
+						),
+					},
+					success: {
+						render: (
+							<TxToast
+								title={t("mint.txs.adjusting_price_success")}
+								rows={[{ title: t("common.txs.transaction"), hash: adjustHash }]}
+							/>
+						),
+					},
+				});
+				store.dispatch(fetchPositionsList(chainId ?? WAGMI_CHAIN.id));
+				onSuccess();
+				setDeltaAmount("");
+				setStrategies({ [StrategyKey.ADD_COLLATERAL]: false, [StrategyKey.INCREASE_LIQ_PRICE]: false });
+				router.push(`/mint/${position.position}/manage`);
+			} catch (error) {
+				toastTxError(error);
+			} finally {
+				setIsTxOnGoing(false);
+			}
+		} else {
+			handleLoanExecute({
+				chainId: chainId ?? WAGMI_CHAIN.id,
+				outcome,
+				position,
+				principal,
+				isOwner,
+				isNativeWrappedPosition,
+				walletDelta: isFullRepay ? netDebt : delta,
+				t,
+				onSuccess: isFullRepay
+					? onFullRepaySuccess
+					: () => {
+							setDeltaAmount("");
+							setStrategies({ [StrategyKey.ADD_COLLATERAL]: false, [StrategyKey.INCREASE_LIQ_PRICE]: false });
+							router.push(`/mint/${position.position}/manage`);
+					  },
+				setIsTxOnGoing,
+			});
+		}
 	};
-
-	const toggleStrategy = (strategy: StrategyKey) => setStrategies((prev) => ({ ...prev, [strategy]: !prev[strategy] }));
 
 	return (
 		<div className="flex flex-col gap-y-4">
@@ -371,6 +455,36 @@ export const AdjustLoan = ({
 							{t("mint.more_collateral")}
 						</span>
 					</div>
+					<div
+						role="button"
+						tabIndex={0}
+						onClick={() => toggleStrategy(StrategyKey.INCREASE_LIQ_PRICE)}
+						onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.INCREASE_LIQ_PRICE)}
+						className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
+					>
+						{strategies[StrategyKey.INCREASE_LIQ_PRICE] ? (
+							<Tooltip content={t("mint.tooltip_remove_liq_price")} arrow style="light">
+								<span className="flex items-center text-button-textGroup-primary-text">
+									<RemoveCircleOutlineIcon color="currentColor" />
+								</span>
+							</Tooltip>
+						) : (
+							<Tooltip content={t("mint.tooltip_add_liq_price")} arrow style="light">
+								<span className="flex items-center text-button-textGroup-secondary-text">
+									<AddCircleOutlineIcon color="currentColor" />
+								</span>
+							</Tooltip>
+						)}
+						<span
+							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
+								strategies[StrategyKey.INCREASE_LIQ_PRICE]
+									? "text-button-textGroup-primary-text"
+									: "text-button-textGroup-secondary-text"
+							}`}
+						>
+							{t("mint.higher_liq_price")}
+						</span>
+					</div>
 				</div>
 			)}
 
@@ -381,6 +495,15 @@ export const AdjustLoan = ({
 							<span className="text-text-muted2">{t("mint.more_collateral")}</span>
 							<span className="font-medium text-text-title">
 								{formatTokenAmount(outcome.deltaCollateral, collateralDecimals, 4, 8)} {collateralSymbol}
+							</span>
+						</div>
+					)}
+					{strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome && (
+						<div className="flex justify-between text-sm">
+							<span className="text-text-muted2">{t("mint.new_liq_price")}</span>
+							<span className="font-medium text-text-title">
+								{formatCurrency(formatUnits(outcome.next.liqPrice, priceDecimals), 2, 2)}{" "}
+								{`${collateralSymbol}/${position.stablecoinSymbol}`}
 							</span>
 						</div>
 					)}
@@ -427,6 +550,14 @@ export const AdjustLoan = ({
 					{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
 					<br />
 					{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
+				</div>
+			)}
+			{showCooldownMessage && (
+				<div className="text-xs sm:text-sm text-text-muted2 px-4">
+					<div className="font-semibold mb-0.5 sm:mb-1">{t("mint.cooldown_active")}</div>
+					{t("mint.cooldown_increase_info")}
+					<br />
+					{t("mint.cooldown_reference_info")}
 				</div>
 			)}
 
