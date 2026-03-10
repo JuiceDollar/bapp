@@ -11,7 +11,15 @@ import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { useChainId, useReadContracts } from "wagmi";
 import { Address } from "viem/accounts";
-import { getCarryOnQueryParams, toQueryString, toTimestamp, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS, formatBigInt } from "@utils";
+import {
+	getCarryOnQueryParams,
+	toQueryString,
+	toTimestamp,
+	normalizeTokenSymbol,
+	NATIVE_WRAPPED_SYMBOLS,
+	formatBigInt,
+	formatCurrency,
+} from "@utils";
 import { toast } from "react-toastify";
 import { TxToast } from "@components/TxToast";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
@@ -19,7 +27,7 @@ import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/redux.store";
 import Button from "@components/Button";
-import { erc20Abi, maxUint256 } from "viem";
+import { erc20Abi, formatUnits, maxUint256 } from "viem";
 import { PositionQuery } from "@juicedollar/api";
 import { mainnet, testnet } from "@config";
 import { getNetDebt } from "../../utils/loanCalculations";
@@ -392,7 +400,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 				<div>
 					<div className="text-xs text-gray-500 dark:text-gray-400">{t("mint.collateral")}</div>
 					<div className="text-sm font-bold text-gray-900 dark:text-gray-100">
-						{formatBigInt(sourceCollateralBalance, position.collateralDecimals)} {collSymbol}
+						{formatCurrency(formatUnits(sourceCollateralBalance, position.collateralDecimals), 3, 3)} {collSymbol}
 					</div>
 				</div>
 				<div>
