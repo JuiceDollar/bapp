@@ -107,7 +107,6 @@ export const AdjustLoan = ({
 	const priceDecimals = 36 - (position.collateralDecimals || 18);
 	const collateralDecimals = position.collateralDecimals || 18;
 	const collateralSymbol = normalizeTokenSymbol(position.collateralSymbol || "");
-	const cooldownDays = Math.ceil(position.challengePeriod / 60 / 60 / 24);
 
 	useEffect(() => {
 		setDeltaAmount("");
@@ -320,13 +319,6 @@ export const AdjustLoan = ({
 				setIsTxOnGoing(true);
 				const newLiqPrice = outcome.next.liqPrice;
 				const principalDelta = outcome.deltaDebt;
-				console.log("[AdjustLoan Tx1] before adjust price", {
-					newLiqPrice: newLiqPrice.toString(),
-					principalDelta: principalDelta.toString(),
-					principal: principal.toString(),
-					collateralBalance: collateralBalance.toString(),
-					position: position.position,
-				});
 
 				// Tx1: Set price first (contract checks collateral at current price before mint)
 				const priceHash = useReference
@@ -383,13 +375,6 @@ export const AdjustLoan = ({
 				if (mintAmount === 0n) {
 					toastTxError(new Error("No amount available to mint after price update"));
 					return;
-				}
-				if (principalDelta > available && process.env.NODE_ENV === "development") {
-					console.warn("[AdjustLoan] mint capped by availableForMinting", {
-						principalDelta: principalDelta.toString(),
-						available: available.toString(),
-						mintAmount: mintAmount.toString(),
-					});
 				}
 
 				// Tx2: Mint (now price is updated, collateral check passes)
@@ -502,8 +487,8 @@ export const AdjustLoan = ({
 					}
 				/>
 				<ErrorDisplay error={deltaAmountError} />
-				{jusdInsufficientError && <div className="ml-1 text-red-500 text-sm">{jusdInsufficientError}</div>}
-				{liqPriceExceedsMax && <div className="ml-1 text-red-500 text-sm">{liqPriceExceedsMax}</div>}
+				{jusdInsufficientError && <div className="ml-1 text-xs text-red-500 mb-1">{jusdInsufficientError}</div>}
+				{liqPriceExceedsMax && <div className="ml-1 text-xs text-red-500 mb-1">{liqPriceExceedsMax}</div>}
 			</div>
 
 			{showStrategyOptions && (
