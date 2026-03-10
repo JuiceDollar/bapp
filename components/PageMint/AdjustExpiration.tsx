@@ -215,7 +215,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	}, [rollParams, principal, interest, sourceReservePPM, targetReservePPM, selectedTarget]);
 
 	const priceAdjustmentCost = netJusdCost !== null && netJusdCost > interest ? netJusdCost - interest : 0n;
-	const totalCost = netJusdCost ?? interest;
+	const totalCost = netJusdCost !== null && netJusdCost > interest ? netJusdCost : interest;
 
 	const totalCostWithBuffer = totalCost + totalCost / 10n + BigInt(1e16);
 	const hasInsufficientBalance = totalCostWithBuffer > 0n && BigInt(jusdBalance || 0) < totalCostWithBuffer;
