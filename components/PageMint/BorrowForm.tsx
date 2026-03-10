@@ -65,9 +65,11 @@ export default function PositionCreate({}) {
 	const [collateralError, setCollateralError] = useState("");
 	const [isMaxedOut, setIsMaxedOut] = useState(false);
 	const [defaultPosition, setDefaultPosition] = useState<PositionQuery | null>(null);
+	const [bestParentPosition, setBestParentPosition] = useState<PositionQuery | null>(null);
 
 	const chainId = useChainId();
 	const { address } = useAccount();
+	const challengesPositions = useSelector((state: RootState) => state.challenges.positions);
 
 	const getMaxCollateralFromMintLimit = (availableForClones: bigint, liqPrice: bigint) => {
 		if (!availableForClones || liqPrice === 0n) return 0n;
@@ -112,7 +114,29 @@ export default function PositionCreate({}) {
 					);
 
 					if (genesisPos) {
+						// Find the best cloneable parent: highest price, same collateral, active & cloneable
+						const now = Math.floor(Date.now() / 1000);
+						const bestParent =
+							[...allPositions]
+								.filter(
+									(p) =>
+										!p.closed &&
+										!p.denied &&
+										p.expiration > now &&
+										p.cooldown < now &&
+										BigInt(p.collateralBalance) >= BigInt(p.minimumCollateral) &&
+										p.collateral.toLowerCase() === genesisPos.collateral.toLowerCase() &&
+										!(challengesPositions?.map[p.position.toLowerCase() as Address] || []).some(
+											(c) => c.status === "Active"
+										)
+								)
+								.sort((a, b) => {
+									const diff = BigInt(b.price) - BigInt(a.price);
+									return diff > 0n ? 1 : diff < 0n ? -1 : 0;
+								})[0] || genesisPos;
+
 						setDefaultPosition(genesisPos);
+						setBestParentPosition(bestParent);
 						const nativeToken: TokenBalance = {
 							symbol: WAGMI_CHAIN.nativeCurrency.symbol,
 							name: WAGMI_CHAIN.nativeCurrency.name,
@@ -121,7 +145,7 @@ export default function PositionCreate({}) {
 							balanceOf: 0n,
 							allowance: {},
 						};
-						handleOnSelectedToken(nativeToken, genesisPos);
+						handleOnSelectedToken(nativeToken, bestParent, genesisPos);
 						return;
 					}
 				}
@@ -221,8 +245,8 @@ export default function PositionCreate({}) {
 		2
 	)?.toString();
 
-	const handleOnSelectedToken = (token: TokenBalance, positionOverride?: PositionQuery) => {
-		const position = positionOverride ?? defaultPosition;
+	const handleOnSelectedToken = (token: TokenBalance, positionOverride?: PositionQuery, genesisPosition?: PositionQuery) => {
+		const position = positionOverride ?? bestParentPosition ?? defaultPosition;
 		if (!token || !position) return;
 		setSelectedCollateral(token);
 
@@ -236,16 +260,13 @@ export default function PositionCreate({}) {
 		const maxAmount = getMaxCollateralAmount(tokenBalance, BigInt(position.availableForClones), liqPrice);
 		const defaultAmount = maxAmount > BigInt(position.minimumCollateral) ? maxAmount.toString() : position.minimumCollateral;
 
+		// Use genesis (defaultPosition) expiration as max, since contract limits to original's expiration
+		const maxExp = genesisPosition?.expiration || defaultPosition?.expiration || position.expiration;
 		setCollateralAmount(defaultAmount);
-		setExpirationDate(toDate(position.expiration));
+		setExpirationDate(toDate(maxExp));
 		setLiquidationPrice(liqPrice.toString());
 
-		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
-			position,
-			BigInt(maxAmount),
-			liqPrice,
-			toDate(position.expiration)
-		);
+		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(position, BigInt(maxAmount), liqPrice, toDate(maxExp));
 
 		setLoanDetails(loanDetails);
 		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
@@ -310,8 +331,9 @@ export default function PositionCreate({}) {
 	}, [expirationDate, collateralAmount, liquidationPrice, selectedPosition]);
 
 	const handleMaxExpirationDate = () => {
-		if (selectedPosition?.expiration) {
-			setExpirationDate(toDate(selectedPosition.expiration));
+		const maxExp = defaultPosition?.expiration || selectedPosition?.expiration;
+		if (maxExp) {
+			setExpirationDate(toDate(maxExp));
 		}
 	};
 
@@ -492,7 +514,13 @@ export default function PositionCreate({}) {
 						<InputTitle>{t("mint.set_expiration_date")}</InputTitle>
 						<DateInputOutlined
 							value={expirationDate}
-							maxDate={selectedPosition?.expiration ? toDate(selectedPosition?.expiration) : expirationDate}
+							maxDate={
+								defaultPosition?.expiration
+									? toDate(defaultPosition.expiration)
+									: selectedPosition?.expiration
+									? toDate(selectedPosition.expiration)
+									: expirationDate
+							}
 							placeholderText="YYYY-MM-DD"
 							onChange={setExpirationDate}
 							rightAdornment={expirationDate ? <MaxButton onClick={handleMaxExpirationDate} /> : null}
