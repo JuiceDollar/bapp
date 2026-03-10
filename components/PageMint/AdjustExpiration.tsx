@@ -31,6 +31,57 @@ import { erc20Abi, formatUnits, maxUint256 } from "viem";
 import { PositionQuery } from "@juicedollar/api";
 import { mainnet, testnet } from "@config";
 import { getNetDebt } from "../../utils/loanCalculations";
+import Select, { StylesConfig } from "react-select";
+
+type PriceOption = { value: string; label: string };
+
+const selectStyles: StylesConfig<PriceOption, false> = {
+	control: (base, state) => ({
+		...base,
+		backgroundColor: "#ffffff",
+		borderRadius: "0.75rem",
+		border: state.isFocused ? "2px solid #FFA33B" : "1px solid #B7B7B7",
+		boxShadow: "none",
+		padding: "0.25rem 0.25rem",
+		minHeight: "3rem",
+		"&:hover": { borderColor: state.isFocused ? "#FFA33B" : "#6D6D6D" },
+	}),
+	singleValue: (base) => ({
+		...base,
+		color: "#131313",
+		fontSize: "0.9375rem",
+		fontWeight: 500,
+	}),
+	menu: (base) => ({
+		...base,
+		backgroundColor: "#ffffff",
+		borderRadius: "0.75rem",
+		overflow: "hidden",
+		border: "1px solid #B7B7B7",
+		boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+		zIndex: 20,
+	}),
+	menuList: (base) => ({
+		...base,
+		padding: 0,
+	}),
+	option: (base, state) => ({
+		...base,
+		backgroundColor: state.isSelected ? "#FDF2E2" : state.isFocused ? "#F5F6F9" : "transparent",
+		color: "#131313",
+		fontSize: "0.9375rem",
+		fontWeight: state.isSelected ? 600 : 400,
+		padding: "0.625rem 0.75rem",
+		cursor: "pointer",
+		"&:active": { backgroundColor: "#FDF2E2" },
+	}),
+	indicatorSeparator: () => ({ display: "none" }),
+	dropdownIndicator: (base) => ({
+		...base,
+		color: "#B7B7B7",
+		"&:hover": { color: "#6D6D6D" },
+	}),
+};
 
 interface AdjustExpirationProps {
 	position: PositionQuery;
@@ -430,20 +481,28 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 				{noTargetsAvailable ? (
 					<div className="text-sm text-text-muted2 px-1">{t("mint.no_extension_target_available")}</div>
 				) : (
-					<select
-						className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-						value={effectivePrice ?? ""}
-						onChange={(e) => {
-							setSelectedTargetPrice(e.target.value);
-							setExpirationDate(undefined);
+					<Select<PriceOption>
+						options={availablePrices.map((price) => ({
+							value: price,
+							label: `${formatPrice(price)} ${position.stablecoinSymbol}/${collSymbol}`,
+						}))}
+						value={
+							effectivePrice
+								? {
+										value: effectivePrice,
+										label: `${formatPrice(effectivePrice)} ${position.stablecoinSymbol}/${collSymbol}`,
+								  }
+								: null
+						}
+						onChange={(opt) => {
+							if (opt) {
+								setSelectedTargetPrice(opt.value);
+								setExpirationDate(undefined);
+							}
 						}}
-					>
-						{availablePrices.map((price) => (
-							<option key={price} value={price}>
-								{formatPrice(price)} {position.stablecoinSymbol}/{collSymbol}
-							</option>
-						))}
-					</select>
+						isSearchable={false}
+						styles={selectStyles}
+					/>
 				)}
 			</div>
 
