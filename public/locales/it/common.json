@@ -227,6 +227,7 @@
 		"needs_higher_liq_price": "La posizione necessita di un prezzo di liquidazione più alto",
 		"more_collateral": "Più garanzia",
 		"higher_liq_price": "Prezzo di liquidazione più alto",
+		"increase_liq_price": "Aumenta il prezzo di liquidazione",
 		"cooldown_warning": "L'aumento del prezzo attiverà un periodo di attesa di 3 giorni. Dopodiché, potrai prendere in prestito l'importo richiesto.",
 		"price_increase_cooldown_warning": "L'aumento del prezzo attiverà un periodo di attesa di 3 giorni.",
 		"after_cooldown_can_withdraw": "Dopo il periodo di attesa puoi prelevare {{amount}} {{symbol}} o prendere in prestito di più.",

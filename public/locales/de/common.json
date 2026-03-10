@@ -226,6 +226,7 @@
 		"needs_higher_liq_price": "Die Position benötigt einen höheren Liquidationspreis",
 		"more_collateral": "Mehr Sicherheit",
 		"higher_liq_price": "Höherer Liquidationspreis",
+		"increase_liq_price": "Liquidationspreis erhöhen",
 		"cooldown_warning": "Die Preiserhöhung löst eine 3-tägige Abkühlphase aus. Danach können Sie den gewünschten Betrag ausleihen.",
 		"price_increase_cooldown_warning": "Die Preiserhöhung löst eine 3-tägige Abkühlphase aus.",
 		"after_cooldown_can_withdraw": "Nach der Abkühlphase können Sie {{amount}} {{symbol}} abheben oder mehr leihen.",

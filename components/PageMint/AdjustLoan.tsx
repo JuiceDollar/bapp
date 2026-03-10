@@ -482,7 +482,7 @@ export const AdjustLoan = ({
 									: "text-button-textGroup-secondary-text"
 							}`}
 						>
-							{t("mint.higher_liq_price")}
+							{t("mint.increase_liq_price")}
 						</span>
 					</div>
 				</div>
