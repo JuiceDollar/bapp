@@ -278,8 +278,9 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 		return totalPaid > totalReceived ? totalPaid - totalReceived : 0n;
 	}, [rollParams, principal, interest, sourceReservePPM, targetReservePPM, selectedTarget]);
 
-	const priceAdjustmentCost = netJusdCost !== null && netJusdCost > interest ? netJusdCost - interest : 0n;
-	const totalCost = netJusdCost !== null && netJusdCost > interest ? netJusdCost : interest;
+	const totalCost = netJusdCost ?? interest;
+	const priceAdjustmentCost = totalCost > interest ? totalCost - interest : 0n;
+	const displayedInterest = totalCost < interest ? totalCost : interest;
 
 	const totalCostWithBuffer = totalCost + totalCost / 10n + BigInt(1e16);
 	const hasInsufficientBalance = totalCostWithBuffer > 0n && BigInt(jusdBalance || 0) < totalCostWithBuffer;
@@ -547,7 +548,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					<div className="flex justify-between text-sm">
 						<span className="text-gray-600 dark:text-gray-400">{t("mint.interest_to_pay")}</span>
 						<span className="font-medium text-gray-900 dark:text-gray-100">
-							{formatNumber(interest)} {position.stablecoinSymbol}
+							{formatNumber(displayedInterest)} {position.stablecoinSymbol}
 						</span>
 					</div>
 					{priceAdjustmentCost > 0n && (
