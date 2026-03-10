@@ -192,6 +192,12 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	const effectivePrice = selectedTargetPrice ?? defaultPrice;
 	const selectedTarget = effectivePrice ? targetsByPrice.get(effectivePrice) ?? null : null;
 
+	useEffect(() => {
+		if (selectedTargetPrice && !availablePrices.includes(selectedTargetPrice)) {
+			setSelectedTargetPrice(null);
+		}
+	}, [availablePrices, selectedTargetPrice]);
+
 	// Read target position parameters from chain
 	const { data: targetContractData } = useReadContracts({
 		contracts: selectedTarget
@@ -237,12 +243,11 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 	const rollParams = useMemo(() => {
 		if (!selectedTarget || sourceCollateralBalance === 0n || sourceReservePPM === 0n) return null;
 
-		const interestCalc = currentDebt > principal ? currentDebt - principal : 0n;
-		const interestBuffer = interestCalc / 10n + BigInt(1e16);
-		const repayAmount = principal + interestCalc + interestBuffer;
+		const interestBuffer = interest / 10n + BigInt(1e16);
+		const repayAmount = principal + interest + interestBuffer;
 
 		const usableMintFromPrincipal = (principal * (1_000_000n - sourceReservePPM)) / 1_000_000n;
-		const usableMint = usableMintFromPrincipal + interestCalc;
+		const usableMint = usableMintFromPrincipal + interest;
 
 		let mintAmount = usableMint === 0n ? 0n : (usableMint * 1_000_000n - 1n) / (1_000_000n - targetReservePPM) + 1n;
 
@@ -260,7 +265,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 		const extraCollateral = depositAmount > sourceCollateralBalance ? depositAmount - sourceCollateralBalance : 0n;
 
 		return { repay: repayAmount, collWithdraw: sourceCollateralBalance, mint: mintAmount, collDeposit: depositAmount, extraCollateral };
-	}, [principal, currentDebt, sourceCollateralBalance, sourceReservePPM, targetReservePPM, targetPrice, targetMinColl, selectedTarget]);
+	}, [principal, interest, sourceCollateralBalance, sourceReservePPM, targetReservePPM, targetPrice, targetMinColl, selectedTarget]);
 
 	// Net JUSD cost: how much the user effectively pays (interest + price adjustment)
 	const netJusdCost = useMemo(() => {
