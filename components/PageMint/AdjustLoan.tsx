@@ -37,6 +37,7 @@ import {
 	walletRepayToDebtReduction,
 	getCappedMintAmount,
 	floorToDisplayDecimals,
+	getMaxWalletFor2xLiqPriceCap,
 } from "../../utils/loanCalculations";
 
 enum StrategyKey {
@@ -143,11 +144,7 @@ export const AdjustLoan = ({
 		};
 		if (!hasAnyStrategy) return safeWalletMax(availableWithoutAdjustment);
 		if (strategies[StrategyKey.INCREASE_LIQ_PRICE]) {
-			const maxLiqPrice = liqPrice * 2n;
-			const rawMaxDebt = (maxLiqPrice * collateralBalance) / BigInt(1e18);
-			const maxDebt = rawMaxDebt - rawMaxDebt / 10000n;
-			const maxDebtDelta = maxDebt > currentDebt ? maxDebt - currentDebt : 0n;
-			return safeWalletMax(maxDebtDelta);
+			return getMaxWalletFor2xLiqPriceCap(currentDebt, position.reserveContribution ?? 0);
 		}
 		const maxCollateral = strategies[StrategyKey.ADD_COLLATERAL] ? collateralBalance + walletBalance : collateralBalance;
 		const rawMaxDebtStrategy = (liqPrice * maxCollateral) / BigInt(1e18);
