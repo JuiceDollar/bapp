@@ -126,6 +126,12 @@ export const AdjustLoan = ({
 
 	const availableWithoutAdjustment = getAvailableToBorrow(liqPrice, collateralBalance, collateralRequirement);
 
+	useEffect(() => {
+		if (isIncrease && availableWithoutAdjustment === 0n) {
+			setStrategies((prev) => ({ ...prev, [StrategyKey.ADD_COLLATERAL]: true }));
+		}
+	}, [isIncrease, availableWithoutAdjustment]);
+
 	const maxDelta = useMemo(() => {
 		if (!isIncrease) return getNetDebt(principal, interest, position.reserveContribution);
 		// Largest wallet amount whose debt equivalent doesn't exceed the debt capacity.
@@ -167,7 +173,7 @@ export const AdjustLoan = ({
 	const delta = BigInt(deltaAmount || 0);
 	const debtDelta = isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
 
-	const showStrategyOptions = isIncrease && debtDelta > availableWithoutAdjustment;
+	const showStrategyOptions = isIncrease && (debtDelta > availableWithoutAdjustment || availableWithoutAdjustment === 0n);
 	// Snap to full repay when remainder is under 1 cent — not worth keeping a position open for.
 	// The contract has no minimum debt, so larger partial repays work fine without snapping.
 	const FULL_REPAY_DUST = BigInt(1e16); // 0.01 JUSD
