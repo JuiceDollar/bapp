@@ -619,6 +619,8 @@ export const AdjustLoan = ({
 					? t("mint.confirm_close_position")
 					: !isIncrease
 					? t("mint.repay")
+					: strategies[StrategyKey.INCREASE_LIQ_PRICE]
+					? t("mint.adjust_price_and_borrow")
 					: t("mint.lend")}
 			</Button>
 		</div>

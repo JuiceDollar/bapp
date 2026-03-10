@@ -282,6 +282,7 @@
 		"goes_to_reserve": "Goes to reserve",
 		"new_total_debt": "New Total Debt",
 		"lend": "Borrow",
+		"adjust_price_and_borrow": "Adjust price & borrow",
 		"increase": "Increase",
 		"reduce": "Reduce",
 		"decrease": "Decrease",
