@@ -307,37 +307,62 @@ export const AdjustLoan = ({
 		if (strategies[StrategyKey.INCREASE_LIQ_PRICE]) {
 			try {
 				setIsTxOnGoing(true);
-				const newPrincipal = principal + outcome.deltaDebt;
 				const newLiqPrice = outcome.next.liqPrice;
-				const adjustHash = useReference
+				const principalDelta = outcome.deltaDebt;
+
+				// Tx1: Set price first (contract checks collateral at current price before mint)
+				const priceHash = useReference
 					? await simulateAndWrite({
 							chainId: chainId as typeof mainnet.id | typeof testnet.id,
 							address: position.position as Address,
 							abi: PositionV2ABI,
-							functionName: "adjustWithReference",
-							args: [newPrincipal, collateralBalance, newLiqPrice, reference.address!, false],
+							functionName: "adjustPriceWithReference",
+							args: [newLiqPrice, reference.address!],
 					  })
 					: await simulateAndWrite({
 							chainId: chainId as typeof mainnet.id | typeof testnet.id,
 							address: position.position as Address,
 							abi: PositionV2ABI,
-							functionName: "adjust",
-							args: [newPrincipal, collateralBalance, newLiqPrice, false],
+							functionName: "adjustPrice",
+							args: [newLiqPrice],
 					  });
-				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: adjustHash, confirmations: 1 }), {
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: priceHash, confirmations: 1 }), {
+					pending: { render: <TxToast title={t("mint.txs.adjusting_price")} rows={[]} /> },
+					success: { render: <TxToast title={t("mint.txs.adjusting_price_success")} rows={[]} /> },
+				});
+
+				// Tx2: Mint (now price is updated, collateral check passes)
+				const mintHash = await simulateAndWrite({
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					address: position.position as Address,
+					abi: PositionV2ABI,
+					functionName: "mint",
+					args: [userAddress, principalDelta],
+				});
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: mintHash, confirmations: 1 }), {
 					pending: {
 						render: (
 							<TxToast
-								title={t("mint.txs.adjusting_price")}
-								rows={[{ title: t("common.txs.transaction"), hash: adjustHash }]}
+								title={t("mint.txs.minting", { symbol: position.stablecoinSymbol })}
+								rows={[
+									{
+										title: t("common.txs.amount"),
+										value: `${formatTokenAmount(delta, 18, 2, 2)} ${position.stablecoinSymbol}`,
+									},
+								]}
 							/>
 						),
 					},
 					success: {
 						render: (
 							<TxToast
-								title={t("mint.txs.adjusting_price_success")}
-								rows={[{ title: t("common.txs.transaction"), hash: adjustHash }]}
+								title={t("mint.txs.minting_success", { symbol: position.stablecoinSymbol })}
+								rows={[
+									{
+										title: t("common.txs.amount"),
+										value: `${formatTokenAmount(delta, 18, 2, 2)} ${position.stablecoinSymbol}`,
+									},
+								]}
 							/>
 						),
 					},
