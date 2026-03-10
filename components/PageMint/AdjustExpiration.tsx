@@ -480,7 +480,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					</div>
 					{priceAdjustmentCost > 0n && (
 						<div className="flex justify-between text-sm">
-							<span className="text-gray-600 dark:text-gray-400">{t("mint.debt_repaid_lower_price")}</span>
+							<span className="text-gray-600 dark:text-gray-400">{t("mint.debt_to_repay_lower_price")}</span>
 							<span className="font-medium text-amber-600 dark:text-amber-400">
 								{formatNumber(priceAdjustmentCost)} {position.stablecoinSymbol}
 							</span>
