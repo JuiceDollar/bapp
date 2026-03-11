@@ -13,7 +13,7 @@ import { MaxButton } from "@components/Input/MaxButton";
 import { ErrorDisplay } from "@components/ErrorDisplay";
 import Button from "@components/Button";
 import { PositionQuery } from "@juicedollar/api";
-import { useChainId, useAccount, useReadContract } from "wagmi";
+import { useChainId, useAccount } from "wagmi";
 import { WAGMI_CHAIN } from "../../app.config";
 import { ADDRESS } from "@juicedollar/jusd";
 import { mainnet, testnet } from "@config";
@@ -23,7 +23,7 @@ import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { useReferencePosition } from "../../hooks/useReferencePosition";
 import { toast } from "react-toastify";
 import { TxToast, toastTxError } from "@components/TxToast";
-import { waitForTransactionReceipt, readContract } from "wagmi/actions";
+import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { store } from "../../redux/redux.store";
@@ -35,7 +35,6 @@ import {
 	getAvailableToBorrow,
 	getNetDebt,
 	walletRepayToDebtReduction,
-	getCappedMintAmount,
 	ceilDivPPM,
 	floorToDisplayDecimals,
 	getMaxWalletFor2xLiqPriceCap,
@@ -118,12 +117,12 @@ export const AdjustLoan = ({
 	}, [isIncrease]);
 
 	const hasAnyStrategy = strategies[StrategyKey.ADD_COLLATERAL] || strategies[StrategyKey.INCREASE_LIQ_PRICE];
-	const reference = useReferencePosition(
-		position,
-		strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome ? outcome.next.liqPrice : liqPrice
-	);
-	const useReference =
-		strategies[StrategyKey.INCREASE_LIQ_PRICE] && reference.address !== null && outcome && outcome.next.liqPrice <= reference.price;
+	// Tx1 overshoots the solver price by 0.01% so interest accrual between Tx1 and Tx2 doesn't cause InsufficientCollateral.
+	// The reference must cover this buffered price, otherwise we fall back to adjustPrice (with cooldown).
+	const bufferedLiqPrice =
+		strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome ? outcome.next.liqPrice + outcome.next.liqPrice / 10000n : liqPrice;
+	const reference = useReferencePosition(position, bufferedLiqPrice);
+	const useReference = strategies[StrategyKey.INCREASE_LIQ_PRICE] && reference.address !== null && outcome !== null;
 	const showCooldownMessage = strategies[StrategyKey.INCREASE_LIQ_PRICE] && !useReference && outcome && outcome.deltaDebt > 0n;
 
 	const availableWithoutAdjustment = getAvailableToBorrow(liqPrice, collateralBalance, collateralRequirement);
@@ -169,32 +168,8 @@ export const AdjustLoan = ({
 	]);
 
 	const maxDeltaForDisplayAndClick = useMemo(() => (isIncrease ? floorToDisplayDecimals(maxDelta) : maxDelta), [isIncrease, maxDelta]);
-	const { data: availableForMintingOnChain } = useReadContract({
-		address: strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome ? (position.position as Address) : undefined,
-		abi: PositionV2ABI,
-		functionName: "availableForMinting",
-	});
-
-	const cappedReceiveAmount = useMemo(() => {
-		if (!strategies[StrategyKey.INCREASE_LIQ_PRICE] || !outcome || availableForMintingOnChain === undefined) return null;
-		const principalDelta = outcome.deltaDebt;
-		const available = availableForMintingOnChain ?? 0n;
-		const newPrice = outcome.next.liqPrice;
-		const cappedMint = getCappedMintAmount({
-			principalDelta,
-			available,
-			collateralBalance,
-			price: newPrice,
-			principalOnChain: principal,
-			interestOnChain: interest,
-			reserveContribution: position.reserveContribution ?? 0,
-			interestTermBufferPct: 0,
-		});
-		return getAmountLended(cappedMint, position.reserveContribution ?? 0);
-	}, [strategies, outcome, availableForMintingOnChain, principal, interest, collateralBalance, position.reserveContribution]);
 
 	const delta = BigInt(deltaAmount || 0);
-	const displayReceiveAmount = strategies[StrategyKey.INCREASE_LIQ_PRICE] && cappedReceiveAmount !== null ? cappedReceiveAmount : delta;
 	const debtDelta = isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
 
 	const showStrategyOptions = isIncrease && (debtDelta > availableWithoutAdjustment || availableWithoutAdjustment === 0n);
@@ -348,68 +323,32 @@ export const AdjustLoan = ({
 		if (strategies[StrategyKey.INCREASE_LIQ_PRICE]) {
 			try {
 				setIsTxOnGoing(true);
-				const newLiqPrice = outcome.next.liqPrice;
-				const principalDelta = outcome.deltaDebt;
+				const mintAmount = outcome.deltaDebt;
+				// Overshoot price by 0.01% so interest accrual between Tx1 and Tx2 doesn't cause InsufficientCollateral
+				const adjustedPrice = bufferedLiqPrice;
 
-				// Tx1: Set price first (contract checks collateral at current price before mint)
+				// Tx1: Adjust price (contract checks collateral at current price before mint, so price must go first)
 				const priceHash = useReference
 					? await simulateAndWrite({
 							chainId: chainId as typeof mainnet.id | typeof testnet.id,
 							address: position.position as Address,
 							abi: PositionV2ABI,
 							functionName: "adjustPriceWithReference",
-							args: [newLiqPrice, reference.address!],
+							args: [adjustedPrice, reference.address!],
 					  })
 					: await simulateAndWrite({
 							chainId: chainId as typeof mainnet.id | typeof testnet.id,
 							address: position.position as Address,
 							abi: PositionV2ABI,
 							functionName: "adjustPrice",
-							args: [newLiqPrice],
+							args: [adjustedPrice],
 					  });
 				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: priceHash, confirmations: 1 }), {
 					pending: { render: <TxToast title={t("mint.txs.adjusting_price")} rows={[]} /> },
 					success: { render: <TxToast title={t("mint.txs.adjusting_price_success")} rows={[]} /> },
 				});
-				// Cap to on-chain available and collateral headroom (interest term causes InsufficientCollateral at boundary)
-				const [available, principalOnChain, priceOnChain, interestOnChain] = await Promise.all([
-					readContract(WAGMI_CONFIG, {
-						address: position.position as Address,
-						abi: PositionV2ABI,
-						functionName: "availableForMinting",
-					}),
-					readContract(WAGMI_CONFIG, {
-						address: position.position as Address,
-						abi: PositionV2ABI,
-						functionName: "principal",
-					}),
-					readContract(WAGMI_CONFIG, {
-						address: position.position as Address,
-						abi: PositionV2ABI,
-						functionName: "price",
-					}),
-					readContract(WAGMI_CONFIG, {
-						address: position.position as Address,
-						abi: PositionV2ABI,
-						functionName: "getInterest",
-					}),
-				]);
-				const mintAmount = getCappedMintAmount({
-					principalDelta,
-					available,
-					collateralBalance,
-					price: priceOnChain,
-					principalOnChain,
-					interestOnChain,
-					reserveContribution: position.reserveContribution ?? 0,
-					interestTermBufferPct: 0,
-				});
-				if (mintAmount === 0n) {
-					toastTxError(new Error("No amount available to mint after price update"));
-					return;
-				}
 
-				// Tx2: Mint (now price is updated, collateral check passes)
+				// Tx2: Mint the exact amount (price headroom from Tx1 absorbs interest accrual)
 				const mintHash = await simulateAndWrite({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: position.position as Address,
@@ -607,15 +546,11 @@ export const AdjustLoan = ({
 					)}
 					<div className="flex justify-between text-sm">
 						<span className="text-text-muted2">{t("mint.you_receive_now")}</span>
-						<span className="font-medium text-green-600 dark:text-green-400">
-							+{formatTokenAmount(floorToDisplayDecimals(displayReceiveAmount), 18, 2, 2)} JUSD
-						</span>
+						<span className="font-medium text-green-600 dark:text-green-400">+{formatTokenAmount(delta, 18, 2, 2)} JUSD</span>
 					</div>
 					<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
 						<span className="font-bold text-text-title">{t("mint.new_total_debt")}</span>
-						<span className="font-bold text-text-title">
-							{formatTokenAmount(netDebt + displayReceiveAmount, 18, 2, 2)} JUSD
-						</span>
+						<span className="font-bold text-text-title">{formatTokenAmount(netDebt + delta, 18, 2, 2)} JUSD</span>
 					</div>
 				</div>
 			)}

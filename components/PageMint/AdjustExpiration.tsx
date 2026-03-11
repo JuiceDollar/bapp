@@ -30,8 +30,7 @@ import Button from "@components/Button";
 import { erc20Abi, formatUnits, maxUint256 } from "viem";
 import { PositionQuery } from "@juicedollar/api";
 import { mainnet, testnet } from "@config";
-import { ceilDivPPM } from "../../utils/loanCalculations";
-import { getNetDebt } from "../../utils/loanCalculations";
+import { ceilDivPPM, getNetDebt } from "../../utils/loanCalculations";
 import Select, { StylesConfig } from "react-select";
 
 type PriceOption = { value: string; label: string };
