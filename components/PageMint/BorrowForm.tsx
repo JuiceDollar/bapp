@@ -360,7 +360,7 @@ export default function PositionCreate({}) {
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatBigInt(loanDetails.loanAmount) + ` ${TOKEN_SYMBOL}`,
+					value: formatBigInt(loanDetails.amountToSendToWallet) + ` ${TOKEN_SYMBOL}`,
 				},
 				{
 					title: t("common.txs.collateral"),
