@@ -36,6 +36,7 @@ import {
 	getNetDebt,
 	walletRepayToDebtReduction,
 	getCappedMintAmount,
+	ceilDivPPM,
 	floorToDisplayDecimals,
 	getMaxWalletFor2xLiqPriceCap,
 } from "../../utils/loanCalculations";
@@ -257,7 +258,16 @@ export const AdjustLoan = ({
 				});
 			}
 			const strategy = strategies[StrategyKey.ADD_COLLATERAL] ? Strategy.KEEP_LIQ_PRICE : Strategy.KEEP_COLLATERAL;
-			setOutcome(solveManage(currentPosition, Target.LOAN, strategy, newDebt));
+			// Compensate for the contract's interest term expansion (ceilDivPPM)
+			// so the solver's price is high enough for the full mint.
+			let targetDebt = newDebt;
+			if (strategy === Strategy.KEEP_COLLATERAL && interest > 0n) {
+				const rc = BigInt(position.reserveContribution ?? 0);
+				if (rc > 0n && rc < 1_000_000n) {
+					targetDebt = newDebt + (ceilDivPPM(interest, rc) - interest);
+				}
+			}
+			setOutcome(solveManage(currentPosition, Target.LOAN, strategy, targetDebt));
 		} catch {
 			setOutcome(null);
 		}
