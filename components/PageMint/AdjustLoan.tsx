@@ -191,15 +191,7 @@ export const AdjustLoan = ({
 			interestTermBufferPct: 0,
 		});
 		return getAmountLended(cappedMint, position.reserveContribution ?? 0);
-	}, [
-		strategies[StrategyKey.INCREASE_LIQ_PRICE],
-		outcome,
-		availableForMintingOnChain,
-		principal,
-		interest,
-		collateralBalance,
-		position.reserveContribution,
-	]);
+	}, [strategies, outcome, availableForMintingOnChain, principal, interest, collateralBalance, position.reserveContribution]);
 
 	const delta = BigInt(deltaAmount || 0);
 	const displayReceiveAmount = strategies[StrategyKey.INCREASE_LIQ_PRICE] && cappedReceiveAmount !== null ? cappedReceiveAmount : delta;
