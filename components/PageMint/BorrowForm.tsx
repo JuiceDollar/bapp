@@ -66,6 +66,7 @@ export default function PositionCreate({}) {
 	const [isMaxedOut, setIsMaxedOut] = useState(false);
 	const [defaultPosition, setDefaultPosition] = useState<PositionQuery | null>(null);
 	const [bestParentPosition, setBestParentPosition] = useState<PositionQuery | null>(null);
+	const [noCloneableParent, setNoCloneableParent] = useState(false);
 
 	const chainId = useChainId();
 	const { address } = useAccount();
@@ -103,6 +104,8 @@ export default function PositionCreate({}) {
 	useEffect(() => {
 		const loadDefaultPosition = async () => {
 			try {
+				setBestParentPosition(null);
+				setNoCloneableParent(false);
 				const apiClient = getApiClient(chainId);
 
 				// TEMPORARY: On mainnet, fetch from /positions/list (NPM package has wrong genesis)
@@ -116,26 +119,27 @@ export default function PositionCreate({}) {
 					if (genesisPos) {
 						// Find the best cloneable parent: highest price, same collateral, active & cloneable
 						const now = Math.floor(Date.now() / 1000);
-						const bestParent =
-							[...allPositions]
-								.filter(
-									(p) =>
-										!p.closed &&
-										!p.denied &&
-										p.expiration > now &&
-										p.cooldown < now &&
-										BigInt(p.collateralBalance) >= BigInt(p.minimumCollateral) &&
-										p.collateral.toLowerCase() === genesisPos.collateral.toLowerCase() &&
-										!(challengesPositions?.map[p.position.toLowerCase() as Address] || []).some(
-											(c) => c.status === "Active"
-										)
-								)
-								.sort((a, b) => {
-									const diff = BigInt(b.price) - BigInt(a.price);
-									return diff > 0n ? 1 : diff < 0n ? -1 : 0;
-								})[0] || genesisPos;
+						const cloneablePositions = [...allPositions]
+							.filter(
+								(p) =>
+									!p.closed &&
+									!p.denied &&
+									p.expiration > now &&
+									p.cooldown < now &&
+									BigInt(p.collateralBalance) >= BigInt(p.minimumCollateral) &&
+									p.collateral.toLowerCase() === genesisPos.collateral.toLowerCase() &&
+									!(challengesPositions?.map[p.position.toLowerCase() as Address] || []).some(
+										(c) => c.status === "Active"
+									)
+							)
+							.sort((a, b) => {
+								const diff = BigInt(b.price) - BigInt(a.price);
+								return diff > 0n ? 1 : diff < 0n ? -1 : 0;
+							});
+						const bestParent = cloneablePositions[0] || genesisPos;
 
 						setDefaultPosition(genesisPos);
+						setNoCloneableParent(cloneablePositions.length === 0);
 						setBestParentPosition(bestParent);
 						const nativeToken: TokenBalance = {
 							symbol: WAGMI_CHAIN.nativeCurrency.symbol,
@@ -479,6 +483,11 @@ export default function PositionCreate({}) {
 							options={collateralSelectorOptions}
 							onTokenSelect={handleOnSelectedToken}
 						/>
+						{noCloneableParent && (
+							<div className="self-stretch mt-1 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md">
+								<div className="text-yellow-800 text-sm font-medium">⚠️ {t("mint.error.no_cloneable_position")}</div>
+							</div>
+						)}
 						{isMaxedOut && selectedPosition && (
 							<div className="self-stretch mt-1 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md">
 								<div className="text-yellow-800 text-sm font-medium">
@@ -539,7 +548,7 @@ export default function PositionCreate({}) {
 							collateralPriceUsd={collateralPriceUsd}
 							extraRows={
 								<div className="py-1.5 flex justify-between">
-									<span className="text-base leading-tight">{t("mint.original_position")}</span>
+									<span className="text-base leading-tight">{t("mint.parent_position")}</span>
 									<Link
 										className="underline text-right text-sm font-extrabold leading-none tracking-tight"
 										href={`/monitoring/${selectedPosition?.position}`}
@@ -566,6 +575,7 @@ export default function PositionCreate({}) {
 									isLiquidationPriceTooHigh ||
 									!!collateralError ||
 									isMaxedOut ||
+									noCloneableParent ||
 									userBalance < BigInt(collateralAmount)
 								}
 							>
