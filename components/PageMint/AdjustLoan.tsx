@@ -323,7 +323,7 @@ export const AdjustLoan = ({
 		if (strategies[StrategyKey.INCREASE_LIQ_PRICE]) {
 			try {
 				setIsTxOnGoing(true);
-				const mintAmount = outcome.deltaDebt;
+				const mintAmount = walletAmountToDebt(delta, position.reserveContribution);
 				// Overshoot price by 0.01% so interest accrual between Tx1 and Tx2 doesn't cause InsufficientCollateral
 				const adjustedPrice = bufferedLiqPrice;
 
