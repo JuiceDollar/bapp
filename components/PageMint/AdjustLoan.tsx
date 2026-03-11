@@ -187,6 +187,7 @@ export const AdjustLoan = ({
 			principalOnChain: principal,
 			interestOnChain: interest,
 			reserveContribution: position.reserveContribution ?? 0,
+			interestTermBufferPct: 0,
 		});
 		return getAmountLended(cappedMint, position.reserveContribution ?? 0);
 	}, [
