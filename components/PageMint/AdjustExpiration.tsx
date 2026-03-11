@@ -443,32 +443,32 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 			{/* Current Position Summary */}
 			<div className="grid grid-cols-2 gap-3 rounded-lg bg-gray-50 dark:bg-gray-800 p-4">
 				<div>
-					<div className="text-xs text-gray-500 dark:text-gray-400">{t("mint.total")}</div>
-					<div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+					<div className="text-xs text-text-muted2">{t("mint.total")}</div>
+					<div className="text-sm font-bold text-text-title">
 						{formatNumber(netDebt)} {position.stablecoinSymbol}
 					</div>
 				</div>
 				<div>
-					<div className="text-xs text-gray-500 dark:text-gray-400">{t("mint.liquidation_price")}</div>
-					<div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+					<div className="text-xs text-text-muted2">{t("mint.liquidation_price")}</div>
+					<div className="text-sm font-bold text-text-title">
 						{formatBigInt(sourcePrice)} {position.stablecoinSymbol}/{collSymbol}
 					</div>
 				</div>
 				<div>
-					<div className="text-xs text-gray-500 dark:text-gray-400">{t("mint.collateral")}</div>
-					<div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+					<div className="text-xs text-text-muted2">{t("mint.collateral")}</div>
+					<div className="text-sm font-bold text-text-title">
 						{formatCurrency(formatUnits(sourceCollateralBalance, position.collateralDecimals), 3, 3)} {collSymbol}
 					</div>
 				</div>
 				<div>
-					<div className="text-xs text-gray-500 dark:text-gray-400">{t("mint.expiration")}</div>
-					<div className="text-sm font-bold text-gray-900 dark:text-gray-100">
+					<div className="text-xs text-text-muted2">{t("mint.expiration")}</div>
+					<div className="text-sm font-bold text-text-title">
 						{currentExpirationDate.toLocaleDateString(router?.locale || "en", {
 							month: "short",
 							day: "numeric",
 							year: "numeric",
 						})}
-						<span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">
+						<span className="text-xs font-normal text-text-muted2 ml-1">
 							(
 							{daysUntilExpiration > 0
 								? t("mint.days_until_expiration", { days: daysUntilExpiration })
@@ -521,7 +521,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 						maxDate={selectedTarget ? new Date(selectedTarget.expiration * 1000) : currentExpirationDate}
 						value={expirationDate}
 						placeholderText={new Date(position.expiration * 1000).toISOString().split("T")[0]}
-						className="placeholder:text-[#5D647B]"
+						className="placeholder:text-input-placeholder"
 						onChange={setExpirationDate}
 						rightAdornment={
 							<MaxButton
@@ -533,7 +533,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 						}
 					/>
 					{isExtending && expirationDate && (
-						<div className="text-xs font-medium text-gray-500 dark:text-gray-400 px-1">
+						<div className="text-xs font-medium text-text-muted2 px-1">
 							{t("mint.extending_by_days", {
 								days: Math.ceil((expirationDate.getTime() - currentExpirationDate.getTime()) / (1000 * 60 * 60 * 24)),
 							})}
@@ -546,29 +546,29 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 			{!noTargetsAvailable && selectedTarget && (
 				<div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-4 flex flex-col gap-y-2">
 					<div className="flex justify-between text-sm">
-						<span className="text-gray-600 dark:text-gray-400">{t("mint.interest_to_pay")}</span>
-						<span className="font-medium text-gray-900 dark:text-gray-100">
+						<span className="text-text-muted2">{t("mint.interest_to_pay")}</span>
+						<span className="font-medium text-text-title">
 							{formatNumber(displayedInterest)} {position.stablecoinSymbol}
 						</span>
 					</div>
 					{priceAdjustmentCost > 0n && (
 						<div className="flex justify-between text-sm">
-							<span className="text-gray-600 dark:text-gray-400">{t("mint.debt_to_repay_lower_price")}</span>
+							<span className="text-text-muted2">{t("mint.debt_to_repay_lower_price")}</span>
 							<span className="font-medium text-amber-600 dark:text-amber-400">
 								{formatNumber(priceAdjustmentCost)} {position.stablecoinSymbol}
 							</span>
 						</div>
 					)}
-					<div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between text-sm">
-						<span className="font-bold text-gray-900 dark:text-gray-100">{t("mint.total_cost")}</span>
-						<span className="font-bold text-gray-900 dark:text-gray-100">
+					<div className="border-t border-gray-300 dark:border-gray-600 pt-2 flex justify-between text-sm">
+						<span className="font-bold text-text-title">{t("mint.total_cost")}</span>
+						<span className="font-bold text-text-title">
 							{formatNumber(totalCost)} {position.stablecoinSymbol}
 						</span>
 					</div>
 					{rollParams && rollParams.extraCollateral > 0n && (
 						<div className="flex justify-between text-sm">
-							<span className="text-gray-600 dark:text-gray-400">{t("mint.extra_collateral_needed")}</span>
-							<span className="font-medium text-gray-900 dark:text-gray-100">
+							<span className="text-text-muted2">{t("mint.extra_collateral_needed")}</span>
+							<span className="font-medium text-text-title">
 								{formatNumber(rollParams.extraCollateral, position.collateralDecimals)} {collSymbol}
 							</span>
 						</div>
