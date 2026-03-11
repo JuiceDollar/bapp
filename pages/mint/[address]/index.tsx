@@ -241,7 +241,7 @@ export default function PositionBorrow({}) {
 			const toastContent = [
 				{
 					title: t("common.txs.amount"),
-					value: formatBigInt(amount) + ` ${TOKEN_SYMBOL}`,
+					value: formatBigInt(paidOutToWallet) + ` ${TOKEN_SYMBOL}`,
 				},
 				{
 					title: t("common.txs.collateral"),
