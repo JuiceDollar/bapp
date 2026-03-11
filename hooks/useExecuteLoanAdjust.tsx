@@ -37,9 +37,8 @@ export const executeLoanAdjust = async ({
 	const posAddr = position.position as Address;
 	const isWithdrawing = outcome.deltaCollateral < 0n;
 	const isRepayOnly = outcome.deltaDebt < 0n && outcome.deltaCollateral === 0n;
-	const LiqPrice = isRepayOnly ? BigInt(position.price) : outcome.next.liqPrice;
-
 	const isFullClose = outcome.next.debt === 0n && principal > 0n;
+	const LiqPrice = isRepayOnly ? BigInt(position.price) : isFullClose && isOwner ? BigInt(position.price) : outcome.next.liqPrice;
 
 	// Case 3: repay ≤ interest → need separate repay() call first
 	const needsSeparateRepay = !isFullClose && outcome.deltaDebt < 0n && outcome.next.debt >= principal;
