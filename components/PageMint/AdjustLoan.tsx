@@ -13,7 +13,7 @@ import { MaxButton } from "@components/Input/MaxButton";
 import { ErrorDisplay } from "@components/ErrorDisplay";
 import Button from "@components/Button";
 import { PositionQuery } from "@juicedollar/api";
-import { useChainId, useAccount } from "wagmi";
+import { useChainId, useAccount, useReadContract } from "wagmi";
 import { WAGMI_CHAIN } from "../../app.config";
 import { ADDRESS } from "@juicedollar/jusd";
 import { mainnet, testnet } from "@config";
@@ -168,8 +168,39 @@ export const AdjustLoan = ({
 	]);
 
 	const maxDeltaForDisplayAndClick = useMemo(() => (isIncrease ? floorToDisplayDecimals(maxDelta) : maxDelta), [isIncrease, maxDelta]);
+	const { data: availableForMintingOnChain } = useReadContract({
+		address: strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome ? (position.position as Address) : undefined,
+		abi: PositionV2ABI,
+		functionName: "availableForMinting",
+	});
+
+	const cappedReceiveAmount = useMemo(() => {
+		if (!strategies[StrategyKey.INCREASE_LIQ_PRICE] || !outcome || availableForMintingOnChain === undefined) return null;
+		const principalDelta = outcome.deltaDebt;
+		const available = availableForMintingOnChain ?? 0n;
+		const newPrice = outcome.next.liqPrice;
+		const cappedMint = getCappedMintAmount({
+			principalDelta,
+			available,
+			collateralBalance,
+			price: newPrice,
+			principalOnChain: principal,
+			interestOnChain: interest,
+			reserveContribution: position.reserveContribution ?? 0,
+		});
+		return getAmountLended(cappedMint, position.reserveContribution ?? 0);
+	}, [
+		strategies[StrategyKey.INCREASE_LIQ_PRICE],
+		outcome,
+		availableForMintingOnChain,
+		principal,
+		interest,
+		collateralBalance,
+		position.reserveContribution,
+	]);
 
 	const delta = BigInt(deltaAmount || 0);
+	const displayReceiveAmount = strategies[StrategyKey.INCREASE_LIQ_PRICE] && cappedReceiveAmount !== null ? cappedReceiveAmount : delta;
 	const debtDelta = isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
 
 	const showStrategyOptions = isIncrease && (debtDelta > availableWithoutAdjustment || availableWithoutAdjustment === 0n);
@@ -267,7 +298,7 @@ export const AdjustLoan = ({
 	};
 
 	const handleMaxClick = () => {
-		setDeltaAmount(maxDeltaForDisplayAndClick.toString());
+		setDeltaAmount(maxDelta.toString());
 	};
 
 	const toggleStrategy = (strategy: StrategyKey) => {
@@ -368,6 +399,7 @@ export const AdjustLoan = ({
 					principalOnChain,
 					interestOnChain,
 					reserveContribution: position.reserveContribution ?? 0,
+					interestTermBufferPct: 0,
 				});
 				if (mintAmount === 0n) {
 					toastTxError(new Error("No amount available to mint after price update"));
@@ -572,11 +604,15 @@ export const AdjustLoan = ({
 					)}
 					<div className="flex justify-between text-sm">
 						<span className="text-text-muted2">{t("mint.you_receive_now")}</span>
-						<span className="font-medium text-green-600 dark:text-green-400">+{formatTokenAmount(delta, 18, 2, 2)} JUSD</span>
+						<span className="font-medium text-green-600 dark:text-green-400">
+							+{formatTokenAmount(floorToDisplayDecimals(displayReceiveAmount), 18, 2, 2)} JUSD
+						</span>
 					</div>
 					<div className="flex justify-between text-sm pt-2 border-t border-gray-300 dark:border-gray-600">
 						<span className="font-bold text-text-title">{t("mint.new_total_debt")}</span>
-						<span className="font-bold text-text-title">{formatTokenAmount(netDebt + delta, 18, 2, 2)} JUSD</span>
+						<span className="font-bold text-text-title">
+							{formatTokenAmount(netDebt + displayReceiveAmount, 18, 2, 2)} JUSD
+						</span>
 					</div>
 				</div>
 			)}

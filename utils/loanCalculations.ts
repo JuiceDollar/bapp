@@ -87,7 +87,8 @@ export const getCappedMintAmount = (params: {
 			? maxPrincipalAtPrice - principalOnChain - interestTermWithBuffer
 			: 0n;
 	const mintAmountRaw = principalDelta > available ? available : principalDelta;
-	return mintAmountRaw > maxMintByCollateral && maxMintByCollateral > 0n ? maxMintByCollateral : mintAmountRaw;
+	const result = mintAmountRaw > maxMintByCollateral && maxMintByCollateral > 0n ? maxMintByCollateral : mintAmountRaw;
+	return result;
 };
 
 export type LoanDetails = {
