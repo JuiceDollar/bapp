@@ -21,6 +21,7 @@ import { store } from "../../redux/redux.store";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { approveToken } from "../../hooks/useApproveToken";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
+import { useReferencePosition } from "../../hooks/useReferencePosition";
 import { mainnet, testnet } from "@config";
 import { debtReductionToWalletCost } from "../../utils/loanCalculations";
 
@@ -71,6 +72,7 @@ export const AdjustCollateral = ({
 	const chainId = useChainId() ?? WAGMI_CHAIN.id;
 	const { address: userAddress } = useAccount();
 	const isOwner = useIsPositionOwner(position);
+	const reference = useReferencePosition(position, positionPrice);
 	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol?.toLowerCase() || "");
 	const maxWalletForAdd = isNativeWrappedPosition
 		? walletBalance > NATIVE_GAS_BUFFER
@@ -136,6 +138,8 @@ export const AdjustCollateral = ({
 
 	const newDebt = activeStrategy === StrategyKey.REPAY_LOAN ? currentDebt - calculatedRepayAmount : currentDebt;
 	const newPrice = activeStrategy === StrategyKey.HIGHER_PRICE ? calculatedNewPrice : positionPrice;
+	const higherPriceExceedsReference =
+		activeStrategy === StrategyKey.HIGHER_PRICE && (reference.address === null || newPrice > reference.price);
 
 	// Snap dust collateral to full withdrawal when full debt is being repaid
 	const snapToClose = !isIncrease && belowMinimumCollateral && activeStrategy === StrategyKey.REPAY_LOAN;
@@ -310,29 +314,49 @@ export const AdjustCollateral = ({
 					});
 				}
 
-				// All cases: call adjust()
+				// All cases: call adjustWithReference() when price is being increased, adjust() otherwise
+				const useRef = activeStrategy === StrategyKey.HIGHER_PRICE && reference.address !== null;
 				const publicClient = getPublicClient(WAGMI_CONFIG, {
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				});
-				const estimatedGas =
-					(await publicClient
-						?.estimateContractGas({
+
+				const estimatedGas = useRef
+					? (await publicClient
+							?.estimateContractGas({
+								address: position.position as Address,
+								abi: PositionV2ABI,
+								functionName: "adjustWithReference",
+								args: [newPrincipal, effectiveNewCollateral, adjustPrice, reference.address!, isNativeWrappedPosition],
+								account: userAddress,
+							})
+							.catch(() => 300_000n)) ?? 300_000n
+					: (await publicClient
+							?.estimateContractGas({
+								address: position.position as Address,
+								abi: PositionV2ABI,
+								functionName: "adjust",
+								args: [newPrincipal, effectiveNewCollateral, adjustPrice, isNativeWrappedPosition],
+								account: userAddress,
+							})
+							.catch(() => 300_000n)) ?? 300_000n;
+
+				const withdrawHash = useRef
+					? await simulateAndWrite({
+							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							address: position.position as Address,
+							abi: PositionV2ABI,
+							functionName: "adjustWithReference",
+							args: [newPrincipal, effectiveNewCollateral, adjustPrice, reference.address!, isNativeWrappedPosition],
+							gas: (estimatedGas * 150n) / 100n,
+					  })
+					: await simulateAndWrite({
+							chainId: chainId as typeof mainnet.id | typeof testnet.id,
 							address: position.position as Address,
 							abi: PositionV2ABI,
 							functionName: "adjust",
 							args: [newPrincipal, effectiveNewCollateral, adjustPrice, isNativeWrappedPosition],
-							account: userAddress,
-						})
-						.catch(() => 300_000n)) ?? 300_000n;
-
-				const withdrawHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
-					address: position.position as Address,
-					abi: PositionV2ABI,
-					functionName: "adjust",
-					args: [newPrincipal, effectiveNewCollateral, adjustPrice, isNativeWrappedPosition],
-					gas: (estimatedGas * 150n) / 100n,
-				});
+							gas: (estimatedGas * 150n) / 100n,
+					  });
 
 				const toastContent = [
 					{ title: t("common.txs.amount"), value: formatValue(effectiveDelta) },
@@ -367,6 +391,7 @@ export const AdjustCollateral = ({
 		delta === 0n ||
 		Boolean(deltaAmountError) ||
 		Boolean(jusdInsufficientError) ||
+		Boolean(higherPriceExceedsReference) ||
 		isTxOnGoing ||
 		needsStrategy ||
 		(!isIncrease && isInCooldown) ||
@@ -395,7 +420,16 @@ export const AdjustCollateral = ({
 			);
 		}
 		if (activeStrategy === StrategyKey.HIGHER_PRICE && newPrice > positionPrice) {
-			return t("mint.adjust_liq_price_btn");
+			return (
+				<>
+					<span className="sm:hidden">
+						{t("mint.adjust_liq_price_btn")} & {t("common.remove")} {collateralSymbol}
+					</span>
+					<span className="hidden sm:inline">
+						{t("mint.adjust_liq_price_btn")} & {t("common.remove")} {formattedDelta} {collateralSymbol}
+					</span>
+				</>
+			);
 		}
 		return isIncrease ? `${t("common.add")} ${formattedDelta} ${collateralSymbol}` : t("common.remove");
 	};
@@ -456,6 +490,9 @@ export const AdjustCollateral = ({
 				<div className="space-y-1 px-4">
 					{jusdInsufficientError && activeStrategy === StrategyKey.REPAY_LOAN && (
 						<div className="text-xs text-red-500 mb-1">{jusdInsufficientError}</div>
+					)}
+					{higherPriceExceedsReference && activeStrategy === StrategyKey.HIGHER_PRICE && (
+						<div className="text-xs text-red-500 mb-1">{t("mint.error.liq_price_exceeds_reference")}</div>
 					)}
 					<div className="text-sm font-medium text-text-muted2">{t("mint.position_needs_adjustments")}</div>
 					<div
