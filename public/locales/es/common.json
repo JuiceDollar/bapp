@@ -316,7 +316,8 @@
 			"price_too_high": "El precio no puede exceder el máximo permitido",
 			"price_too_low": "El precio no puede ser inferior al mínimo requerido para el colateral",
 			"insufficient_collateral_for_requirements": "Colateral insuficiente para ajuste de precio",
-			"liq_price_exceeds_max": "El nuevo precio de liquidación supera el máximo permitido (2x precio actual)."
+			"liq_price_exceeds_max": "El nuevo precio de liquidación supera el máximo permitido (2x precio actual).",
+			"price_adjusted_mint_failed": "El precio de liquidación se ajustó pero el minting falló. Puede completar el minting desde la página de la posición."
 		},
 		"txs": {
 			"creating_position": "Creando una nueva posición.",
