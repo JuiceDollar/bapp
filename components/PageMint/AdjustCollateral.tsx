@@ -111,6 +111,12 @@ export const AdjustCollateral = ({
 
 	const newCollateral = isIncrease ? collateralBalance + delta : collateralBalance - delta;
 
+	useEffect(() => {
+		if (newCollateral === 0n && activeStrategy === StrategyKey.HIGHER_PRICE) {
+			setActiveStrategy(null);
+		}
+	}, [newCollateral, activeStrategy]);
+
 	const calculatedNewPrice = useMemo(() => {
 		if (isIncrease || activeStrategy !== StrategyKey.HIGHER_PRICE || newCollateral === 0n) return positionPrice;
 		return (currentDebt * BigInt(1e18)) / newCollateral + 1n;
@@ -482,36 +488,38 @@ export const AdjustCollateral = ({
 							{t("mint.repay_loan")}
 						</span>
 					</div>
-					<div
-						role="button"
-						tabIndex={0}
-						onClick={() => setStrategy(StrategyKey.HIGHER_PRICE)}
-						onKeyDown={(e) => e.key === "Enter" && setStrategy(StrategyKey.HIGHER_PRICE)}
-						className="flex items-center gap-x-1 cursor-pointer hover:opacity-80 transition-opacity py-1"
-					>
-						<span
-							className={`flex items-center ${
-								activeStrategy === StrategyKey.HIGHER_PRICE
-									? "text-button-textGroup-primary-text"
-									: "text-button-textGroup-secondary-text"
-							}`}
+					{newCollateral > 0n && (
+						<div
+							role="button"
+							tabIndex={0}
+							onClick={() => setStrategy(StrategyKey.HIGHER_PRICE)}
+							onKeyDown={(e) => e.key === "Enter" && setStrategy(StrategyKey.HIGHER_PRICE)}
+							className="flex items-center gap-x-1 cursor-pointer hover:opacity-80 transition-opacity py-1"
 						>
-							{activeStrategy === StrategyKey.HIGHER_PRICE ? (
-								<RemoveCircleOutlineIcon color="currentColor" />
-							) : (
-								<AddCircleOutlineIcon color="currentColor" />
-							)}
-						</span>
-						<span
-							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight ${
-								activeStrategy === StrategyKey.HIGHER_PRICE
-									? "text-button-textGroup-primary-text"
-									: "text-button-textGroup-secondary-text"
-							}`}
-						>
-							{t("mint.higher_liq_price")}
-						</span>
-					</div>
+							<span
+								className={`flex items-center ${
+									activeStrategy === StrategyKey.HIGHER_PRICE
+										? "text-button-textGroup-primary-text"
+										: "text-button-textGroup-secondary-text"
+								}`}
+							>
+								{activeStrategy === StrategyKey.HIGHER_PRICE ? (
+									<RemoveCircleOutlineIcon color="currentColor" />
+								) : (
+									<AddCircleOutlineIcon color="currentColor" />
+								)}
+							</span>
+							<span
+								className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight ${
+									activeStrategy === StrategyKey.HIGHER_PRICE
+										? "text-button-textGroup-primary-text"
+										: "text-button-textGroup-secondary-text"
+								}`}
+							>
+								{t("mint.higher_liq_price")}
+							</span>
+						</div>
+					)}
 				</div>
 			)}
 
