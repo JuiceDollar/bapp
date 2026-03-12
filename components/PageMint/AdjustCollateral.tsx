@@ -113,18 +113,18 @@ export const AdjustCollateral = ({
 
 	const newCollateral = isIncrease ? collateralBalance + delta : collateralBalance - delta;
 
-	useEffect(() => {
-		if (newCollateral === 0n && activeStrategy === StrategyKey.HIGHER_PRICE) {
-			setActiveStrategy(null);
-		}
-	}, [newCollateral, activeStrategy]);
-
 	const calculatedNewPrice = useMemo(() => {
 		if (isIncrease || activeStrategy !== StrategyKey.HIGHER_PRICE || newCollateral === 0n) return positionPrice;
 		return (currentDebt * BigInt(1e18)) / newCollateral + 1n;
 	}, [isIncrease, activeStrategy, newCollateral, currentDebt, positionPrice]);
 
 	const belowMinimumCollateral = newCollateral > 0n && newCollateral < minimumCollateral;
+
+	useEffect(() => {
+		if (activeStrategy === StrategyKey.HIGHER_PRICE && (newCollateral === 0n || belowMinimumCollateral)) {
+			setActiveStrategy(null);
+		}
+	}, [newCollateral, belowMinimumCollateral, activeStrategy]);
 	const calculatedRepayAmount = useMemo(() => {
 		if (isIncrease || activeStrategy !== StrategyKey.REPAY_LOAN) return 0n;
 		// When new collateral is below the absolute minimum, the only way to withdraw
@@ -515,7 +515,22 @@ export const AdjustCollateral = ({
 						</div>
 					}
 				/>
-				{deltaAmountError && <div className="ml-1 text-red-500 text-sm">{deltaAmountError}</div>}
+				{deltaAmountError && <div className="ml-1 text-xs text-red-500">{deltaAmountError}</div>}
+				{belowMinimumCollateral && (
+					<div className="ml-1 text-xs text-text-muted2">
+						{t("mint.error.collateral_below_min_hint_before")}{" "}
+						<button
+							className="font-bold underline hover:opacity-70"
+							onClick={() => {
+								setDeltaAmount(collateralBalance.toString());
+								setActiveStrategy(StrategyKey.REPAY_LOAN);
+							}}
+						>
+							{t("mint.error.collateral_below_min_hint_link")}
+						</button>{" "}
+						{t("mint.error.collateral_below_min_hint_after")}
+					</div>
+				)}
 			</div>
 
 			{showStrategyOptions && (
@@ -557,7 +572,7 @@ export const AdjustCollateral = ({
 							{t("mint.repay_loan")}
 						</span>
 					</div>
-					{newCollateral > 0n && (
+					{newCollateral > 0n && !belowMinimumCollateral && (
 						<div
 							role="button"
 							tabIndex={0}
@@ -616,12 +631,14 @@ export const AdjustCollateral = ({
 						{formatTokenAmount(effectiveDelta, collateralDecimals, 4, 8)} {collateralSymbol}
 					</span>
 				</div>
-				<div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
-					<span className="font-bold text-text-title">{t("mint.new_collateral")}</span>
-					<span className="font-bold text-text-title">
-						{formatTokenAmount(effectiveNewCollateral, collateralDecimals, 4, 8)} {collateralSymbol}
-					</span>
-				</div>
+				{effectiveNewCollateral > 0n && (
+					<div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
+						<span className="font-bold text-text-title">{t("mint.new_collateral")}</span>
+						<span className="font-bold text-text-title">
+							{formatTokenAmount(effectiveNewCollateral, collateralDecimals, 4, 8)} {collateralSymbol}
+						</span>
+					</div>
+				)}
 			</div>
 
 			{!isIncrease && isInCooldown && (
