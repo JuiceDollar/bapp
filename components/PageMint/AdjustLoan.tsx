@@ -122,7 +122,8 @@ export const AdjustLoan = ({
 		strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome ? outcome.next.liqPrice + outcome.next.liqPrice / 10000n : liqPrice;
 	const reference = useReferencePosition(position, bufferedLiqPrice);
 	const useReference = strategies[StrategyKey.INCREASE_LIQ_PRICE] && reference.address !== null && outcome !== null;
-	const showCooldownMessage = strategies[StrategyKey.INCREASE_LIQ_PRICE] && !useReference && outcome && outcome.deltaDebt > 0n;
+	const showCooldownMessage =
+		strategies[StrategyKey.INCREASE_LIQ_PRICE] && !useReference && !isInCooldown && outcome && outcome.deltaDebt > 0n;
 
 	const availableWithoutAdjustment = getAvailableToBorrow(liqPrice, collateralBalance, collateralRequirement);
 
