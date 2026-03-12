@@ -320,17 +320,59 @@ export const AdjustCollateral = ({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				});
 
-				const estimatedGas = useRef
-					? (await publicClient
-							?.estimateContractGas({
-								address: position.position as Address,
-								abi: PositionV2ABI,
-								functionName: "adjustWithReference",
-								args: [newPrincipal, effectiveNewCollateral, adjustPrice, reference.address!, isNativeWrappedPosition],
-								account: userAddress,
-							})
-							.catch(() => 300_000n)) ?? 300_000n
-					: (await publicClient
+				if (useRef) {
+					// +0.01% covers reserveContribution gap and interest accrual between TX1 and TX2.
+					const tx1Price = adjustPrice + adjustPrice / 10000n;
+
+					// Tx 1: set price high enough so that TX2's collateral withdrawal passes _checkCollateral
+					const priceHash = await simulateAndWrite({
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: position.position as Address,
+						abi: PositionV2ABI,
+						functionName: "adjustPriceWithReference",
+						args: [tx1Price, reference.address!],
+					});
+					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: priceHash, confirmations: 1 }), {
+						pending: {
+							render: (
+								<TxToast
+									title={t("mint.txs.adjusting_price")}
+									rows={[{ title: t("common.txs.transaction"), hash: priceHash }]}
+								/>
+							),
+						},
+						success: {
+							render: (
+								<TxToast
+									title={t("mint.txs.adjusting_price_success")}
+									rows={[{ title: t("common.txs.transaction"), hash: priceHash }]}
+								/>
+							),
+						},
+					});
+
+					// Tx 2: withdraw collateral. _checkCollateral uses the stored price from TX1 (with +0.01% buffer).
+					const withdrawHash = await simulateAndWrite({
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: position.position as Address,
+						abi: PositionV2ABI,
+						functionName: "adjust",
+						args: [newPrincipal, effectiveNewCollateral, tx1Price, isNativeWrappedPosition],
+					});
+
+					const toastContent = [
+						{ title: t("common.txs.amount"), value: formatValue(effectiveDelta) },
+						{ title: t("common.txs.transaction"), hash: withdrawHash },
+					];
+					const txTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral");
+					const txSuccessTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral_success");
+					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
+						pending: { render: <TxToast title={txTitle} rows={toastContent} /> },
+						success: { render: <TxToast title={txSuccessTitle} rows={toastContent} /> },
+					});
+				} else {
+					const estimatedGas =
+						(await publicClient
 							?.estimateContractGas({
 								address: position.position as Address,
 								abi: PositionV2ABI,
@@ -340,36 +382,26 @@ export const AdjustCollateral = ({
 							})
 							.catch(() => 300_000n)) ?? 300_000n;
 
-				const withdrawHash = useRef
-					? await simulateAndWrite({
-							chainId: chainId as typeof mainnet.id | typeof testnet.id,
-							address: position.position as Address,
-							abi: PositionV2ABI,
-							functionName: "adjustWithReference",
-							args: [newPrincipal, effectiveNewCollateral, adjustPrice, reference.address!, isNativeWrappedPosition],
-							gas: (estimatedGas * 150n) / 100n,
-					  })
-					: await simulateAndWrite({
-							chainId: chainId as typeof mainnet.id | typeof testnet.id,
-							address: position.position as Address,
-							abi: PositionV2ABI,
-							functionName: "adjust",
-							args: [newPrincipal, effectiveNewCollateral, adjustPrice, isNativeWrappedPosition],
-							gas: (estimatedGas * 150n) / 100n,
-					  });
+					const withdrawHash = await simulateAndWrite({
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: position.position as Address,
+						abi: PositionV2ABI,
+						functionName: "adjust",
+						args: [newPrincipal, effectiveNewCollateral, adjustPrice, isNativeWrappedPosition],
+						gas: (estimatedGas * 150n) / 100n,
+					});
 
-				const toastContent = [
-					{ title: t("common.txs.amount"), value: formatValue(effectiveDelta) },
-					{ title: t("common.txs.transaction"), hash: withdrawHash },
-				];
-
-				const txTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral");
-				const txSuccessTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral_success");
-
-				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
-					pending: { render: <TxToast title={txTitle} rows={toastContent} /> },
-					success: { render: <TxToast title={txSuccessTitle} rows={toastContent} /> },
-				});
+					const toastContent = [
+						{ title: t("common.txs.amount"), value: formatValue(effectiveDelta) },
+						{ title: t("common.txs.transaction"), hash: withdrawHash },
+					];
+					const txTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral");
+					const txSuccessTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral_success");
+					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
+						pending: { render: <TxToast title={txTitle} rows={toastContent} /> },
+						success: { render: <TxToast title={txSuccessTitle} rows={toastContent} /> },
+					});
+				}
 			}
 
 			store.dispatch(fetchPositionsList(chainId));
