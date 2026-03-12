@@ -172,6 +172,14 @@ export const AdjustLoan = ({
 	const debtDelta = isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
 
 	const showStrategyOptions = isIncrease && (debtDelta > availableWithoutAdjustment || availableWithoutAdjustment === 0n);
+
+	// Clear strategies when the entered amount no longer requires adjustment
+	useEffect(() => {
+		if (!showStrategyOptions) {
+			setStrategies({ [StrategyKey.ADD_COLLATERAL]: false, [StrategyKey.INCREASE_LIQ_PRICE]: false });
+		}
+	}, [showStrategyOptions]);
+
 	// Snap to full repay when remainder is under 1 cent — not worth keeping a position open for.
 	// The contract has no minimum debt, so larger partial repays work fine without snapping.
 	const FULL_REPAY_DUST = BigInt(1e16); // 0.01 JUSD
@@ -310,7 +318,7 @@ export const AdjustLoan = ({
 
 	const handleExecute = async () => {
 		if (!outcome || !outcome.isValid || !position || !userAddress) return;
-		if (strategies[StrategyKey.INCREASE_LIQ_PRICE]) {
+		if (strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome.next.liqPrice > liqPrice) {
 			try {
 				setIsTxOnGoing(true);
 				const mintAmount = walletAmountToDebt(delta, position.reserveContribution);
