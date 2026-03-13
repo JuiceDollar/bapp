@@ -47,9 +47,19 @@ export const floorToDisplayDecimals = (amount: bigint, displayDecimals = 2, toke
 	return floored > 0n ? floored : amount;
 };
 
-/** Max wallet amount to borrow when increasing liq price (2x cap). Doubling debt = 2x price. */
-export const getMaxWalletFor2xLiqPriceCap = (currentDebt: bigint, reserveContribution: number): bigint => {
-	const maxDebtDelta = currentDebt;
+/** Max wallet amount to borrow when increasing liq price, capped so the new price stays below the reference position's price. */
+export const getMaxWalletForRefPrice = (
+	collateralRequirement: bigint,
+	liqPrice: bigint,
+	refPrice: bigint,
+	reserveContribution: number,
+	collateralBalance: bigint
+): bigint => {
+	const maxNewLiqPrice = (refPrice * 10000n) / 10001n;
+	if (maxNewLiqPrice <= liqPrice) return 0n;
+	const rawMaxCapacity = (maxNewLiqPrice * collateralBalance) / BigInt(1e18);
+	const maxCapacity = rawMaxCapacity - rawMaxCapacity / 10000n;
+	const maxDebtDelta = maxCapacity > collateralRequirement ? maxCapacity - collateralRequirement : 0n;
 	const wallet = getAmountLended(maxDebtDelta, reserveContribution);
 	return wallet > 0n && walletAmountToDebt(wallet, reserveContribution) > maxDebtDelta ? wallet - 1n : wallet;
 };

@@ -315,9 +315,7 @@
 			"collateral_below_min": "La garantie est inférieure au minimum requis",
 			"price_too_high": "Le prix ne peut pas dépasser le maximum autorisé",
 			"price_too_low": "Le prix ne peut pas être inférieur au minimum requis pour la garantie",
-			"insufficient_collateral_for_requirements": "Garantie insuffisante pour l'ajustement du prix",
-			"liq_price_exceeds_max": "Le nouveau prix de liquidation dépasse le maximum autorisé (2x prix actuel).",
-			"price_adjusted_mint_failed": "Le prix de liquidation a été ajusté mais le minting a échoué. Vous pouvez compléter le minting depuis la page de la position."
+			"insufficient_collateral_for_requirements": "Garantie insuffisante pour l'ajustement du prix"
 		},
 		"txs": {
 			"creating_position": "Création d'une nouvelle position",

@@ -36,7 +36,7 @@ import {
 	getNetDebt,
 	walletRepayToDebtReduction,
 	floorToDisplayDecimals,
-	getMaxWalletFor2xLiqPriceCap,
+	getMaxWalletForRefPrice,
 } from "../../utils/loanCalculations";
 
 enum StrategyKey {
@@ -116,14 +116,8 @@ export const AdjustLoan = ({
 	}, [isIncrease]);
 
 	const hasAnyStrategy = strategies[StrategyKey.ADD_COLLATERAL] || strategies[StrategyKey.INCREASE_LIQ_PRICE];
-	// Tx1 overshoots the solver price by 0.01% so interest accrual between Tx1 and Tx2 doesn't cause InsufficientCollateral.
-	// The reference must cover this buffered price, otherwise we fall back to adjustPrice (with cooldown).
-	const bufferedLiqPrice =
-		strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome ? outcome.next.liqPrice + outcome.next.liqPrice / 10000n : liqPrice;
-	const reference = useReferencePosition(position, bufferedLiqPrice);
-	const useReference = strategies[StrategyKey.INCREASE_LIQ_PRICE] && reference.address !== null && outcome !== null;
-	const showCooldownMessage =
-		strategies[StrategyKey.INCREASE_LIQ_PRICE] && !useReference && !isInCooldown && outcome && outcome.deltaDebt > 0n;
+	const reference = useReferencePosition(position, liqPrice);
+	const referenceAvailable = reference.address !== null && reference.price > liqPrice;
 
 	const availableWithoutAdjustment = getAvailableToBorrow(liqPrice, collateralBalance, collateralRequirement);
 
@@ -144,12 +138,19 @@ export const AdjustLoan = ({
 		};
 		if (!hasAnyStrategy) return safeWalletMax(availableWithoutAdjustment);
 		if (strategies[StrategyKey.INCREASE_LIQ_PRICE]) {
-			return getMaxWalletFor2xLiqPriceCap(currentDebt, position.reserveContribution ?? 0);
+			const fromRefPrice = getMaxWalletForRefPrice(
+				collateralRequirement,
+				liqPrice,
+				reference.price,
+				position.reserveContribution ?? 0,
+				collateralBalance
+			);
+			return fromRefPrice > safeWalletMax(availableWithoutAdjustment) ? fromRefPrice : safeWalletMax(availableWithoutAdjustment);
 		}
 		const maxCollateral = strategies[StrategyKey.ADD_COLLATERAL] ? collateralBalance + walletBalance : collateralBalance;
-		const rawMaxDebtStrategy = (liqPrice * maxCollateral) / BigInt(1e18);
-		const maxDebt = rawMaxDebtStrategy - rawMaxDebtStrategy / 10000n;
-		const deltaFromStrategies = maxDebt > currentDebt ? maxDebt - currentDebt : 0n;
+		const rawMaxCapacity = (liqPrice * maxCollateral) / BigInt(1e18);
+		const maxCapacity = rawMaxCapacity - rawMaxCapacity / 10000n;
+		const deltaFromStrategies = maxCapacity > collateralRequirement ? maxCapacity - collateralRequirement : 0n;
 		const maxDebtDelta = deltaFromStrategies > availableWithoutAdjustment ? deltaFromStrategies : availableWithoutAdjustment;
 		return safeWalletMax(maxDebtDelta);
 	}, [
@@ -165,6 +166,7 @@ export const AdjustLoan = ({
 		availableWithoutAdjustment,
 		collateralRequirement,
 		position.reserveContribution,
+		reference.price,
 	]);
 
 	const maxDeltaForDisplayAndClick = useMemo(() => (isIncrease ? floorToDisplayDecimals(maxDelta) : maxDelta), [isIncrease, maxDelta]);
@@ -213,8 +215,9 @@ export const AdjustLoan = ({
 			}
 			const debtIncrease = walletAmountToDebt(walletInput, position.reserveContribution);
 			const newDebt = currentDebt + debtIncrease;
-			const maxDebtNoAdjust = (liqPrice * collateralBalance) / BigInt(1e18);
-			const canBorrowWithoutAdjustment = newDebt <= maxDebtNoAdjust;
+			const newRequirement = collateralRequirement + debtIncrease;
+			const maxCapacity = (liqPrice * collateralBalance) / BigInt(1e18);
+			const canBorrowWithoutAdjustment = newRequirement <= maxCapacity;
 			if (!strategies[StrategyKey.ADD_COLLATERAL] && !strategies[StrategyKey.INCREASE_LIQ_PRICE] && !canBorrowWithoutAdjustment)
 				return setOutcome(null);
 			if (canBorrowWithoutAdjustment) {
@@ -232,34 +235,69 @@ export const AdjustLoan = ({
 					isValid: true,
 				});
 			}
+			if (strategies[StrategyKey.INCREASE_LIQ_PRICE]) {
+				// Minimum liq price to cover the new collateral requirement (ceiling division).
+				// Contract checks collateral * price >= (principal + _ceilDivPPM(interest, rc)) * 1e18,
+				// so we must use collateralRequirement (not raw debt) as the basis.
+				const minNewLiqPrice =
+					collateralBalance > 0n ? (newRequirement * BigInt(1e18) + collateralBalance - 1n) / collateralBalance : 0n;
+				return setOutcome({
+					next: {
+						collateral: collateralBalance,
+						debt: newDebt,
+						liqPrice: minNewLiqPrice,
+						expiration: currentPosition.expiration,
+					},
+					deltaCollateral: 0n,
+					deltaDebt: debtIncrease,
+					deltaLiqPrice: minNewLiqPrice - liqPrice,
+					txPlan: [TxAction.BORROW],
+					isValid: minNewLiqPrice > liqPrice,
+				});
+			}
 			const strategy = strategies[StrategyKey.ADD_COLLATERAL] ? Strategy.KEEP_LIQ_PRICE : Strategy.KEEP_COLLATERAL;
 			setOutcome(solveManage(currentPosition, Target.LOAN, strategy, newDebt));
 		} catch {
 			setOutcome(null);
 		}
-	}, [currentPosition, deltaAmount, isIncrease, strategies, currentDebt, collateralBalance, liqPrice, interest, netDebt]);
+	}, [
+		currentPosition,
+		deltaAmount,
+		isIncrease,
+		strategies,
+		currentDebt,
+		collateralRequirement,
+		collateralBalance,
+		liqPrice,
+		interest,
+		netDebt,
+	]);
 
 	const repayAmount = useMemo(() => (!outcome || outcome.deltaDebt >= 0n ? 0n : -outcome.deltaDebt), [outcome]);
 
 	useEffect(() => {
-		if (!deltaAmount || isIncrease) {
+		if (!deltaAmount) {
 			setDeltaAmountError(null);
 			return;
 		}
 
 		const walletInput = BigInt(deltaAmount);
-		const error = walletInput > maxDelta && maxDelta > 0n ? t("mint.error.amount_greater_than_max_to_remove") : null;
 
+		if (isIncrease) {
+			const error =
+				strategies[StrategyKey.INCREASE_LIQ_PRICE] && walletInput > 0n && (maxDelta === 0n || walletInput > maxDelta)
+					? t("mint.error.amount_greater_than_max_to_remove")
+					: null;
+			setDeltaAmountError(error);
+			return;
+		}
+
+		const error = walletInput > maxDelta && maxDelta > 0n ? t("mint.error.amount_greater_than_max_to_remove") : null;
 		setDeltaAmountError(error);
-	}, [deltaAmount, isIncrease, maxDelta, t]);
+	}, [deltaAmount, isIncrease, maxDelta, strategies, t]);
 
 	const jusdInsufficientError =
 		!isIncrease && delta > 0n && delta > jusdBalance ? t("mint.insufficient_balance", { symbol: position.stablecoinSymbol }) : null;
-	const maxLiqPriceAllowed = liqPrice * 2n;
-	const liqPriceExceedsMax =
-		strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome && outcome.next.liqPrice > maxLiqPriceAllowed
-			? t("mint.error.liq_price_exceeds_max")
-			: null;
 	const collateralDepositAmount = outcome?.deltaCollateral && outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
 	const insufficientCollateral = collateralDepositAmount > 0n && collateralDepositAmount > walletBalance;
 	const needsCollateralApproval =
@@ -275,7 +313,7 @@ export const AdjustLoan = ({
 	};
 
 	const handleMaxClick = () => {
-		setDeltaAmount(maxDelta.toString());
+		setDeltaAmount(maxDeltaForDisplayAndClick.toString());
 	};
 
 	const toggleStrategy = (strategy: StrategyKey) => {
@@ -319,35 +357,25 @@ export const AdjustLoan = ({
 
 	const handleExecute = async () => {
 		if (!outcome || !outcome.isValid || !position || !userAddress) return;
-		if (strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome.next.liqPrice > liqPrice) {
-			let priceAdjusted = false;
+		if (strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome.next.liqPrice > liqPrice && reference.address) {
 			try {
 				setIsTxOnGoing(true);
 				const mintAmount = walletAmountToDebt(delta, position.reserveContribution);
 				// Overshoot price by 0.01% so interest accrual between Tx1 and Tx2 doesn't cause InsufficientCollateral
-				const adjustedPrice = bufferedLiqPrice;
+				const adjustedPrice = outcome.next.liqPrice + outcome.next.liqPrice / 10000n;
 
-				// Tx1: Adjust price (contract checks collateral at current price before mint, so price must go first)
-				const priceHash = useReference
-					? await simulateAndWrite({
-							chainId: chainId as typeof mainnet.id | typeof testnet.id,
-							address: position.position as Address,
-							abi: PositionV2ABI,
-							functionName: "adjustPriceWithReference",
-							args: [adjustedPrice, reference.address!],
-					  })
-					: await simulateAndWrite({
-							chainId: chainId as typeof mainnet.id | typeof testnet.id,
-							address: position.position as Address,
-							abi: PositionV2ABI,
-							functionName: "adjustPrice",
-							args: [adjustedPrice],
-					  });
+				// Tx1: Adjust price with reference (no cooldown)
+				const priceHash = await simulateAndWrite({
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					address: position.position as Address,
+					abi: PositionV2ABI,
+					functionName: "adjustPriceWithReference",
+					args: [adjustedPrice, reference.address],
+				});
 				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: priceHash, confirmations: 1 }), {
 					pending: { render: <TxToast title={t("mint.txs.adjusting_price")} rows={[]} /> },
 					success: { render: <TxToast title={t("mint.txs.adjusting_price_success")} rows={[]} /> },
 				});
-				priceAdjusted = true;
 
 				// Tx2: Mint the exact amount (price headroom from Tx1 absorbs interest accrual)
 				const mintHash = await simulateAndWrite({
@@ -392,12 +420,7 @@ export const AdjustLoan = ({
 				setStrategies({ [StrategyKey.ADD_COLLATERAL]: false, [StrategyKey.INCREASE_LIQ_PRICE]: false });
 				router.push(`/mint/${position.position}/manage`);
 			} catch (error) {
-				if (priceAdjusted) {
-					toast.warning(t("mint.error.price_adjusted_mint_failed"), { autoClose: false });
-					store.dispatch(fetchPositionsList(chainId ?? WAGMI_CHAIN.id));
-				} else {
-					toastTxError(error);
-				}
+				toastTxError(error);
 			} finally {
 				setIsTxOnGoing(false);
 			}
@@ -448,7 +471,6 @@ export const AdjustLoan = ({
 					value={deltaAmount}
 					onChange={handleDeltaChange}
 					decimals={18}
-					displayDecimals={isIncrease ? 2 : undefined}
 					unit={position.stablecoinSymbol}
 					isError={Boolean(deltaAmountError)}
 					adornamentRow={
@@ -465,7 +487,6 @@ export const AdjustLoan = ({
 				/>
 				<ErrorDisplay error={deltaAmountError} />
 				{jusdInsufficientError && <div className="ml-1 text-xs text-red-500 mb-1">{jusdInsufficientError}</div>}
-				{liqPriceExceedsMax && <div className="ml-1 text-xs text-red-500 mb-1">{liqPriceExceedsMax}</div>}
 			</div>
 
 			{showStrategyOptions && (
@@ -502,32 +523,34 @@ export const AdjustLoan = ({
 							{t("mint.more_collateral")}
 						</span>
 					</div>
-					<div
-						role="button"
-						tabIndex={0}
-						onClick={() => toggleStrategy(StrategyKey.INCREASE_LIQ_PRICE)}
-						onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.INCREASE_LIQ_PRICE)}
-						className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
-					>
-						{strategies[StrategyKey.INCREASE_LIQ_PRICE] ? (
-							<span className="flex items-center text-button-textGroup-primary-text">
-								<RemoveCircleOutlineIcon color="currentColor" />
-							</span>
-						) : (
-							<span className="flex items-center text-button-textGroup-secondary-text">
-								<AddCircleOutlineIcon color="currentColor" />
-							</span>
-						)}
-						<span
-							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
-								strategies[StrategyKey.INCREASE_LIQ_PRICE]
-									? "text-button-textGroup-primary-text"
-									: "text-button-textGroup-secondary-text"
-							}`}
+					{referenceAvailable && (
+						<div
+							role="button"
+							tabIndex={0}
+							onClick={() => toggleStrategy(StrategyKey.INCREASE_LIQ_PRICE)}
+							onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.INCREASE_LIQ_PRICE)}
+							className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
 						>
-							{t("mint.increase_liq_price")}
-						</span>
-					</div>
+							{strategies[StrategyKey.INCREASE_LIQ_PRICE] ? (
+								<span className="flex items-center text-button-textGroup-primary-text">
+									<RemoveCircleOutlineIcon color="currentColor" />
+								</span>
+							) : (
+								<span className="flex items-center text-button-textGroup-secondary-text">
+									<AddCircleOutlineIcon color="currentColor" />
+								</span>
+							)}
+							<span
+								className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
+									strategies[StrategyKey.INCREASE_LIQ_PRICE]
+										? "text-button-textGroup-primary-text"
+										: "text-button-textGroup-secondary-text"
+								}`}
+							>
+								{t("mint.increase_liq_price")}
+							</span>
+						</div>
+					)}
 				</div>
 			)}
 
@@ -595,14 +618,6 @@ export const AdjustLoan = ({
 					{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
 				</div>
 			)}
-			{showCooldownMessage && (
-				<div className="text-xs sm:text-sm text-text-muted2 px-4">
-					<div className="font-semibold mb-0.5 sm:mb-1">{t("mint.cooldown_active")}</div>
-					{t("mint.cooldown_increase_info")}
-					<br />
-					{t("mint.cooldown_reference_info")}
-				</div>
-			)}
 
 			{!isIncrease && !isOwner && delta > 0n && <div className="text-xs text-text-muted2 px-4">{t("mint.non_owner_repay_info")}</div>}
 
@@ -617,7 +632,6 @@ export const AdjustLoan = ({
 					isTxOnGoing ||
 					Boolean(deltaAmountError) ||
 					Boolean(jusdInsufficientError) ||
-					Boolean(liqPriceExceedsMax) ||
 					insufficientCollateral ||
 					(isIncrease && isInCooldown) ||
 					(!isIncrease && isFullRepay && isInCooldown)

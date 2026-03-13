@@ -318,9 +318,7 @@
 			"collateral_below_min": "Collateral is below minimum required",
 			"price_too_high": "Price cannot exceed maximum allowed",
 			"price_too_low": "Price cannot be below minimum required for collateral",
-			"insufficient_collateral_for_requirements": "Insufficient collateral for price adjustment",
-			"liq_price_exceeds_max": "New liquidation price exceeds the maximum allowed (2x current price).",
-			"price_adjusted_mint_failed": "Liquidation price was adjusted but minting failed. You can complete the mint from the position page."
+			"insufficient_collateral_for_requirements": "Insufficient collateral for price adjustment"
 		},
 		"txs": {
 			"creating_position": "Creating a new position",
