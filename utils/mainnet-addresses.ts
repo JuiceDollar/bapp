@@ -7,3 +7,6 @@ export const MAINNET_CHAIN_ID = mainnet.id;
 
 // HARDCODED: Mainnet genesis position (NPM package has zeroAddress)
 export const MAINNET_GENESIS_POSITION: Address = "0xeA4512AB7EDa6Ac7745FE8F97C80014d80fcF7E8";
+
+// Mainnet default collateral for mint (best-cloneable). TODO: use user-selected collateral later.
+export const MAINNET_DEFAULT_COLLATERAL_WCBTC: Address = "0x3100000000000000000000000000000000000006";

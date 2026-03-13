@@ -24,6 +24,7 @@ import {
 	normalizeTokenSymbol,
 	formatPositionValue,
 	MAINNET_CHAIN_ID,
+	MAINNET_DEFAULT_COLLATERAL_WCBTC,
 	MAINNET_GENESIS_POSITION,
 } from "@utils";
 import { TokenBalance, useWalletERC20Balances } from "../../hooks/useWalletBalances";
@@ -70,7 +71,6 @@ export default function PositionCreate({}) {
 
 	const chainId = useChainId();
 	const { address } = useAccount();
-	const challengesPositions = useSelector((state: RootState) => state.challenges.positions);
 
 	const getMaxCollateralFromMintLimit = (availableForClones: bigint, liqPrice: bigint) => {
 		if (!availableForClones || liqPrice === 0n) return 0n;
@@ -108,48 +108,40 @@ export default function PositionCreate({}) {
 				setNoCloneableParent(false);
 				const apiClient = getApiClient(chainId);
 
-				// TEMPORARY: On mainnet, fetch from /positions/list (NPM package has wrong genesis)
+				// Mainnet: 1) best-cloneable (WCBTC for now; later = user-selected). 2) If null, fallback = /positions/list for genesis.
 				if (chainId === MAINNET_CHAIN_ID) {
-					const genesisResponse = await apiClient.get<ApiPositionsListing>(`/positions/list`);
-					const allPositions = genesisResponse.data?.list || [];
-					const genesisPos = allPositions.find(
-						(p: PositionQuery) => p.position.toLowerCase() === MAINNET_GENESIS_POSITION.toLowerCase()
+					const bestRes = await apiClient.get<{ position: PositionQuery | null }>(
+						`/positions/best-cloneable?collateral=${MAINNET_DEFAULT_COLLATERAL_WCBTC}`
 					);
+					let defaultPos: PositionQuery | null = bestRes.data?.position ?? null;
+					let bestParent = defaultPos;
+					let noCloneable = defaultPos == null;
 
-					if (genesisPos) {
-						// Find the best cloneable parent: highest price, same collateral, active & cloneable
-						const now = Math.floor(Date.now() / 1000);
-						const cloneablePositions = [...allPositions]
-							.filter(
-								(p) =>
-									!p.closed &&
-									!p.denied &&
-									p.expiration > now &&
-									p.cooldown < now &&
-									BigInt(p.collateralBalance) >= BigInt(p.minimumCollateral) &&
-									p.collateral.toLowerCase() === genesisPos.collateral.toLowerCase() &&
-									!(challengesPositions?.map[p.position.toLowerCase() as Address] || []).some(
-										(c) => c.status === "Active"
-									)
-							)
-							.sort((a, b) => {
-								const diff = BigInt(b.price) - BigInt(a.price);
-								return diff > 0n ? 1 : diff < 0n ? -1 : 0;
-							});
-						const bestParent = cloneablePositions[0] || genesisPos;
+					if (noCloneable) {
+						const listRes = await apiClient.get<ApiPositionsListing>(`/positions/list`);
+						const allPositions = listRes.data?.list || [];
+						const genesisPos = allPositions.find(
+							(p: PositionQuery) => p.position.toLowerCase() === MAINNET_GENESIS_POSITION.toLowerCase()
+						);
+						if (genesisPos) {
+							defaultPos = genesisPos;
+							bestParent = genesisPos;
+						}
+					}
 
-						setDefaultPosition(genesisPos);
-						setNoCloneableParent(cloneablePositions.length === 0);
+					if (defaultPos) {
+						setDefaultPosition(defaultPos);
+						setNoCloneableParent(noCloneable);
 						setBestParentPosition(bestParent);
 						const nativeToken: TokenBalance = {
 							symbol: WAGMI_CHAIN.nativeCurrency.symbol,
 							name: WAGMI_CHAIN.nativeCurrency.name,
 							address: "0x0000000000000000000000000000000000000000" as Address,
-							decimals: genesisPos.collateralDecimals,
+							decimals: defaultPos.collateralDecimals,
 							balanceOf: 0n,
 							allowance: {},
 						};
-						handleOnSelectedToken(nativeToken, bestParent, genesisPos);
+						handleOnSelectedToken(nativeToken, bestParent ?? defaultPos, defaultPos);
 						return;
 					}
 				}
