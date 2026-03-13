@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Address, formatUnits } from "viem";
-import { formatCurrency, formatTokenAmount, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
+import { formatCurrency, formatTokenAmount, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS, NATIVE_GAS_BUFFER } from "@utils";
 import { solveManage, SolverPosition, SolverOutcome, Strategy, TxAction } from "../../utils/positionSolver";
 import { Target } from "./AdjustPosition";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
@@ -147,7 +147,13 @@ export const AdjustLoan = ({
 			);
 			return fromRefPrice > safeWalletMax(availableWithoutAdjustment) ? fromRefPrice : safeWalletMax(availableWithoutAdjustment);
 		}
-		const maxCollateral = strategies[StrategyKey.ADD_COLLATERAL] ? collateralBalance + walletBalance : collateralBalance;
+		const availableWallet =
+			isNativeWrappedPosition && walletBalance > NATIVE_GAS_BUFFER
+				? walletBalance - NATIVE_GAS_BUFFER
+				: isNativeWrappedPosition
+				? 0n
+				: walletBalance;
+		const maxCollateral = strategies[StrategyKey.ADD_COLLATERAL] ? collateralBalance + availableWallet : collateralBalance;
 		const rawMaxCapacity = (liqPrice * maxCollateral) / BigInt(1e18);
 		const maxCapacity = rawMaxCapacity - rawMaxCapacity / 10000n;
 		const deltaFromStrategies = maxCapacity > collateralRequirement ? maxCapacity - collateralRequirement : 0n;
