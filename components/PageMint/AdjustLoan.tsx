@@ -369,7 +369,14 @@ export const AdjustLoan = ({
 
 	const handleExecute = async () => {
 		if (!outcome || !outcome.isValid || !position || !userAddress) return;
+
+		if (strategies[StrategyKey.INCREASE_LIQ_PRICE] && !reference.address) {
+			toast.error("Reference position is no longer available. Please try again.");
+			return;
+		}
+
 		if (strategies[StrategyKey.INCREASE_LIQ_PRICE] && outcome.next.liqPrice > liqPrice && reference.address) {
+			let tx1Confirmed = false;
 			try {
 				setIsTxOnGoing(true);
 				const mintAmount = walletAmountToDebt(delta, position.reserveContribution);
@@ -388,6 +395,7 @@ export const AdjustLoan = ({
 					pending: { render: <TxToast title={t("mint.txs.adjusting_price")} rows={[]} /> },
 					success: { render: <TxToast title={t("mint.txs.adjusting_price_success")} rows={[]} /> },
 				});
+				tx1Confirmed = true;
 
 				// Tx2: Mint the exact amount (price headroom from Tx1 absorbs interest accrual)
 				const mintHash = await simulateAndWrite({
@@ -432,7 +440,11 @@ export const AdjustLoan = ({
 				setStrategies({ [StrategyKey.ADD_COLLATERAL]: false, [StrategyKey.INCREASE_LIQ_PRICE]: false });
 				router.push(`/mint/${position.position}/manage`);
 			} catch (error) {
-				toastTxError(error);
+				if (tx1Confirmed) {
+					toast.warn("Liquidation price was adjusted, but borrowing failed. You can retry borrowing or reduce the price.");
+				} else {
+					toastTxError(error);
+				}
 			} finally {
 				setIsTxOnGoing(false);
 			}
