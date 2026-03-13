@@ -24,6 +24,7 @@ import {
 	normalizeTokenSymbol,
 	formatPositionValue,
 	MAINNET_CHAIN_ID,
+	MAINNET_DEFAULT_COLLATERAL_WCBTC,
 	MAINNET_GENESIS_POSITION,
 } from "@utils";
 import { TokenBalance, useWalletERC20Balances } from "../../hooks/useWalletBalances";
@@ -65,6 +66,8 @@ export default function PositionCreate({}) {
 	const [collateralError, setCollateralError] = useState("");
 	const [isMaxedOut, setIsMaxedOut] = useState(false);
 	const [defaultPosition, setDefaultPosition] = useState<PositionQuery | null>(null);
+	const [bestParentPosition, setBestParentPosition] = useState<PositionQuery | null>(null);
+	const [noCloneableParent, setNoCloneableParent] = useState(false);
 
 	const chainId = useChainId();
 	const { address } = useAccount();
@@ -101,27 +104,44 @@ export default function PositionCreate({}) {
 	useEffect(() => {
 		const loadDefaultPosition = async () => {
 			try {
+				setBestParentPosition(null);
+				setNoCloneableParent(false);
 				const apiClient = getApiClient(chainId);
 
-				// TEMPORARY: On mainnet, fetch from /positions/list (NPM package has wrong genesis)
+				// Mainnet: 1) best-cloneable (WCBTC for now; later = user-selected). 2) If null, fallback = /positions/list for genesis.
 				if (chainId === MAINNET_CHAIN_ID) {
-					const genesisResponse = await apiClient.get<ApiPositionsListing>(`/positions/list`);
-					const allPositions = genesisResponse.data?.list || [];
-					const genesisPos = allPositions.find(
-						(p: PositionQuery) => p.position.toLowerCase() === MAINNET_GENESIS_POSITION.toLowerCase()
+					const bestRes = await apiClient.get<{ position: PositionQuery | null }>(
+						`/positions/best-cloneable?collateral=${MAINNET_DEFAULT_COLLATERAL_WCBTC}`
 					);
+					let defaultPos: PositionQuery | null = bestRes.data?.position ?? null;
+					let bestParent = defaultPos;
+					let noCloneable = defaultPos == null;
 
-					if (genesisPos) {
-						setDefaultPosition(genesisPos);
+					if (noCloneable) {
+						const listRes = await apiClient.get<ApiPositionsListing>(`/positions/list`);
+						const allPositions = listRes.data?.list || [];
+						const genesisPos = allPositions.find(
+							(p: PositionQuery) => p.position.toLowerCase() === MAINNET_GENESIS_POSITION.toLowerCase()
+						);
+						if (genesisPos) {
+							defaultPos = genesisPos;
+							bestParent = genesisPos;
+						}
+					}
+
+					if (defaultPos) {
+						setDefaultPosition(defaultPos);
+						setNoCloneableParent(noCloneable);
+						setBestParentPosition(bestParent);
 						const nativeToken: TokenBalance = {
 							symbol: WAGMI_CHAIN.nativeCurrency.symbol,
 							name: WAGMI_CHAIN.nativeCurrency.name,
 							address: "0x0000000000000000000000000000000000000000" as Address,
-							decimals: genesisPos.collateralDecimals,
+							decimals: defaultPos.collateralDecimals,
 							balanceOf: 0n,
 							allowance: {},
 						};
-						handleOnSelectedToken(nativeToken, genesisPos);
+						handleOnSelectedToken(nativeToken, bestParent ?? defaultPos, defaultPos);
 						return;
 					}
 				}
@@ -221,8 +241,8 @@ export default function PositionCreate({}) {
 		2
 	)?.toString();
 
-	const handleOnSelectedToken = (token: TokenBalance, positionOverride?: PositionQuery) => {
-		const position = positionOverride ?? defaultPosition;
+	const handleOnSelectedToken = (token: TokenBalance, positionOverride?: PositionQuery, genesisPosition?: PositionQuery) => {
+		const position = positionOverride ?? bestParentPosition ?? defaultPosition;
 		if (!token || !position) return;
 		setSelectedCollateral(token);
 
@@ -236,16 +256,13 @@ export default function PositionCreate({}) {
 		const maxAmount = getMaxCollateralAmount(tokenBalance, BigInt(position.availableForClones), liqPrice);
 		const defaultAmount = maxAmount > BigInt(position.minimumCollateral) ? maxAmount.toString() : position.minimumCollateral;
 
+		// Use genesis (defaultPosition) expiration as max, since contract limits to original's expiration
+		const maxExp = genesisPosition?.expiration || defaultPosition?.expiration || position.expiration;
 		setCollateralAmount(defaultAmount);
-		setExpirationDate(toDate(position.expiration));
+		setExpirationDate(toDate(maxExp));
 		setLiquidationPrice(liqPrice.toString());
 
-		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
-			position,
-			BigInt(maxAmount),
-			liqPrice,
-			toDate(position.expiration)
-		);
+		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(position, BigInt(maxAmount), liqPrice, toDate(maxExp));
 
 		setLoanDetails(loanDetails);
 		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
@@ -310,8 +327,9 @@ export default function PositionCreate({}) {
 	}, [expirationDate, collateralAmount, liquidationPrice, selectedPosition]);
 
 	const handleMaxExpirationDate = () => {
-		if (selectedPosition?.expiration) {
-			setExpirationDate(toDate(selectedPosition.expiration));
+		const maxExp = defaultPosition?.expiration || selectedPosition?.expiration;
+		if (maxExp) {
+			setExpirationDate(toDate(maxExp));
 		}
 	};
 
@@ -457,6 +475,11 @@ export default function PositionCreate({}) {
 							options={collateralSelectorOptions}
 							onTokenSelect={handleOnSelectedToken}
 						/>
+						{noCloneableParent && (
+							<div className="self-stretch mt-1 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md">
+								<div className="text-yellow-800 text-sm font-medium">⚠️ {t("mint.error.no_cloneable_position")}</div>
+							</div>
+						)}
 						{isMaxedOut && selectedPosition && (
 							<div className="self-stretch mt-1 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md">
 								<div className="text-yellow-800 text-sm font-medium">
@@ -492,7 +515,13 @@ export default function PositionCreate({}) {
 						<InputTitle>{t("mint.set_expiration_date")}</InputTitle>
 						<DateInputOutlined
 							value={expirationDate}
-							maxDate={selectedPosition?.expiration ? toDate(selectedPosition?.expiration) : expirationDate}
+							maxDate={
+								defaultPosition?.expiration
+									? toDate(defaultPosition.expiration)
+									: selectedPosition?.expiration
+									? toDate(selectedPosition.expiration)
+									: expirationDate
+							}
 							placeholderText="YYYY-MM-DD"
 							onChange={setExpirationDate}
 							rightAdornment={expirationDate ? <MaxButton onClick={handleMaxExpirationDate} /> : null}
@@ -511,7 +540,7 @@ export default function PositionCreate({}) {
 							collateralPriceUsd={collateralPriceUsd}
 							extraRows={
 								<div className="py-1.5 flex justify-between">
-									<span className="text-base leading-tight">{t("mint.original_position")}</span>
+									<span className="text-base leading-tight">{t("mint.parent_position")}</span>
 									<Link
 										className="underline text-right text-sm font-extrabold leading-none tracking-tight"
 										href={`/monitoring/${selectedPosition?.position}`}
@@ -538,6 +567,7 @@ export default function PositionCreate({}) {
 									isLiquidationPriceTooHigh ||
 									!!collateralError ||
 									isMaxedOut ||
+									noCloneableParent ||
 									userBalance < BigInt(collateralAmount)
 								}
 							>
