@@ -154,7 +154,11 @@ export const AdjustLoan = ({
 				? 0n
 				: walletBalance;
 		const maxCollateral = strategies[StrategyKey.ADD_COLLATERAL] ? collateralBalance + availableWallet : collateralBalance;
-		const rawMaxCapacity = (liqPrice * maxCollateral) / BigInt(1e18);
+		// Use the stored on-chain price (same as what the solver uses) — not the effective liqPrice,
+		// which can be inflated by debtRatio when interest accrues. Using liqPrice here overestimates
+		// capacity and causes the solver to request more collateral than the gas buffer allows.
+		const storedPrice = currentPosition.liqPrice;
+		const rawMaxCapacity = (storedPrice * maxCollateral) / BigInt(1e18);
 		const maxCapacity = rawMaxCapacity - rawMaxCapacity / 10000n;
 		const deltaFromStrategies = maxCapacity > collateralRequirement ? maxCapacity - collateralRequirement : 0n;
 		const maxDebtDelta = deltaFromStrategies > availableWithoutAdjustment ? deltaFromStrategies : availableWithoutAdjustment;
@@ -165,7 +169,6 @@ export const AdjustLoan = ({
 		strategies,
 		liqPrice,
 		collateralBalance,
-		currentDebt,
 		principal,
 		interest,
 		walletBalance,
@@ -173,6 +176,7 @@ export const AdjustLoan = ({
 		collateralRequirement,
 		position.reserveContribution,
 		reference.price,
+		currentPosition.liqPrice,
 	]);
 
 	const maxDeltaForDisplayAndClick = useMemo(() => (isIncrease ? floorToDisplayDecimals(maxDelta) : maxDelta), [isIncrease, maxDelta]);
@@ -305,7 +309,9 @@ export const AdjustLoan = ({
 	const jusdInsufficientError =
 		!isIncrease && delta > 0n && delta > jusdBalance ? t("mint.insufficient_balance", { symbol: position.stablecoinSymbol }) : null;
 	const collateralDepositAmount = outcome?.deltaCollateral && outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
-	const insufficientCollateral = collateralDepositAmount > 0n && collateralDepositAmount > walletBalance;
+	const maxCollateralSpend =
+		isNativeWrappedPosition && walletBalance > NATIVE_GAS_BUFFER ? walletBalance - NATIVE_GAS_BUFFER : walletBalance;
+	const insufficientCollateral = collateralDepositAmount > 0n && collateralDepositAmount > maxCollateralSpend;
 	const needsCollateralApproval =
 		!isNativeWrappedPosition &&
 		collateralDepositAmount > 0n &&
