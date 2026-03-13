@@ -158,7 +158,6 @@ export const AdjustCollateral = ({
 		}
 
 		const delta = BigInt(deltaAmount || 0);
-		const validationDebt = activeStrategy === StrategyKey.REPAY_LOAN ? currentDebt - calculatedRepayAmount : currentDebt;
 		const formattedMinCollateral = formatCurrency(formatUnits(minimumCollateral, collateralDecimals), 3, 8);
 
 		const validations = [
@@ -196,8 +195,6 @@ export const AdjustCollateral = ({
 	const isBelowMinCollateral = (col: bigint) => col > 0n && col < minimumCollateral && newDebt > 0n;
 
 	const formatValue = (value: bigint) => formatTokenAmount(value, collateralDecimals, 4, 8) + " " + collateralSymbol;
-
-	const maxRemovable = hasAnyStrategy || maxRemovableWithoutAdjustment === 0n ? collateralBalance : maxRemovableWithoutAdjustment;
 
 	const handleMaxClick = () => {
 		const maxAmount = isIncrease ? maxWalletForAdd : collateralBalance;
