@@ -32,7 +32,6 @@ enum StrategyKey {
 interface AdjustLiqPriceProps {
 	position: PositionQuery;
 	positionPrice: bigint;
-	liqPrice: bigint;
 	priceDecimals: number;
 	isInCooldown: boolean;
 	cooldownRemainingFormatted: string | null;
@@ -53,7 +52,6 @@ interface AdjustLiqPriceProps {
 export const AdjustLiqPrice = ({
 	position,
 	positionPrice,
-	liqPrice,
 	priceDecimals,
 	isInCooldown,
 	cooldownRemainingFormatted,
@@ -93,27 +91,28 @@ export const AdjustLiqPrice = ({
 	const rc = position.reserveContribution || 0;
 
 	const delta = deltaAmount ? BigInt(deltaAmount) : 0n;
-	const newPrice = isIncrease ? liqPrice + delta : liqPrice > delta ? liqPrice - delta : 0n;
+	const newPrice = isIncrease ? positionPrice + delta : positionPrice > delta ? positionPrice - delta : 0n;
 	const minPriceNoStrategy = collateralBalance > 0n && currentDebt > 0n ? (currentDebt * PRICE_SCALE) / collateralBalance : 0n;
 	const needsStrategy = !isIncrease && delta > 0n && newPrice < minPriceNoStrategy;
 
 	const minPriceViaAddCollateral =
-		collateralBalance + maxWalletForAdd > 0n ? (currentDebt * PRICE_SCALE) / (collateralBalance + maxWalletForAdd) : liqPrice;
+		collateralBalance + maxWalletForAdd > 0n ? (currentDebt * PRICE_SCALE) / (collateralBalance + maxWalletForAdd) : positionPrice;
 
 	const maxRepayableForPriceAdjust = (currentDebt * 95n) / 100n;
 	const maxDebtRepayableByWallet = walletRepayToDebtReduction(jusdBalance, interest, rc);
 	const effectiveMaxRepay = maxDebtRepayableByWallet < maxRepayableForPriceAdjust ? maxDebtRepayableByWallet : maxRepayableForPriceAdjust;
 	const residualDebt = currentDebt > effectiveMaxRepay ? currentDebt - effectiveMaxRepay : (currentDebt * 5n) / 100n;
-	const minPriceViaRepayDebt = residualDebt > 0n && collateralBalance > 0n ? (residualDebt * PRICE_SCALE) / collateralBalance : liqPrice;
+	const minPriceViaRepayDebt =
+		residualDebt > 0n && collateralBalance > 0n ? (residualDebt * PRICE_SCALE) / collateralBalance : positionPrice;
 
 	const rawSliderMin = minPriceViaAddCollateral < minPriceViaRepayDebt ? minPriceViaAddCollateral : minPriceViaRepayDebt;
 	const sliderDecreaseMin = rawSliderMin > 0n ? (rawSliderMin / PRICE_SCALE + 1n) * PRICE_SCALE : PRICE_SCALE;
 
 	const isOwner = useIsPositionOwner(position);
 	const reference = useReferencePosition(position, positionPrice);
-	const maxPriceIncrease = liqPrice * 2n;
-	const deltaIncrease = maxPriceIncrease - liqPrice;
-	const maxDeltaIncrease = deltaIncrease * 10n >= liqPrice ? deltaIncrease : 0n;
+	const maxPriceIncrease = positionPrice * 2n;
+	const deltaIncrease = maxPriceIncrease - positionPrice;
+	const maxDeltaIncrease = deltaIncrease * 10n >= positionPrice ? deltaIncrease : 0n;
 
 	const useReference = isIncrease && reference.address !== null && newPrice <= reference.price;
 	const showCooldownMessage = isIncrease && !useReference && delta > 0n;
@@ -152,7 +151,7 @@ export const AdjustLiqPrice = ({
 		if (!needsStrategy) setActiveStrategy(null);
 	}, [needsStrategy]);
 
-	const liqPriceRounded = (liqPrice / PRICE_SCALE) * PRICE_SCALE;
+	const positionPriceRounded = (positionPrice / PRICE_SCALE) * PRICE_SCALE;
 
 	const handleSliderChange = (val: string) => {
 		if (!val) {
@@ -160,16 +159,16 @@ export const AdjustLiqPrice = ({
 			return;
 		}
 		const newPriceValue = BigInt(val);
-		if (!isIncrease && newPriceValue >= liqPrice) {
+		if (!isIncrease && newPriceValue >= positionPrice) {
 			setDeltaAmount("");
 			return;
 		}
 		const rounded = (newPriceValue / PRICE_SCALE) * PRICE_SCALE;
-		if (!isIncrease && rounded >= liqPriceRounded) {
+		if (!isIncrease && rounded >= positionPriceRounded) {
 			setDeltaAmount("");
 			return;
 		}
-		const newDelta = isIncrease ? rounded - liqPrice : liqPrice - rounded;
+		const newDelta = isIncrease ? rounded - positionPrice : positionPrice - rounded;
 		setDeltaAmount(newDelta > 0n ? newDelta.toString() : "");
 	};
 
@@ -340,7 +339,7 @@ export const AdjustLiqPrice = ({
 		return t("mint.set_new_price");
 	};
 
-	const showSlider = isIncrease ? maxDeltaIncrease > 0n : liqPrice > sliderDecreaseMin;
+	const showSlider = isIncrease ? maxDeltaIncrease > 0n : positionPrice > sliderDecreaseMin;
 
 	return (
 		<div className="flex flex-col gap-y-4">
@@ -370,8 +369,8 @@ export const AdjustLiqPrice = ({
 					<SliderInputOutlined
 						value={newPriceForDisplay.toString()}
 						onChange={handleSliderChange}
-						min={isIncrease ? liqPrice : sliderDecreaseMin}
-						max={isIncrease ? maxPriceIncrease : liqPrice}
+						min={isIncrease ? positionPrice : sliderDecreaseMin}
+						max={isIncrease ? maxPriceIncrease : positionPrice}
 						decimals={priceDecimals}
 						hideTrailingZeros
 					/>

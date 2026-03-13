@@ -113,8 +113,8 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 
 	const currentPosition: SolverPosition | null = useMemo(() => {
 		if (!position) return null;
-		return { collateral: collateralBalance, debt: currentDebt, liqPrice, expiration: position.expiration };
-	}, [position, collateralBalance, currentDebt, liqPrice]);
+		return { collateral: collateralBalance, debt: currentDebt, liqPrice: positionPrice, expiration: position.expiration };
+	}, [position, collateralBalance, currentDebt, positionPrice]);
 
 	return {
 		position,

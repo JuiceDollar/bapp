@@ -38,7 +38,15 @@ export const executeLoanAdjust = async ({
 	const isWithdrawing = outcome.deltaCollateral < 0n;
 	const isRepayOnly = outcome.deltaDebt < 0n && outcome.deltaCollateral === 0n;
 	const isFullClose = outcome.next.debt === 0n && principal > 0n;
-	const LiqPrice = isRepayOnly ? BigInt(position.price) : isFullClose && isOwner ? BigInt(position.price) : outcome.next.liqPrice;
+	// When the solver keeps the price unchanged (deltaLiqPrice === 0), use the exact on-chain price.
+	// The solver's liqPrice may be inflated by debtRatio > positionPrice (due to interest accrual),
+	// and sending a higher price via adjust() triggers a cooldown (no reference = 3-day freeze).
+	const LiqPrice =
+		isRepayOnly || (isFullClose && isOwner)
+			? BigInt(position.price)
+			: outcome.deltaLiqPrice === 0n
+			? await readContract(WAGMI_CONFIG, { address: posAddr, abi: PositionV2ABI, functionName: "price" })
+			: outcome.next.liqPrice;
 
 	// Case 3: repay ≤ interest → need separate repay() call first
 	const needsSeparateRepay = !isFullClose && outcome.deltaDebt < 0n && outcome.next.debt >= principal;

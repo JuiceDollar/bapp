@@ -30,7 +30,7 @@ import Button from "@components/Button";
 import { erc20Abi, formatUnits, maxUint256 } from "viem";
 import { PositionQuery } from "@juicedollar/api";
 import { mainnet, testnet } from "@config";
-import { getNetDebt } from "../../utils/loanCalculations";
+import { ceilDivPPM, getNetDebt } from "../../utils/loanCalculations";
 import Select, { StylesConfig } from "react-select";
 
 type PriceOption = { value: string; label: string };
@@ -249,7 +249,8 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 		const usableMintFromPrincipal = (principal * (1_000_000n - sourceReservePPM)) / 1_000_000n;
 		const usableMint = usableMintFromPrincipal + interest;
 
-		let mintAmount = usableMint === 0n ? 0n : (usableMint * 1_000_000n - 1n) / (1_000_000n - targetReservePPM) + 1n;
+		// target.getMintAmount(usableMint) = _ceilDivPPM(usableMint, targetReservePPM)
+		let mintAmount = ceilDivPPM(usableMint, targetReservePPM);
 
 		let depositAmount = targetPrice > 0n ? (mintAmount * 10n ** 18n + targetPrice - 1n) / targetPrice : 0n;
 

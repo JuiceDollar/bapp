@@ -16,7 +16,6 @@ export default function ManageLiquidationPrice() {
 	const {
 		position,
 		positionPrice,
-		liqPrice,
 		priceDecimals,
 		isInCooldown,
 		cooldownRemainingFormatted,
@@ -60,7 +59,6 @@ export default function ManageLiquidationPrice() {
 					<AdjustLiqPrice
 						position={position}
 						positionPrice={positionPrice}
-						liqPrice={liqPrice}
 						priceDecimals={priceDecimals}
 						isInCooldown={isInCooldown}
 						cooldownRemainingFormatted={cooldownRemainingFormatted}
