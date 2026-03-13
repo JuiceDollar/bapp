@@ -141,10 +141,8 @@ export const AdjustCollateral = ({
 	const higherPriceExceedsReference =
 		activeStrategy === StrategyKey.HIGHER_PRICE && (reference.address === null || newPrice > reference.price);
 
-	// Snap dust collateral to full withdrawal when full debt is being repaid
-	const snapToClose = !isIncrease && belowMinimumCollateral && activeStrategy === StrategyKey.REPAY_LOAN;
-	const effectiveNewCollateral = snapToClose ? 0n : newCollateral;
-	const effectiveDelta = snapToClose ? collateralBalance : delta;
+	const effectiveNewCollateral = newCollateral;
+	const effectiveDelta = delta;
 	const isClosingPosition = !isIncrease && effectiveNewCollateral === 0n;
 
 	const walletRepayAmount = debtReductionToWalletCost(calculatedRepayAmount, interest, position.reserveContribution);
@@ -173,7 +171,7 @@ export const AdjustCollateral = ({
 				error: t("common.error.insufficient_balance", { symbol: collateralSymbol }),
 			},
 			{
-				condition: !isIncrease && effectiveNewCollateral > 0n && effectiveNewCollateral < minimumCollateral && validationDebt > 0n,
+				condition: !isIncrease && effectiveNewCollateral > 0n && effectiveNewCollateral < minimumCollateral,
 				error: `${t("mint.error.collateral_below_min")} (${formattedMinCollateral} ${collateralSymbol})`,
 			},
 		];
@@ -426,6 +424,7 @@ export const AdjustCollateral = ({
 		Boolean(higherPriceExceedsReference) ||
 		isTxOnGoing ||
 		needsStrategy ||
+		(belowMinimumCollateral && newCollateral !== 0n) ||
 		(!isIncrease && isInCooldown) ||
 		(!isIncrease && !hasAnyStrategy && collateralBalance <= requiredCollateral && !isClosingPosition && newDebt > 0n);
 
@@ -516,21 +515,6 @@ export const AdjustCollateral = ({
 					}
 				/>
 				{deltaAmountError && <div className="ml-1 text-xs text-red-500">{deltaAmountError}</div>}
-				{belowMinimumCollateral && (
-					<div className="ml-1 text-xs text-text-muted2">
-						{t("mint.error.collateral_below_min_hint_before")}{" "}
-						<button
-							className="font-bold underline hover:opacity-70"
-							onClick={() => {
-								setDeltaAmount(collateralBalance.toString());
-								setActiveStrategy(StrategyKey.REPAY_LOAN);
-							}}
-						>
-							{t("mint.error.collateral_below_min_hint_link")}
-						</button>{" "}
-						{t("mint.error.collateral_below_min_hint_after")}
-					</div>
-				)}
 			</div>
 
 			{showStrategyOptions && (
@@ -646,6 +630,22 @@ export const AdjustCollateral = ({
 					{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
 					<br />
 					{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
+				</div>
+			)}
+
+			{belowMinimumCollateral && (
+				<div className="text-xs text-text-muted2 px-4">
+					{t("mint.error.collateral_below_min_hint_before")}{" "}
+					<button
+						className="font-bold underline hover:opacity-70"
+						onClick={() => {
+							setDeltaAmount(collateralBalance.toString());
+							setActiveStrategy(StrategyKey.REPAY_LOAN);
+						}}
+					>
+						{t("mint.error.collateral_below_min_hint_link")}
+					</button>{" "}
+					{t("mint.error.collateral_below_min_hint_after")}
 				</div>
 			)}
 
