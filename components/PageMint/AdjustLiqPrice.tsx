@@ -212,6 +212,10 @@ export const AdjustLiqPrice = ({
 		try {
 			setIsTxOnGoing(true);
 
+			const priceToastRows = [
+				{ title: t("mint.new_price"), value: `${formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} ${pairNotation}` },
+			];
+
 			if (activeStrategy === StrategyKey.ADD_COLLATERAL && requiredCollateralAdd > 0n) {
 				const newCollateral = collateralBalance + requiredCollateralAdd;
 				const adjustHash = await simulateAndWrite({
@@ -227,7 +231,7 @@ export const AdjustLiqPrice = ({
 						render: (
 							<TxToast
 								title={t("mint.txs.adjusting_price")}
-								rows={[{ title: t("common.txs.transaction"), hash: adjustHash }]}
+								rows={[...priceToastRows, { title: t("common.txs.transaction"), hash: adjustHash }]}
 							/>
 						),
 					},
@@ -235,7 +239,7 @@ export const AdjustLiqPrice = ({
 						render: (
 							<TxToast
 								title={t("mint.txs.adjusting_price_success")}
-								rows={[{ title: t("common.txs.transaction"), hash: adjustHash }]}
+								rows={[...priceToastRows, { title: t("common.txs.transaction"), hash: adjustHash }]}
 							/>
 						),
 					},
@@ -278,7 +282,7 @@ export const AdjustLiqPrice = ({
 						render: (
 							<TxToast
 								title={t("mint.txs.adjusting_price")}
-								rows={[{ title: t("common.txs.transaction"), hash: priceHash }]}
+								rows={[...priceToastRows, { title: t("common.txs.transaction"), hash: priceHash }]}
 							/>
 						),
 					},
@@ -286,7 +290,7 @@ export const AdjustLiqPrice = ({
 						render: (
 							<TxToast
 								title={t("mint.txs.adjusting_price_success")}
-								rows={[{ title: t("common.txs.transaction"), hash: priceHash }]}
+								rows={[...priceToastRows, { title: t("common.txs.transaction"), hash: priceHash }]}
 							/>
 						),
 					},
@@ -308,8 +312,22 @@ export const AdjustLiqPrice = ({
 							args: [newPrice],
 					  });
 				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: adjustHash, confirmations: 1 }), {
-					pending: { render: <TxToast title={t("mint.txs.adjusting_price")} rows={[]} /> },
-					success: { render: <TxToast title={t("mint.txs.adjusting_price_success")} rows={[]} /> },
+					pending: {
+						render: (
+							<TxToast
+								title={t("mint.txs.adjusting_price")}
+								rows={[...priceToastRows, { title: t("common.txs.transaction"), hash: adjustHash }]}
+							/>
+						),
+					},
+					success: {
+						render: (
+							<TxToast
+								title={t("mint.txs.adjusting_price_success")}
+								rows={[...priceToastRows, { title: t("common.txs.transaction"), hash: adjustHash }]}
+							/>
+						),
+					},
 				});
 			}
 

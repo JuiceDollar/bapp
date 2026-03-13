@@ -264,6 +264,7 @@
 		"change": "Changement",
 		"new_collateral": "Nouvelle Garantie",
 		"new_liq_price": "Nouveau Prix de Liquidation",
+		"new_price": "Nouveau prix",
 		"choose_what_stays_constant": "Choisissez ce qui reste constant",
 		"preview_changes": "Aperçu",
 		"calculation_error": "Erreur de calcul",

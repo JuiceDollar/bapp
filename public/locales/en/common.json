@@ -265,6 +265,7 @@
 		"you_add": "You add",
 		"you_remove": "You remove",
 		"new_liq_price": "New Liquidation Price",
+		"new_price": "New Price",
 		"choose_what_stays_constant": "Choose what stays constant",
 		"preview_changes": "Preview Changes",
 		"calculation_error": "Calculation error",
