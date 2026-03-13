@@ -109,8 +109,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function ChangeRow({ symbol, amount, decimals, direction }: { symbol: string; amount: bigint; decimals: number; direction: "in" | "out" }) {
 	const num = parseFloat(formatUnits(amount, decimals));
-	const dp = num > 0 && num < 0.01 ? 4 : 2;
-	const formatted = num.toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
+	const dp = num > 0 && num < 0.01 ? 8 : 4;
+	const formatted = num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: dp });
 	const prefix = direction === "out" ? "−" : "+";
 	const color = direction === "out" ? "text-text-warning" : "text-green-600";
 

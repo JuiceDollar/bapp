@@ -11,6 +11,7 @@ import { formatCurrency, TOKEN_SYMBOL, normalizeTokenSymbol } from "@utils";
 import { useRouter } from "next/router";
 import { getPublicViewAddress } from "../../utils/url";
 import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
+import { getNetDebt } from "../../utils/loanCalculations";
 interface BorrowData {
 	position: `0x${string}`;
 	symbol: string;
@@ -162,7 +163,10 @@ export const MyBorrow = () => {
 			ownedPositions.map((position) => {
 				const { principal, interest, collateralBalance, collateralDecimals, collateralSymbol } = position;
 				const amountBorrowed = formatCurrency(
-					formatUnits(BigInt(principal) + BigInt(interest ?? "0"), position.stablecoinDecimals),
+					formatUnits(
+						getNetDebt(BigInt(principal), BigInt(interest ?? "0"), position.reserveContribution),
+						position.stablecoinDecimals
+					),
 					2,
 					2
 				) as string;
@@ -188,7 +192,10 @@ export const MyBorrow = () => {
 		[ownedPositions, prices]
 	);
 
-	const totalOwed = ownedPositions.reduce((acc, curr) => acc + BigInt(curr.principal) + BigInt(curr.interest ?? "0"), 0n);
+	const totalOwed = ownedPositions.reduce(
+		(acc, curr) => acc + getNetDebt(BigInt(curr.principal), BigInt(curr.interest ?? "0"), curr.reserveContribution),
+		0n
+	);
 
 	return (
 		<div className="w-full h-full p-4 sm:p-8 flex flex-col items-start">

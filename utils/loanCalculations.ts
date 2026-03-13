@@ -7,10 +7,65 @@ export const getRetainedReserve = (principal: bigint, reserveContribution: numbe
 export const getAmountLended = (principal: bigint, reserveContribution: number): bigint =>
 	principal - getRetainedReserve(principal, reserveContribution);
 
-export const walletAmountToDebtReduction = (walletAmount: bigint, reserveContribution: number): bigint => {
+export const walletAmountToDebt = (walletAmount: bigint, reserveContribution: number): bigint => {
 	const rc = BigInt(reserveContribution);
 	return rc < 1_000_000n ? (walletAmount * 1_000_000n) / (1_000_000n - rc) : walletAmount;
 };
+
+export const getAvailableToBorrow = (liqPrice: bigint, collateral: bigint, requirement: bigint): bigint => {
+	const rawMax = (liqPrice * collateral) / BigInt(1e18);
+	const maxWithBuffer = rawMax - rawMax / 1000000n;
+	return maxWithBuffer > requirement ? maxWithBuffer - requirement : 0n;
+};
+
+/** Net debt visible to the user: principal after reserve discount + accrued interest */
+export const getNetDebt = (principal: bigint, interest: bigint, reserveContribution: number): bigint =>
+	getAmountLended(principal, reserveContribution) + interest;
+
+/**
+ * Convert a wallet repayment amount to the raw debt reduction it achieves.
+ * Interest is paid 1:1 from wallet. Principal portion gets the reserve discount (burns more debt per wallet unit).
+ */
+export const walletRepayToDebtReduction = (walletAmount: bigint, interest: bigint, reserveContribution: number): bigint => {
+	if (walletAmount <= interest) return walletAmount;
+	const principalPayment = walletAmount - interest;
+	return interest + walletAmountToDebt(principalPayment, reserveContribution);
+};
+
+/** Inverse of walletRepayToDebtReduction: how much wallet JUSD to reduce debt by `debtReduction`. */
+export const debtReductionToWalletCost = (debtReduction: bigint, interest: bigint, reserveContribution: number): bigint => {
+	if (debtReduction <= interest) return debtReduction;
+	const principalReduction = debtReduction - interest;
+	return interest + getAmountLended(principalReduction, reserveContribution);
+};
+
+/** Floors amount (18 decimals) to given display decimals. Use for MAX display/click to avoid rounding up. */
+export const floorToDisplayDecimals = (amount: bigint, displayDecimals = 2, tokenDecimals = 18): bigint => {
+	if (amount === 0n) return 0n;
+	const divisor = 10n ** BigInt(tokenDecimals - displayDecimals);
+	const floored = (amount / divisor) * divisor;
+	return floored > 0n ? floored : amount;
+};
+
+/** Max wallet amount to borrow when increasing liq price, capped so the new price stays below the reference position's price. */
+export const getMaxWalletForRefPrice = (
+	collateralRequirement: bigint,
+	liqPrice: bigint,
+	refPrice: bigint,
+	reserveContribution: number,
+	collateralBalance: bigint
+): bigint => {
+	const maxNewLiqPrice = (refPrice * 10000n) / 10001n;
+	if (maxNewLiqPrice <= liqPrice) return 0n;
+	const rawMaxCapacity = (maxNewLiqPrice * collateralBalance) / BigInt(1e18);
+	const maxCapacity = rawMaxCapacity - rawMaxCapacity / 10000n;
+	const maxDebtDelta = maxCapacity > collateralRequirement ? maxCapacity - collateralRequirement : 0n;
+	const wallet = getAmountLended(maxDebtDelta, reserveContribution);
+	return wallet > 0n && walletAmountToDebt(wallet, reserveContribution) > maxDebtDelta ? wallet - 1n : wallet;
+};
+
+/** Matches contract's _ceilDivPPM: ceil(amount / (1 - ppm/1000000)) */
+export const ceilDivPPM = (a: bigint, ppm: bigint): bigint => (a === 0n ? 0n : (a * 1_000_000n - 1n) / (1_000_000n - ppm) + 1n);
 
 export type LoanDetails = {
 	loanAmount: bigint;

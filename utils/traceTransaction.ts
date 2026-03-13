@@ -1,5 +1,6 @@
 import { readContracts } from "@wagmi/core";
-import { WAGMI_CONFIG, CONFIG_RPC } from "../app.config";
+import { WAGMI_CONFIG } from "../app.config";
+import { CONFIG } from "@config";
 import { Address, erc20Abi, encodeFunctionData, Abi } from "viem";
 import { mainnet, testnet } from "@config";
 import { normalizeTokenSymbol } from "./tokenDisplay";
@@ -95,11 +96,11 @@ async function fetchTokenMetadata(tokenAddresses: Address[]): Promise<Map<Addres
 }
 
 export async function traceTransaction(params: TraceParams): Promise<TraceResult> {
-	const { address, abi, functionName, args, value, account } = params;
+	const { chainId, address, abi, functionName, args, value, account } = params;
 
 	const calldata = encodeFunctionData({ abi, functionName, args: args ?? [] });
 
-	const rpcUrl = CONFIG_RPC();
+	const rpcUrl = chainId === mainnet.id ? CONFIG.network.mainnet : CONFIG.network.testnet;
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), TRACE_TIMEOUT_MS);
 
@@ -178,7 +179,7 @@ export async function traceTransaction(params: TraceParams): Promise<TraceResult
 		const metadata = await fetchTokenMetadata(tokenAddresses);
 		const userAddr = account.toLowerCase();
 
-		const transfers: BalanceChange[] = rawTransfers
+		const filteredTransfers = rawTransfers
 			.filter((t) => t.amount > 0n && (t.from.toLowerCase() === userAddr || t.to.toLowerCase() === userAddr))
 			.map((t) => {
 				const meta = metadata.get(t.token) ?? { symbol: "???", decimals: 18 };
@@ -195,6 +196,41 @@ export async function traceTransaction(params: TraceParams): Promise<TraceResult
 			})
 			// Filter dust: amounts below 0.0001 of the token's unit (e.g. < 10^14 for 18-decimal tokens)
 			.filter((t) => t.amount >= 10n ** BigInt(Math.max(0, t.decimals - 4)));
+
+		// Aggregate transfers by (token, direction) so multiple events for the same
+		// token collapse into a single line (e.g. interest + principal repayment).
+		const aggregated = new Map<string, BalanceChange>();
+		for (const t of filteredTransfers) {
+			const key = `${t.token}-${t.direction}`;
+			const existing = aggregated.get(key);
+			if (existing) {
+				existing.amount += t.amount;
+			} else {
+				aggregated.set(key, { ...t });
+			}
+		}
+		// Net cross-direction: if same token appears as both "in" and "out",
+		// collapse to a single entry showing the net direction and amount.
+		const tokens = new Set([...aggregated.keys()].map((k) => k.split("-")[0]));
+		for (const token of tokens) {
+			const outEntry = aggregated.get(`${token}-out`);
+			const inEntry = aggregated.get(`${token}-in`);
+			if (outEntry && inEntry) {
+				if (outEntry.amount > inEntry.amount) {
+					outEntry.amount -= inEntry.amount;
+					aggregated.delete(`${token}-in`);
+				} else if (inEntry.amount > outEntry.amount) {
+					inEntry.amount -= outEntry.amount;
+					aggregated.delete(`${token}-out`);
+				} else {
+					aggregated.delete(`${token}-in`);
+					aggregated.delete(`${token}-out`);
+				}
+			}
+		}
+
+		// Re-apply dust filter on netted results (netting may produce sub-dust amounts)
+		const transfers: BalanceChange[] = [...aggregated.values()].filter((t) => t.amount >= 10n ** BigInt(Math.max(0, t.decimals - 4)));
 
 		const approvals: ApprovalChange[] = rawApprovals.map((a) => {
 			const meta = metadata.get(a.token) ?? { symbol: "???", decimals: 18 };

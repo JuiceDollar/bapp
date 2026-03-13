@@ -20,7 +20,7 @@ export enum Target {
 interface AdjustPositionProps {
 	position: PositionQuery;
 	collateralBalance: bigint;
-	currentDebt: bigint;
+	netDebt: bigint;
 	liqPrice: bigint;
 	onSelectTarget: (target: Target) => void;
 	isInCooldown?: boolean;
@@ -31,7 +31,7 @@ interface AdjustPositionProps {
 export const AdjustPosition = ({
 	position,
 	collateralBalance,
-	currentDebt,
+	netDebt,
 	liqPrice,
 	onSelectTarget,
 	isInCooldown,
@@ -47,7 +47,7 @@ export const AdjustPosition = ({
 			id: Target.LOAN,
 			label: t("mint.loan_amount"),
 			desc: t("mint.adjust_loan_amount_description"),
-			value: currentDebt,
+			value: netDebt,
 			decimals: 18,
 			currency: position.stablecoinSymbol,
 		},

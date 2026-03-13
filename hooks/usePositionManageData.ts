@@ -7,6 +7,7 @@ import { ADDRESS, PositionV2ABI } from "@juicedollar/jusd";
 import { usePositionMaxAmounts } from "./usePositionMaxAmounts";
 import { PositionQuery } from "@juicedollar/api";
 import { SolverPosition } from "../utils/positionSolver";
+import { getNetDebt } from "../utils/loanCalculations";
 
 interface PositionManageData {
 	position: PositionQuery | undefined;
@@ -18,6 +19,8 @@ interface PositionManageData {
 	liqPrice: bigint;
 	minimumCollateral: bigint;
 	jusdAllowance: bigint;
+	interest: bigint;
+	netDebt: bigint;
 	jusdBalance: bigint;
 	collateralAllowance: bigint;
 	walletBalance: bigint;
@@ -76,6 +79,7 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 						functionName: "allowance",
 						args: [userAddress as Address, position.position as Address],
 					},
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "getInterest" },
 			  ]
 			: [],
 	});
@@ -90,11 +94,13 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 	const jusdAllowance = data?.[7]?.result || 0n;
 	const jusdBalance = data?.[8]?.result || 0n;
 	const collateralAllowance = data?.[9]?.result || 0n;
+	const interest = (data?.[10]?.result as bigint) || 0n;
 
 	const collateralDecimals = position?.collateralDecimals || 18;
 	const priceDecimals = 36 - collateralDecimals;
 	const debtRatio = collateralBalance > 0n ? (currentDebt * BigInt(10 ** priceDecimals)) / collateralBalance : 0n;
 	const liqPrice = debtRatio > positionPrice ? debtRatio : positionPrice;
+	const netDebt = getNetDebt(principal, interest, position?.reserveContribution ?? 0);
 
 	const now = BigInt(Math.floor(Date.now() / 1000));
 	const cooldownBigInt = BigInt(cooldown);
@@ -107,8 +113,8 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 
 	const currentPosition: SolverPosition | null = useMemo(() => {
 		if (!position) return null;
-		return { collateral: collateralBalance, debt: currentDebt, liqPrice, expiration: position.expiration };
-	}, [position, collateralBalance, currentDebt, liqPrice]);
+		return { collateral: collateralBalance, debt: currentDebt, liqPrice: positionPrice, expiration: position.expiration };
+	}, [position, collateralBalance, currentDebt, positionPrice]);
 
 	return {
 		position,
@@ -116,6 +122,8 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 		positionPrice,
 		collateralBalance,
 		currentDebt,
+		interest,
+		netDebt,
 		collateralRequirement,
 		liqPrice,
 		minimumCollateral,
