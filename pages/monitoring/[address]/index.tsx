@@ -19,6 +19,7 @@ import { readContract } from "wagmi/actions";
 import { ChallengesQueryItem, PositionQuery } from "@juicedollar/api";
 import { useRouter as useNavigation } from "next/navigation";
 import Button, { SecondaryLinkButton } from "@components/Button";
+import { useIsPositionOwner } from "../../../hooks/useIsPositionOwner";
 import { ADDRESS, JuiceDollarABI } from "@juicedollar/jusd";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
@@ -40,6 +41,7 @@ export default function PositionDetail() {
 	const ownerLink = useContractUrl(position?.owner || zeroAddress, chain);
 	const navigate = useNavigation();
 	const { t } = useTranslation();
+	const isOwner = useIsPositionOwner(position);
 
 	useEffect(() => {
 		if (!position) return;
@@ -160,14 +162,20 @@ export default function PositionDetail() {
 							</AppBox>
 						</div>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-							<Button
-								className="h-10"
-								onClick={() =>
-									navigate.push(`/mint/${position.position}/manage${toQueryString(getCarryOnQueryParams(router))}`)
-								}
-							>
-								{t("dashboard.manage")}
-							</Button>
+							{isOwner ? (
+								<Button
+									className="h-10"
+									onClick={() =>
+										navigate.push(`/mint/${position.position}/manage${toQueryString(getCarryOnQueryParams(router))}`)
+									}
+								>
+									{t("dashboard.manage")}
+								</Button>
+							) : (
+								<Button className="h-10" onClick={() => navigate.push("/mint")}>
+									{t("mint.clone")}
+								</Button>
+							)}
 							<SecondaryLinkButton
 								className="h-10"
 								href={`/monitoring/${position.position}/${maturity <= 0 ? "forceSell" : "challenge"}`}
