@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { Address, formatUnits, zeroAddress } from "viem";
 import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
@@ -50,7 +50,12 @@ import { MaxButton } from "@components/Input/MaxButton";
 import Link from "next/link";
 import { mainnet, testnet } from "@config";
 
-export default function PositionCreate({}) {
+type BorrowFormProps = {
+	clonePosition?: PositionQuery | null;
+};
+
+export default function PositionCreate({ clonePosition = null }: BorrowFormProps) {
+	const cloneAppliedRef = useRef(false);
 	const [selectedCollateral, setSelectedCollateral] = useState<TokenBalance | null | undefined>(null);
 	const [selectedPosition, setSelectedPosition] = useState<PositionQuery | null | undefined>(null);
 	const [expirationDate, setExpirationDate] = useState<Date | undefined | null>(undefined);
@@ -79,8 +84,9 @@ export default function PositionCreate({}) {
 		return maxFromLimit > 0n && balance > maxFromLimit ? maxFromLimit : balance;
 	};
 
+	const positionForTokenList = defaultPosition ?? clonePosition ?? null;
 	const collateralTokenList = useMemo(() => {
-		if (!defaultPosition) return [];
+		if (!positionForTokenList) return [];
 
 		return [
 			{
@@ -88,10 +94,10 @@ export default function PositionCreate({}) {
 				address: "0x0000000000000000000000000000000000000000" as Address,
 				name: WAGMI_CHAIN.nativeCurrency.name,
 				allowance: [ADDRESS[chainId].mintingHubGateway],
-				decimals: defaultPosition.collateralDecimals,
+				decimals: positionForTokenList.collateralDecimals,
 			},
 		];
-	}, [defaultPosition, chainId]);
+	}, [positionForTokenList, chainId]);
 
 	const { balances, balancesByAddress, refetchBalances } = useWalletERC20Balances(collateralTokenList);
 	const collateralSelectorOptions = selectedCollateral ? [selectedCollateral] : [];
@@ -113,15 +119,17 @@ export default function PositionCreate({}) {
 
 					if (genesisPos) {
 						setDefaultPosition(genesisPos);
-						const nativeToken: TokenBalance = {
-							symbol: WAGMI_CHAIN.nativeCurrency.symbol,
-							name: WAGMI_CHAIN.nativeCurrency.name,
-							address: "0x0000000000000000000000000000000000000000" as Address,
-							decimals: genesisPos.collateralDecimals,
-							balanceOf: 0n,
-							allowance: {},
-						};
-						handleOnSelectedToken(nativeToken, genesisPos);
+						if (!clonePosition) {
+							const nativeToken: TokenBalance = {
+								symbol: WAGMI_CHAIN.nativeCurrency.symbol,
+								name: WAGMI_CHAIN.nativeCurrency.name,
+								address: "0x0000000000000000000000000000000000000000" as Address,
+								decimals: genesisPos.collateralDecimals,
+								balanceOf: 0n,
+								allowance: {},
+							};
+							handleOnSelectedToken(nativeToken, genesisPos);
+						}
 						return;
 					}
 				}
@@ -138,16 +146,17 @@ export default function PositionCreate({}) {
 
 				setDefaultPosition(position);
 
-				const nativeToken: TokenBalance = {
-					symbol: WAGMI_CHAIN.nativeCurrency.symbol,
-					name: WAGMI_CHAIN.nativeCurrency.name,
-					address: "0x0000000000000000000000000000000000000000" as Address,
-					decimals: position.collateralDecimals,
-					balanceOf: 0n,
-					allowance: {},
-				};
-
-				handleOnSelectedToken(nativeToken, position);
+				if (!clonePosition) {
+					const nativeToken: TokenBalance = {
+						symbol: WAGMI_CHAIN.nativeCurrency.symbol,
+						name: WAGMI_CHAIN.nativeCurrency.name,
+						address: "0x0000000000000000000000000000000000000000" as Address,
+						decimals: position.collateralDecimals,
+						balanceOf: 0n,
+						allowance: {},
+					};
+					handleOnSelectedToken(nativeToken, position);
+				}
 			} catch (error) {
 				console.error("Error loading default position:", error);
 			}
@@ -155,7 +164,35 @@ export default function PositionCreate({}) {
 
 		loadDefaultPosition();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [chainId]);
+	}, [chainId, clonePosition]);
+
+	useEffect(() => {
+		if (!clonePosition || cloneAppliedRef.current) return;
+
+		const pos = clonePosition;
+		const token: TokenBalance = {
+			symbol: WAGMI_CHAIN.nativeCurrency.symbol,
+			name: WAGMI_CHAIN.nativeCurrency.name,
+			address: "0x0000000000000000000000000000000000000000" as Address,
+			decimals: pos.collateralDecimals,
+			balanceOf: 0n,
+			allowance: {},
+		};
+		handleOnSelectedToken(token, pos);
+
+		const collBalance = BigInt(pos.collateralBalance);
+		const liqPrice = BigInt(pos.virtualPrice ?? pos.price);
+		setCollateralAmount(pos.collateralBalance.toString());
+		setExpirationDate(toDate(pos.expiration));
+		setLiquidationPrice(liqPrice.toString());
+
+		const details = getLoanDetailsByCollateralAndStartingLiqPrice(pos, collBalance, liqPrice, toDate(pos.expiration));
+		setLoanDetails(details);
+		setBorrowedAmount(details.amountToSendToWallet.toString());
+
+		cloneAppliedRef.current = true;
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [clonePosition]);
 
 	useEffect(() => {
 		if (!selectedPosition || !selectedCollateral) return;
