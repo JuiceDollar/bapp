@@ -2,7 +2,7 @@ import { SecondaryLinkButton } from "@components/Button";
 import TokenLogo from "@components/TokenLogo";
 import { useTranslation } from "next-i18next";
 import { Fragment, useMemo, useRef } from "react";
-import { HeaderCell, NoDataRow } from "./SectionTable";
+import { HeaderCell, LinkTitle, NoDataRow } from "./SectionTable";
 import { useAccount } from "wagmi";
 import { RootState } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
@@ -199,9 +199,7 @@ export const MyBorrow = () => {
 
 	return (
 		<div className="w-full h-full p-4 sm:p-8 flex flex-col items-start">
-			<div className="pb-7 items-center justify-start flex gap-2">
-				<span className="text-text-primary text-2xl font-black">{t("dashboard.my_borrow")}</span>
-			</div>
+			<LinkTitle href="/mypositions">{t("dashboard.my_borrow")}</LinkTitle>
 			<div className="w-full flex flex-row justify-between items-center">
 				<DesktopTable borrowData={borrowData} />
 				<MobileTable borrowData={borrowData} />
