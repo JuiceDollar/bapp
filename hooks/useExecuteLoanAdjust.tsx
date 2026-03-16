@@ -89,14 +89,16 @@ export const executeLoanAdjust = async ({
 		: t("mint.adjust_position");
 
 	if (newPrincipal > principal) {
-		const freshDebt = await readContract(WAGMI_CONFIG, {
+		// _checkCollateral uses _getCollateralRequirement() (not getDebt()) which
+		// overcollateralizes interest by reserveContribution via _ceilDivPPM.
+		const freshColReq = await readContract(WAGMI_CONFIG, {
 			address: posAddr,
 			abi: PositionV2ABI,
-			functionName: "getDebt",
+			functionName: "getCollateralRequirement",
 		});
 		// _checkCollateral in _mint uses the current stored price (before any price adjustment)
 		const currentPrice = BigInt(position.price);
-		const freshTotalReq = freshDebt + outcome.deltaDebt;
+		const freshTotalReq = freshColReq + outcome.deltaDebt;
 		const collateralCapacity = (currentPrice * outcome.next.collateral) / BigInt(1e18);
 
 		if (collateralCapacity < freshTotalReq) {

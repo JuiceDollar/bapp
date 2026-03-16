@@ -265,8 +265,28 @@ export const AdjustLoan = ({
 					isValid: minNewLiqPrice > liqPrice,
 				});
 			}
-			const strategy = strategies[StrategyKey.ADD_COLLATERAL] ? Strategy.KEEP_LIQ_PRICE : Strategy.KEEP_COLLATERAL;
-			setOutcome(solveManage(currentPosition, Target.LOAN, strategy, newDebt));
+			if (strategies[StrategyKey.ADD_COLLATERAL]) {
+				// Use collateralRequirement (not raw debt) — the contract's _checkCollateral checks
+				// collateral * price >= getCollateralRequirement() * 1e18, which overcollateralizes
+				// interest by reserveContribution via _ceilDivPPM.
+				const storedPrice = currentPosition.liqPrice;
+				const minCollateral = (newRequirement * BigInt(1e18) + storedPrice - 1n) / storedPrice;
+				const newCollateral = minCollateral > collateralBalance ? minCollateral : collateralBalance;
+				return setOutcome({
+					next: {
+						collateral: newCollateral,
+						debt: newDebt,
+						liqPrice: storedPrice,
+						expiration: currentPosition.expiration,
+					},
+					deltaCollateral: newCollateral - collateralBalance,
+					deltaDebt: debtIncrease,
+					deltaLiqPrice: 0n,
+					txPlan: newCollateral > collateralBalance ? [TxAction.DEPOSIT, TxAction.BORROW] : [TxAction.BORROW],
+					isValid: true,
+				});
+			}
+			setOutcome(solveManage(currentPosition, Target.LOAN, Strategy.KEEP_COLLATERAL, newDebt));
 		} catch {
 			setOutcome(null);
 		}
