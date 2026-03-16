@@ -195,6 +195,7 @@
 		"pay_back_and_close": "Rimborsa e chiudi posizione",
 		"available_to_borrow": "Disponibile per il prestito",
 		"pay_back_amount": "Importo da rimborsare",
+		"amount_borrowed": "Importo prestato",
 		"current_expiration_date": "Data di scadenza attuale",
 		"days_until_expiration": "{{days}} giorni alla scadenza",
 		"expires_today": "Scade oggi",

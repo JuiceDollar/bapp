@@ -413,9 +413,17 @@ export const AdjustLoan = ({
 					functionName: "adjustPriceWithReference",
 					args: [adjustedPrice, reference.address],
 				});
+				const pairNotation = `${collateralSymbol}/${position.stablecoinSymbol}`;
+				const priceToastRows = [
+					{
+						title: t("mint.new_price"),
+						value: `${formatCurrency(formatUnits(outcome.next.liqPrice, priceDecimals), 2, 2)} ${pairNotation}`,
+					},
+					{ title: t("common.txs.transaction"), hash: priceHash },
+				];
 				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: priceHash, confirmations: 1 }), {
-					pending: { render: <TxToast title={t("mint.txs.adjusting_price")} rows={[]} /> },
-					success: { render: <TxToast title={t("mint.txs.adjusting_price_success")} rows={[]} /> },
+					pending: { render: <TxToast title={t("mint.txs.adjusting_price")} rows={priceToastRows} /> },
+					success: { render: <TxToast title={t("mint.txs.adjusting_price_success")} rows={priceToastRows} /> },
 				});
 				tx1Confirmed = true;
 
@@ -428,31 +436,20 @@ export const AdjustLoan = ({
 					args: [userAddress, mintAmount],
 				});
 				const receivedAmount = getAmountLended(mintAmount, position.reserveContribution ?? 0);
+				const mintToastRows = [
+					{
+						title: t("mint.amount_borrowed"),
+						value: `${formatTokenAmount(receivedAmount, 18, 2, 2)} ${position.stablecoinSymbol}`,
+					},
+					{ title: t("common.txs.transaction"), hash: mintHash },
+				];
 				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: mintHash, confirmations: 1 }), {
 					pending: {
-						render: (
-							<TxToast
-								title={t("mint.txs.minting", { symbol: position.stablecoinSymbol })}
-								rows={[
-									{
-										title: t("common.txs.amount"),
-										value: `${formatTokenAmount(receivedAmount, 18, 2, 2)} ${position.stablecoinSymbol}`,
-									},
-								]}
-							/>
-						),
+						render: <TxToast title={t("mint.txs.minting", { symbol: position.stablecoinSymbol })} rows={mintToastRows} />,
 					},
 					success: {
 						render: (
-							<TxToast
-								title={t("mint.txs.minting_success", { symbol: position.stablecoinSymbol })}
-								rows={[
-									{
-										title: t("common.txs.amount"),
-										value: `${formatTokenAmount(receivedAmount, 18, 2, 2)} ${position.stablecoinSymbol}`,
-									},
-								]}
-							/>
+							<TxToast title={t("mint.txs.minting_success", { symbol: position.stablecoinSymbol })} rows={mintToastRows} />
 						),
 					},
 				});
