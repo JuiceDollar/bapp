@@ -132,24 +132,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 					const genesisPos = allPositions.find(
 						(p: PositionQuery) => p.position.toLowerCase() === MAINNET_GENESIS_POSITION.toLowerCase()
 					);
-<<<<<<< feat/mint-clone-query
 
-					if (genesisPos) {
-						setDefaultPosition(genesisPos);
-						if (!clonePosition) {
-							const nativeToken: TokenBalance = {
-								symbol: WAGMI_CHAIN.nativeCurrency.symbol,
-								name: WAGMI_CHAIN.nativeCurrency.name,
-								address: "0x0000000000000000000000000000000000000000" as Address,
-								decimals: genesisPos.collateralDecimals,
-								balanceOf: 0n,
-								allowance: {},
-							};
-							handleOnSelectedToken(nativeToken, genesisPos);
-						}
-						return;
-					}
-=======
 					if (!genesisPos) return;
 
 					const bestParent = bestCloneableRes?.data?.position ?? null;
@@ -160,17 +143,18 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 					setNoCloneableParent(noCloneable);
 					setBestParentPosition(cloneTarget);
 
-					const nativeToken: TokenBalance = {
-						symbol: WAGMI_CHAIN.nativeCurrency.symbol,
-						name: WAGMI_CHAIN.nativeCurrency.name,
-						address: "0x0000000000000000000000000000000000000000" as Address,
-						decimals: genesisPos.collateralDecimals,
-						balanceOf: 0n,
-						allowance: {},
-					};
-					handleOnSelectedToken(nativeToken, cloneTarget, genesisPos);
+					if (!clonePosition) {
+						const nativeToken: TokenBalance = {
+							symbol: WAGMI_CHAIN.nativeCurrency.symbol,
+							name: WAGMI_CHAIN.nativeCurrency.name,
+							address: "0x0000000000000000000000000000000000000000" as Address,
+							decimals: genesisPos.collateralDecimals,
+							balanceOf: 0n,
+							allowance: {},
+						};
+						handleOnSelectedToken(nativeToken, cloneTarget, genesisPos);
+					}
 					return;
->>>>>>> develop
 				}
 
 				// Testnet: use default endpoint
