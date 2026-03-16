@@ -336,7 +336,8 @@
 			"extending_success": "Posizione estesa con successo",
 			"adjusting_price": "Modifica prezzo posizione...",
 			"adjusting_price_success": "Prezzo posizione modificato con successo",
-			"adjust_success": "Posizione modificata con successo"
+			"adjust_success": "Posizione modificata con successo",
+			"price_adjusted_withdraw_failed": "Il prezzo di liquidazione è stato modificato, ma il prelievo del collaterale è fallito. Puoi riprovare il prelievo o abbassare il prezzo."
 		}
 	},
 	"my_positions": {

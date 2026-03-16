@@ -333,7 +333,8 @@
 			"extending_success": "Position prolongée avec succès",
 			"adjusting_price": "Ajustement du prix de la position...",
 			"adjusting_price_success": "Prix de la position ajusté avec succès",
-			"adjust_success": "Position ajustée avec succès"
+			"adjust_success": "Position ajustée avec succès",
+			"price_adjusted_withdraw_failed": "Le prix de liquidation a été ajusté, mais le retrait de collatéral a échoué. Vous pouvez réessayer le retrait ou baisser le prix."
 		}
 	},
 	"my_positions": {

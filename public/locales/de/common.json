@@ -333,7 +333,8 @@
 			"extending_success": "Position erfolgreich verlängert",
 			"adjusting_price": "Positionspreis wird angepasst...",
 			"adjusting_price_success": "Positionspreis erfolgreich angepasst",
-			"adjust_success": "Position erfolgreich angepasst"
+			"adjust_success": "Position erfolgreich angepasst",
+			"price_adjusted_withdraw_failed": "Der Liquidationspreis wurde angepasst, aber die Sicherheitenentnahme ist fehlgeschlagen. Sie können die Entnahme erneut versuchen oder den Preis senken."
 		}
 	},
 	"my_positions": {

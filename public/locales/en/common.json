@@ -336,7 +336,8 @@
 			"extending_success": "Successfully extended position",
 			"adjusting_price": "Adjusting position price...",
 			"adjusting_price_success": "Position price adjusted successfully",
-			"adjust_success": "Position adjusted successfully"
+			"adjust_success": "Position adjusted successfully",
+			"price_adjusted_withdraw_failed": "Liquidation price was adjusted, but collateral withdrawal failed. You can retry the withdrawal or lower the price."
 		}
 	},
 	"my_positions": {

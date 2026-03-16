@@ -333,7 +333,8 @@
 			"extending_success": "Posición extendida correctamente",
 			"adjusting_price": "Ajustando precio de posición...",
 			"adjusting_price_success": "Precio de posición ajustado exitosamente",
-			"adjust_success": "Posición ajustada exitosamente"
+			"adjust_success": "Posición ajustada exitosamente",
+			"price_adjusted_withdraw_failed": "El precio de liquidación fue ajustado, pero la retirada de colateral falló. Puede reintentar la retirada o reducir el precio."
 		}
 	},
 	"my_positions": {

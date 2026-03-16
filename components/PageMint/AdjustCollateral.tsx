@@ -346,25 +346,30 @@ export const AdjustCollateral = ({
 						},
 					});
 
-					// Tx 2: withdraw collateral. _checkCollateral uses the stored price from TX1 (with +0.01% buffer).
-					const withdrawHash = await simulateAndWrite({
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
-						address: position.position as Address,
-						abi: PositionV2ABI,
-						functionName: "adjust",
-						args: [newPrincipal, effectiveNewCollateral, tx1Price, isNativeWrappedPosition],
-					});
+					try {
+						// Tx 2: withdraw collateral. _checkCollateral uses the stored price from TX1 (with +0.01% buffer).
+						const withdrawHash = await simulateAndWrite({
+							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							address: position.position as Address,
+							abi: PositionV2ABI,
+							functionName: "adjust",
+							args: [newPrincipal, effectiveNewCollateral, tx1Price, isNativeWrappedPosition],
+						});
 
-					const toastContent = [
-						{ title: t("common.txs.amount"), value: formatValue(effectiveDelta) },
-						{ title: t("common.txs.transaction"), hash: withdrawHash },
-					];
-					const txTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral");
-					const txSuccessTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral_success");
-					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
-						pending: { render: <TxToast title={txTitle} rows={toastContent} /> },
-						success: { render: <TxToast title={txSuccessTitle} rows={toastContent} /> },
-					});
+						const toastContent = [
+							{ title: t("common.txs.amount"), value: formatValue(effectiveDelta) },
+							{ title: t("common.txs.transaction"), hash: withdrawHash },
+						];
+						const txTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral");
+						const txSuccessTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral_success");
+						await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
+							pending: { render: <TxToast title={txTitle} rows={toastContent} /> },
+							success: { render: <TxToast title={txSuccessTitle} rows={toastContent} /> },
+						});
+					} catch (tx2Error) {
+						toast.warn(t("mint.txs.price_adjusted_withdraw_failed"));
+						return;
+					}
 				} else {
 					const estimatedGas =
 						(await publicClient
@@ -630,7 +635,7 @@ export const AdjustCollateral = ({
 				</div>
 			)}
 
-			{belowMinimumCollateral && (
+			{!isIncrease && belowMinimumCollateral && (
 				<div className="text-xs text-text-muted2 px-4">
 					{t("mint.error.collateral_below_min_hint_before")}{" "}
 					<button
