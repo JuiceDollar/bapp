@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Address, formatUnits } from "viem";
-import { formatCurrency, formatTokenAmount, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS, NATIVE_GAS_BUFFER } from "@utils";
+import { formatCurrency, formatTokenAmount, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS, NATIVE_GAS_BUFFER, DUST_JUSD } from "@utils";
 import { solveManage, SolverPosition, SolverOutcome, Strategy, TxAction } from "../../utils/positionSolver";
 import { Target } from "./AdjustPosition";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
@@ -122,7 +122,7 @@ export const AdjustLoan = ({
 	const availableWithoutAdjustment = getAvailableToBorrow(liqPrice, collateralBalance, collateralRequirement);
 
 	useEffect(() => {
-		if (isIncrease && availableWithoutAdjustment === 0n) {
+		if (isIncrease && availableWithoutAdjustment <= DUST_JUSD) {
 			setStrategies((prev) => ({ ...prev, [StrategyKey.ADD_COLLATERAL]: true }));
 		}
 	}, [isIncrease, availableWithoutAdjustment]);
@@ -179,12 +179,15 @@ export const AdjustLoan = ({
 		currentPosition.liqPrice,
 	]);
 
-	const maxDeltaForDisplayAndClick = useMemo(() => (isIncrease ? floorToDisplayDecimals(maxDelta) : maxDelta), [isIncrease, maxDelta]);
+	const maxDeltaForDisplayAndClick = useMemo(() => {
+		if (isIncrease && maxDelta <= DUST_JUSD) return 0n;
+		return isIncrease ? floorToDisplayDecimals(maxDelta) : maxDelta;
+	}, [isIncrease, maxDelta]);
 
 	const delta = BigInt(deltaAmount || 0);
 	const debtDelta = isIncrease && delta > 0n ? walletAmountToDebt(delta, position.reserveContribution) : 0n;
 
-	const showStrategyOptions = isIncrease && (debtDelta > availableWithoutAdjustment || availableWithoutAdjustment === 0n);
+	const showStrategyOptions = isIncrease && (debtDelta > availableWithoutAdjustment || availableWithoutAdjustment <= DUST_JUSD);
 
 	// Clear strategies when the entered amount no longer requires adjustment
 	useEffect(() => {
@@ -195,8 +198,7 @@ export const AdjustLoan = ({
 
 	// Snap to full repay when remainder is under 1 cent — not worth keeping a position open for.
 	// The contract has no minimum debt, so larger partial repays work fine without snapping.
-	const FULL_REPAY_DUST = BigInt(1e16); // 0.01 JUSD
-	const isFullRepay = !isIncrease && delta > 0n && (delta >= netDebt || netDebt - delta <= FULL_REPAY_DUST);
+	const isFullRepay = !isIncrease && delta > 0n && (delta >= netDebt || netDebt - delta <= DUST_JUSD);
 
 	useEffect(() => {
 		if (!deltaAmount) return setOutcome(null);
@@ -205,7 +207,7 @@ export const AdjustLoan = ({
 			if (walletInput === 0n) return setOutcome(null);
 			if (!isIncrease) {
 				const debtRed = walletRepayToDebtReduction(walletInput, interest, position.reserveContribution);
-				const isFullRepayNow = walletInput >= netDebt || netDebt - walletInput <= FULL_REPAY_DUST;
+				const isFullRepayNow = walletInput >= netDebt || netDebt - walletInput <= DUST_JUSD;
 				if (isFullRepayNow) {
 					return setOutcome({
 						next: {
@@ -265,8 +267,28 @@ export const AdjustLoan = ({
 					isValid: minNewLiqPrice > liqPrice,
 				});
 			}
-			const strategy = strategies[StrategyKey.ADD_COLLATERAL] ? Strategy.KEEP_LIQ_PRICE : Strategy.KEEP_COLLATERAL;
-			setOutcome(solveManage(currentPosition, Target.LOAN, strategy, newDebt));
+			if (strategies[StrategyKey.ADD_COLLATERAL]) {
+				// Use collateralRequirement (not raw debt) — the contract's _checkCollateral checks
+				// collateral * price >= getCollateralRequirement() * 1e18, which overcollateralizes
+				// interest by reserveContribution via _ceilDivPPM.
+				const storedPrice = currentPosition.liqPrice;
+				const minCollateral = (newRequirement * BigInt(1e18) + storedPrice - 1n) / storedPrice;
+				const newCollateral = minCollateral > collateralBalance ? minCollateral : collateralBalance;
+				return setOutcome({
+					next: {
+						collateral: newCollateral,
+						debt: newDebt,
+						liqPrice: storedPrice,
+						expiration: currentPosition.expiration,
+					},
+					deltaCollateral: newCollateral - collateralBalance,
+					deltaDebt: debtIncrease,
+					deltaLiqPrice: 0n,
+					txPlan: newCollateral > collateralBalance ? [TxAction.DEPOSIT, TxAction.BORROW] : [TxAction.BORROW],
+					isValid: true,
+				});
+			}
+			setOutcome(solveManage(currentPosition, Target.LOAN, Strategy.KEEP_COLLATERAL, newDebt));
 		} catch {
 			setOutcome(null);
 		}
@@ -505,7 +527,7 @@ export const AdjustLoan = ({
 								<div className="text-input-label text-xs font-medium leading-none">
 									{formatCurrency(formatUnits(maxDeltaForDisplayAndClick, 18), 2, 2)} {position.stablecoinSymbol}
 								</div>
-								<MaxButton disabled={maxDelta === 0n} onClick={handleMaxClick} />
+								<MaxButton disabled={maxDeltaForDisplayAndClick === 0n} onClick={handleMaxClick} />
 							</div>
 						</div>
 					}
