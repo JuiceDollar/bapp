@@ -204,7 +204,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 		handleOnSelectedToken(token, pos);
 
 		const collBalance = BigInt(pos.collateralBalance);
-		const liqPrice = BigInt(pos.virtualPrice ?? pos.price);
+		const liqPrice = BigInt(pos.price);
 		setCollateralAmount(pos.collateralBalance.toString());
 		setExpirationDate(toDate(pos.expiration));
 		setLiquidationPrice(liqPrice.toString());
