@@ -234,7 +234,7 @@
 		"price_increase_cooldown_warning": "El aumento de precio activará un período de cooldown de 3 días.",
 		"after_cooldown_can_withdraw": "Después del cooldown podrás retirar {{amount}} {{symbol}} o pedir más préstamo.",
 		"price_below_collateral_limit": "El precio no puede bajar de {{min}} {{symbol}} (límite de colateral).",
-		"adjust_liq_price_btn": "Ajustar precio de liquidación",
+		"adjust_liq_price_btn": "Ajustar precio",
 		"cooldown_ends_at": "Finaliza: {{date}}",
 		"not_your_position": "No eres el propietario de esta posición",
 		"non_owner_repay_info": "Puedes pagar la deuda de esta posición. Solo el propietario puede retirar el colateral.",
@@ -314,6 +314,10 @@
 			"amount_greater_than_max_to_remove": "La cantidad es mayor que el máximo permitido dado el actual deuda",
 			"amount_greater_than_debt": "La cantidad es mayor que la deuda",
 			"collateral_below_min": "El colateral está por debajo del mínimo requerido",
+			"collateral_below_min_hint_before": "Puedes",
+			"collateral_below_min_hint_link": "pagar toda la deuda",
+			"collateral_below_min_hint_after": "y retirar el colateral, esto cerrará la posición",
+			"liq_price_exceeds_reference": "El nuevo precio de liquidación supera el máximo permitido",
 			"price_too_high": "El precio no puede exceder el máximo permitido",
 			"price_too_low": "El precio no puede ser inferior al mínimo requerido para el colateral",
 			"insufficient_collateral_for_requirements": "Colateral insuficiente para ajuste de precio"
@@ -333,7 +337,8 @@
 			"extending_success": "Posición extendida correctamente",
 			"adjusting_price": "Ajustando precio de posición...",
 			"adjusting_price_success": "Precio de posición ajustado exitosamente",
-			"adjust_success": "Posición ajustada exitosamente"
+			"adjust_success": "Posición ajustada exitosamente",
+			"price_adjusted_withdraw_failed": "El precio de liquidación fue ajustado, pero la retirada de colateral falló. Puede reintentar la retirada o reducir el precio."
 		}
 	},
 	"my_positions": {
