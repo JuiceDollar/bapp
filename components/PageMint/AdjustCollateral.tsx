@@ -19,9 +19,9 @@ import { toast } from "react-toastify";
 import { TxToast, toastTxError } from "@components/TxToast";
 import { store } from "../../redux/redux.store";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
-import { Tooltip } from "flowbite-react";
 import { approveToken } from "../../hooks/useApproveToken";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
+import { useReferencePosition } from "../../hooks/useReferencePosition";
 import { mainnet, testnet } from "@config";
 import { debtReductionToWalletCost } from "../../utils/loanCalculations";
 
@@ -29,8 +29,6 @@ enum StrategyKey {
 	HIGHER_PRICE = "higherPrice",
 	REPAY_LOAN = "repayLoan",
 }
-
-type Strategies = Record<StrategyKey, boolean>;
 
 interface AdjustCollateralProps {
 	position: PositionQuery;
@@ -74,6 +72,7 @@ export const AdjustCollateral = ({
 	const chainId = useChainId() ?? WAGMI_CHAIN.id;
 	const { address: userAddress } = useAccount();
 	const isOwner = useIsPositionOwner(position);
+	const reference = useReferencePosition(position, positionPrice);
 	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol?.toLowerCase() || "");
 	const maxWalletForAdd = isNativeWrappedPosition
 		? walletBalance > NATIVE_GAS_BUFFER
@@ -85,10 +84,7 @@ export const AdjustCollateral = ({
 	const [deltaAmount, setDeltaAmount] = useState<string>("");
 	const [isIncrease, setIsIncrease] = useState(true);
 	const [deltaAmountError, setDeltaAmountError] = useState<string | null>(null);
-	const [strategies, setStrategies] = useState<Strategies>({
-		[StrategyKey.HIGHER_PRICE]: false,
-		[StrategyKey.REPAY_LOAN]: false,
-	});
+	const [activeStrategy, setActiveStrategy] = useState<StrategyKey | null>(null);
 
 	const collateralDecimals = position.collateralDecimals || 18;
 	const collateralSymbol = normalizeTokenSymbol(position.collateralSymbol || "");
@@ -97,7 +93,7 @@ export const AdjustCollateral = ({
 	useEffect(() => {
 		setDeltaAmount("");
 		setDeltaAmountError(null);
-		setStrategies({ [StrategyKey.HIGHER_PRICE]: false, [StrategyKey.REPAY_LOAN]: false });
+		setActiveStrategy(null);
 	}, [isIncrease]);
 
 	const minCollateralNeeded = collateralRequirement > 0n ? (collateralRequirement * BigInt(1e18)) / positionPrice : 0n;
@@ -109,7 +105,7 @@ export const AdjustCollateral = ({
 			? (minCollateralNeeded * 101n) / 100n // debt ratio dominates → apply buffer
 			: minimumCollateral; // absolute minimum dominates → no buffer needed
 	const maxRemovableWithoutAdjustment = collateralBalance > requiredCollateral ? collateralBalance - requiredCollateral : 0n;
-	const hasAnyStrategy = strategies[StrategyKey.HIGHER_PRICE] || strategies[StrategyKey.REPAY_LOAN];
+	const hasAnyStrategy = activeStrategy !== null;
 
 	const delta = BigInt(deltaAmount || 0);
 	const showStrategyOptions = !isIncrease && delta > maxRemovableWithoutAdjustment && currentDebt > 0n;
@@ -118,13 +114,19 @@ export const AdjustCollateral = ({
 	const newCollateral = isIncrease ? collateralBalance + delta : collateralBalance - delta;
 
 	const calculatedNewPrice = useMemo(() => {
-		if (isIncrease || !strategies[StrategyKey.HIGHER_PRICE] || newCollateral === 0n) return positionPrice;
+		if (isIncrease || activeStrategy !== StrategyKey.HIGHER_PRICE || newCollateral === 0n) return positionPrice;
 		return (currentDebt * BigInt(1e18)) / newCollateral + 1n;
-	}, [isIncrease, strategies, newCollateral, currentDebt, positionPrice]);
+	}, [isIncrease, activeStrategy, newCollateral, currentDebt, positionPrice]);
 
 	const belowMinimumCollateral = newCollateral > 0n && newCollateral < minimumCollateral;
+
+	useEffect(() => {
+		if (activeStrategy === StrategyKey.HIGHER_PRICE && (newCollateral === 0n || belowMinimumCollateral)) {
+			setActiveStrategy(null);
+		}
+	}, [newCollateral, belowMinimumCollateral, activeStrategy]);
 	const calculatedRepayAmount = useMemo(() => {
-		if (isIncrease || !strategies[StrategyKey.REPAY_LOAN]) return 0n;
+		if (isIncrease || activeStrategy !== StrategyKey.REPAY_LOAN) return 0n;
 		// When new collateral is below the absolute minimum, the only way to withdraw
 		// is to fully repay debt first (contract allows withdrawal below min when debt = 0).
 		if (belowMinimumCollateral) return currentDebt;
@@ -132,20 +134,20 @@ export const AdjustCollateral = ({
 		const rawRepayAmount = currentDebt > debtNeededForNewCollateral ? currentDebt - debtNeededForNewCollateral : 0n;
 		const withBuffer = (rawRepayAmount * 105n) / 100n;
 		return withBuffer > currentDebt ? currentDebt : withBuffer;
-	}, [isIncrease, strategies, newCollateral, currentDebt, positionPrice, belowMinimumCollateral, minimumCollateral]);
+	}, [isIncrease, activeStrategy, newCollateral, currentDebt, positionPrice, belowMinimumCollateral, minimumCollateral]);
 
-	const newDebt = strategies[StrategyKey.REPAY_LOAN] ? currentDebt - calculatedRepayAmount : currentDebt;
-	const newPrice = strategies[StrategyKey.HIGHER_PRICE] ? calculatedNewPrice : positionPrice;
+	const newDebt = activeStrategy === StrategyKey.REPAY_LOAN ? currentDebt - calculatedRepayAmount : currentDebt;
+	const newPrice = activeStrategy === StrategyKey.HIGHER_PRICE ? calculatedNewPrice : positionPrice;
+	const higherPriceExceedsReference =
+		activeStrategy === StrategyKey.HIGHER_PRICE && (reference.address === null || newPrice > reference.price);
 
-	// Snap dust collateral to full withdrawal when full debt is being repaid
-	const snapToClose = !isIncrease && belowMinimumCollateral && strategies[StrategyKey.REPAY_LOAN];
-	const effectiveNewCollateral = snapToClose ? 0n : newCollateral;
-	const effectiveDelta = snapToClose ? collateralBalance : delta;
+	const effectiveNewCollateral = newCollateral;
+	const effectiveDelta = delta;
 	const isClosingPosition = !isIncrease && effectiveNewCollateral === 0n;
 
 	const walletRepayAmount = debtReductionToWalletCost(calculatedRepayAmount, interest, position.reserveContribution);
 	const jusdInsufficientError =
-		!isIncrease && strategies[StrategyKey.REPAY_LOAN] && walletRepayAmount > 0n && walletRepayAmount > jusdBalance
+		!isIncrease && activeStrategy === StrategyKey.REPAY_LOAN && walletRepayAmount > 0n && walletRepayAmount > jusdBalance
 			? t("mint.insufficient_balance", { symbol: position.stablecoinSymbol })
 			: null;
 
@@ -156,7 +158,6 @@ export const AdjustCollateral = ({
 		}
 
 		const delta = BigInt(deltaAmount || 0);
-		const validationDebt = strategies[StrategyKey.REPAY_LOAN] ? currentDebt - calculatedRepayAmount : currentDebt;
 		const formattedMinCollateral = formatCurrency(formatUnits(minimumCollateral, collateralDecimals), 3, 8);
 
 		const validations = [
@@ -169,7 +170,7 @@ export const AdjustCollateral = ({
 				error: t("common.error.insufficient_balance", { symbol: collateralSymbol }),
 			},
 			{
-				condition: !isIncrease && effectiveNewCollateral > 0n && effectiveNewCollateral < minimumCollateral && validationDebt > 0n,
+				condition: !isIncrease && effectiveNewCollateral > 0n && effectiveNewCollateral < minimumCollateral,
 				error: `${t("mint.error.collateral_below_min")} (${formattedMinCollateral} ${collateralSymbol})`,
 			},
 		];
@@ -182,7 +183,7 @@ export const AdjustCollateral = ({
 		collateralBalance,
 		walletBalance,
 		collateralSymbol,
-		strategies,
+		activeStrategy,
 		calculatedRepayAmount,
 		minimumCollateral,
 		effectiveNewCollateral,
@@ -195,16 +196,14 @@ export const AdjustCollateral = ({
 
 	const formatValue = (value: bigint) => formatTokenAmount(value, collateralDecimals, 4, 8) + " " + collateralSymbol;
 
-	const maxRemovable = hasAnyStrategy || maxRemovableWithoutAdjustment === 0n ? collateralBalance : maxRemovableWithoutAdjustment;
-
 	const handleMaxClick = () => {
 		const maxAmount = isIncrease ? maxWalletForAdd : collateralBalance;
 		setDeltaAmount(maxAmount.toString());
 	};
 
-	const toggleStrategy = (key: StrategyKey) => setStrategies((prev) => ({ ...prev, [key]: !prev[key] }));
+	const setStrategy = (key: StrategyKey) => setActiveStrategy((prev) => (prev === key ? null : key));
 
-	const needsApproval = strategies[StrategyKey.REPAY_LOAN] && walletRepayAmount > 0n && jusdAllowance < walletRepayAmount;
+	const needsApproval = activeStrategy === StrategyKey.REPAY_LOAN && walletRepayAmount > 0n && jusdAllowance < walletRepayAmount;
 
 	const handleApprove = async () => {
 		if (!position || calculatedRepayAmount <= 0n) return;
@@ -229,7 +228,7 @@ export const AdjustCollateral = ({
 		if (!position || !userAddress || delta === 0n) return;
 		if (needsStrategy) return;
 
-		if (!strategies[StrategyKey.REPAY_LOAN] && isBelowMinCollateral(effectiveNewCollateral)) {
+		if (activeStrategy !== StrategyKey.REPAY_LOAN && isBelowMinCollateral(effectiveNewCollateral)) {
 			toast.error(t("mint.error.collateral_below_min"));
 			return;
 		}
@@ -264,7 +263,7 @@ export const AdjustCollateral = ({
 
 				// Case 3: repay ≤ interest → need separate repay() call first
 				const needsSeparateRepay =
-					!isFullClose && strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n && targetDebt >= principal;
+					!isFullClose && activeStrategy === StrategyKey.REPAY_LOAN && calculatedRepayAmount > 0n && targetDebt >= principal;
 
 				// Use principal - calculatedRepayAmount (not currentDebt - calculatedRepayAmount)
 				// so the principal reduction is a clean number. The contract pays interest
@@ -272,7 +271,7 @@ export const AdjustCollateral = ({
 				const rawNewPrincipal = principal - calculatedRepayAmount;
 				const newPrincipal = isFullClose
 					? 0n // Case 1: close position
-					: strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n && targetDebt < principal
+					: activeStrategy === StrategyKey.REPAY_LOAN && calculatedRepayAmount > 0n && targetDebt < principal
 					? rawNewPrincipal > 0n
 						? rawNewPrincipal
 						: 0n // Case 2: repay > interest
@@ -310,42 +309,99 @@ export const AdjustCollateral = ({
 					});
 				}
 
-				// All cases: call adjust()
+				// All cases: call adjustWithReference() when price is being increased, adjust() otherwise
+				const useRef = activeStrategy === StrategyKey.HIGHER_PRICE && reference.address !== null;
 				const publicClient = getPublicClient(WAGMI_CONFIG, {
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				});
-				const estimatedGas =
-					(await publicClient
-						?.estimateContractGas({
+
+				if (useRef) {
+					// +0.01% covers reserveContribution gap and interest accrual between TX1 and TX2.
+					const tx1Price = adjustPrice + adjustPrice / 10000n;
+
+					// Tx 1: set price high enough so that TX2's collateral withdrawal passes _checkCollateral
+					const priceHash = await simulateAndWrite({
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: position.position as Address,
+						abi: PositionV2ABI,
+						functionName: "adjustPriceWithReference",
+						args: [tx1Price, reference.address!],
+					});
+					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: priceHash, confirmations: 1 }), {
+						pending: {
+							render: (
+								<TxToast
+									title={t("mint.txs.adjusting_price")}
+									rows={[{ title: t("common.txs.transaction"), hash: priceHash }]}
+								/>
+							),
+						},
+						success: {
+							render: (
+								<TxToast
+									title={t("mint.txs.adjusting_price_success")}
+									rows={[{ title: t("common.txs.transaction"), hash: priceHash }]}
+								/>
+							),
+						},
+					});
+
+					try {
+						// Tx 2: withdraw collateral. _checkCollateral uses the stored price from TX1 (with +0.01% buffer).
+						const withdrawHash = await simulateAndWrite({
+							chainId: chainId as typeof mainnet.id | typeof testnet.id,
 							address: position.position as Address,
 							abi: PositionV2ABI,
 							functionName: "adjust",
-							args: [newPrincipal, effectiveNewCollateral, adjustPrice, isNativeWrappedPosition],
-							account: userAddress,
-						})
-						.catch(() => 300_000n)) ?? 300_000n;
+							args: [newPrincipal, effectiveNewCollateral, tx1Price, isNativeWrappedPosition],
+						});
 
-				const withdrawHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
-					address: position.position as Address,
-					abi: PositionV2ABI,
-					functionName: "adjust",
-					args: [newPrincipal, effectiveNewCollateral, adjustPrice, isNativeWrappedPosition],
-					gas: (estimatedGas * 150n) / 100n,
-				});
+						const toastContent = [
+							{ title: t("common.txs.amount"), value: formatValue(effectiveDelta) },
+							{ title: t("common.txs.transaction"), hash: withdrawHash },
+						];
+						const txTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral");
+						const txSuccessTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral_success");
+						await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
+							pending: { render: <TxToast title={txTitle} rows={toastContent} /> },
+							success: { render: <TxToast title={txSuccessTitle} rows={toastContent} /> },
+						});
+					} catch (tx2Error) {
+						toast.warn(t("mint.txs.price_adjusted_withdraw_failed"));
+						return;
+					}
+				} else {
+					const estimatedGas =
+						(await publicClient
+							?.estimateContractGas({
+								address: position.position as Address,
+								abi: PositionV2ABI,
+								functionName: "adjust",
+								args: [newPrincipal, effectiveNewCollateral, adjustPrice, isNativeWrappedPosition],
+								account: userAddress,
+							})
+							.catch(() => 300_000n)) ?? 300_000n;
 
-				const toastContent = [
-					{ title: t("common.txs.amount"), value: formatValue(effectiveDelta) },
-					{ title: t("common.txs.transaction"), hash: withdrawHash },
-				];
+					const withdrawHash = await simulateAndWrite({
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: position.position as Address,
+						abi: PositionV2ABI,
+						functionName: "adjust",
+						args: [newPrincipal, effectiveNewCollateral, adjustPrice, isNativeWrappedPosition],
+						gas: (estimatedGas * 150n) / 100n,
+					});
 
-				const txTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral");
-				const txSuccessTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral_success");
-
-				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
-					pending: { render: <TxToast title={txTitle} rows={toastContent} /> },
-					success: { render: <TxToast title={txSuccessTitle} rows={toastContent} /> },
-				});
+					const toastContent = [
+						{ title: t("common.txs.amount"), value: formatValue(effectiveDelta) },
+						{ title: t("common.txs.transaction"), hash: withdrawHash },
+					];
+					const txTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral");
+					const txSuccessTitle = isFullClose ? t("mint.close_position") : t("mint.txs.removing_collateral_success");
+					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: withdrawHash, confirmations: 1 }), {
+						pending: { render: <TxToast title={txTitle} rows={toastContent} /> },
+						success: { render: <TxToast title={txSuccessTitle} rows={toastContent} /> },
+					});
+				}
 			}
 
 			store.dispatch(fetchPositionsList(chainId));
@@ -367,8 +423,10 @@ export const AdjustCollateral = ({
 		delta === 0n ||
 		Boolean(deltaAmountError) ||
 		Boolean(jusdInsufficientError) ||
+		Boolean(higherPriceExceedsReference) ||
 		isTxOnGoing ||
 		needsStrategy ||
+		(belowMinimumCollateral && newCollateral !== 0n) ||
 		(!isIncrease && isInCooldown) ||
 		(!isIncrease && !hasAnyStrategy && collateralBalance <= requiredCollateral && !isClosingPosition && newDebt > 0n);
 
@@ -377,7 +435,7 @@ export const AdjustCollateral = ({
 		if (needsApproval) return t("common.approve");
 		if (delta === 0n) return isIncrease ? t("common.add") : t("common.remove");
 		const formattedDelta = formatTokenAmount(delta, collateralDecimals, 4, 8);
-		if (strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n) {
+		if (activeStrategy === StrategyKey.REPAY_LOAN && calculatedRepayAmount > 0n) {
 			const formattedRepay = formatCurrency(formatUnits(walletRepayAmount, 18), 2, 2);
 			if (isClosingPosition) {
 				return t("mint.repay_and_close_position");
@@ -394,8 +452,17 @@ export const AdjustCollateral = ({
 				</>
 			);
 		}
-		if (strategies[StrategyKey.HIGHER_PRICE] && newPrice > positionPrice) {
-			return t("mint.adjust_liq_price_btn");
+		if (activeStrategy === StrategyKey.HIGHER_PRICE && newPrice > positionPrice) {
+			return (
+				<>
+					<span className="sm:hidden">
+						{t("mint.adjust_liq_price_btn")} & {t("common.remove")} {collateralSymbol}
+					</span>
+					<span className="hidden sm:inline">
+						{t("mint.adjust_liq_price_btn")} & {t("common.remove")} {formattedDelta} {collateralSymbol}
+					</span>
+				</>
+			);
 		}
 		return isIncrease ? `${t("common.add")} ${formattedDelta} ${collateralSymbol}` : t("common.remove");
 	};
@@ -449,30 +516,33 @@ export const AdjustCollateral = ({
 						</div>
 					}
 				/>
-				{deltaAmountError && <div className="ml-1 text-red-500 text-sm">{deltaAmountError}</div>}
+				{deltaAmountError && <div className="ml-1 text-xs text-red-500">{deltaAmountError}</div>}
 			</div>
 
 			{showStrategyOptions && (
 				<div className="space-y-1 px-4">
-					{jusdInsufficientError && strategies[StrategyKey.REPAY_LOAN] && (
+					{jusdInsufficientError && activeStrategy === StrategyKey.REPAY_LOAN && (
 						<div className="text-xs text-red-500 mb-1">{jusdInsufficientError}</div>
+					)}
+					{higherPriceExceedsReference && activeStrategy === StrategyKey.HIGHER_PRICE && (
+						<div className="text-xs text-red-500 mb-1">{t("mint.error.liq_price_exceeds_reference")}</div>
 					)}
 					<div className="text-sm font-medium text-text-muted2">{t("mint.position_needs_adjustments")}</div>
 					<div
 						role="button"
 						tabIndex={0}
-						onClick={() => toggleStrategy(StrategyKey.REPAY_LOAN)}
-						onKeyDown={(e) => e.key === "Enter" && toggleStrategy(StrategyKey.REPAY_LOAN)}
+						onClick={() => setStrategy(StrategyKey.REPAY_LOAN)}
+						onKeyDown={(e) => e.key === "Enter" && setStrategy(StrategyKey.REPAY_LOAN)}
 						className="flex items-center gap-x-1 cursor-pointer hover:opacity-80 transition-opacity py-1"
 					>
 						<span
 							className={`flex items-center ${
-								strategies[StrategyKey.REPAY_LOAN]
+								activeStrategy === StrategyKey.REPAY_LOAN
 									? "text-button-textGroup-primary-text"
 									: "text-button-textGroup-secondary-text"
 							}`}
 						>
-							{strategies[StrategyKey.REPAY_LOAN] ? (
+							{activeStrategy === StrategyKey.REPAY_LOAN ? (
 								<RemoveCircleOutlineIcon color="currentColor" />
 							) : (
 								<AddCircleOutlineIcon color="currentColor" />
@@ -480,7 +550,7 @@ export const AdjustCollateral = ({
 						</span>
 						<span
 							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight ${
-								strategies[StrategyKey.REPAY_LOAN]
+								activeStrategy === StrategyKey.REPAY_LOAN
 									? "text-button-textGroup-primary-text"
 									: "text-button-textGroup-secondary-text"
 							}`}
@@ -488,29 +558,51 @@ export const AdjustCollateral = ({
 							{t("mint.repay_loan")}
 						</span>
 					</div>
+					{newCollateral > 0n && !belowMinimumCollateral && (
+						<div
+							role="button"
+							tabIndex={0}
+							onClick={() => setStrategy(StrategyKey.HIGHER_PRICE)}
+							onKeyDown={(e) => e.key === "Enter" && setStrategy(StrategyKey.HIGHER_PRICE)}
+							className="flex items-center gap-x-1 cursor-pointer hover:opacity-80 transition-opacity py-1"
+						>
+							<span
+								className={`flex items-center ${
+									activeStrategy === StrategyKey.HIGHER_PRICE
+										? "text-button-textGroup-primary-text"
+										: "text-button-textGroup-secondary-text"
+								}`}
+							>
+								{activeStrategy === StrategyKey.HIGHER_PRICE ? (
+									<RemoveCircleOutlineIcon color="currentColor" />
+								) : (
+									<AddCircleOutlineIcon color="currentColor" />
+								)}
+							</span>
+							<span
+								className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight ${
+									activeStrategy === StrategyKey.HIGHER_PRICE
+										? "text-button-textGroup-primary-text"
+										: "text-button-textGroup-secondary-text"
+								}`}
+							>
+								{t("mint.higher_liq_price")}
+							</span>
+						</div>
+					)}
 				</div>
 			)}
 
 			<div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
-				{strategies[StrategyKey.HIGHER_PRICE] && newPrice > positionPrice && (
+				{activeStrategy === StrategyKey.HIGHER_PRICE && newPrice > positionPrice && (
 					<div className="flex justify-between text-sm">
-						<div className="flex items-center gap-1">
-							<span className="text-text-muted2">{t("mint.higher_liq_price")}</span>
-							<Tooltip content={t("mint.tooltip_remove_liq_price")} arrow style="light">
-								<span
-									className="w-4 h-4 text-primary cursor-pointer hover:opacity-80 flex items-center"
-									onClick={() => toggleStrategy(StrategyKey.HIGHER_PRICE)}
-								>
-									<RemoveCircleOutlineIcon color="currentColor" />
-								</span>
-							</Tooltip>
-						</div>
+						<span className="text-text-muted2">{t("mint.new_liq_price")}</span>
 						<span className="font-medium text-text-title">
 							{formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} {position.stablecoinSymbol}
 						</span>
 					</div>
 				)}
-				{strategies[StrategyKey.REPAY_LOAN] && calculatedRepayAmount > 0n && (
+				{activeStrategy === StrategyKey.REPAY_LOAN && calculatedRepayAmount > 0n && (
 					<div className="flex justify-between text-sm">
 						<span className="text-text-muted2">{t("mint.repay")}</span>
 						<span className="font-medium text-text-title">
@@ -525,12 +617,14 @@ export const AdjustCollateral = ({
 						{formatTokenAmount(effectiveDelta, collateralDecimals, 4, 8)} {collateralSymbol}
 					</span>
 				</div>
-				<div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
-					<span className="font-bold text-text-title">{t("mint.new_collateral")}</span>
-					<span className="font-bold text-text-title">
-						{formatTokenAmount(effectiveNewCollateral, collateralDecimals, 4, 8)} {collateralSymbol}
-					</span>
-				</div>
+				{effectiveNewCollateral > 0n && (
+					<div className="flex justify-between text-base pt-2 border-t border-gray-300 dark:border-gray-600">
+						<span className="font-bold text-text-title">{t("mint.new_collateral")}</span>
+						<span className="font-bold text-text-title">
+							{formatTokenAmount(effectiveNewCollateral, collateralDecimals, 4, 8)} {collateralSymbol}
+						</span>
+					</div>
+				)}
 			</div>
 
 			{!isIncrease && isInCooldown && (
@@ -538,6 +632,22 @@ export const AdjustCollateral = ({
 					{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
 					<br />
 					{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
+				</div>
+			)}
+
+			{!isIncrease && belowMinimumCollateral && (
+				<div className="text-xs text-text-muted2 px-4">
+					{t("mint.error.collateral_below_min_hint_before")}{" "}
+					<button
+						className="font-bold underline hover:opacity-70"
+						onClick={() => {
+							setDeltaAmount(collateralBalance.toString());
+							setActiveStrategy(StrategyKey.REPAY_LOAN);
+						}}
+					>
+						{t("mint.error.collateral_below_min_hint_link")}
+					</button>{" "}
+					{t("mint.error.collateral_below_min_hint_after")}
 				</div>
 			)}
 

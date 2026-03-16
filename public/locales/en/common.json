@@ -150,7 +150,6 @@
 		"effective_annual_interest": "Effective Annual Interest",
 		"apr": "APR",
 		"market_price": "Market Price",
-		"original_position": "Original Position",
 		"borrowing_deuro": "You are lending JUSD",
 		"your_collateral": "Your Collateral",
 		"liquidation_price": "Liquidation Price",
@@ -235,7 +234,7 @@
 		"price_increase_cooldown_warning": "Price increase will trigger a 3-day cooldown period.",
 		"after_cooldown_can_withdraw": "After cooldown you can withdraw {{amount}} {{symbol}} or borrow more.",
 		"price_below_collateral_limit": "Price cannot go below {{min}} {{symbol}} (collateral limit).",
-		"adjust_liq_price_btn": "Adjust liquidation price",
+		"adjust_liq_price_btn": "Adjust price",
 		"close_position": "Close Position",
 		"repay_and_close_position": "Repay & Close Position",
 		"cooldown_ends_at": "Ends: {{date}}",
@@ -266,6 +265,7 @@
 		"you_add": "You add",
 		"you_remove": "You remove",
 		"new_liq_price": "New Liquidation Price",
+		"new_price": "New Price",
 		"choose_what_stays_constant": "Choose what stays constant",
 		"preview_changes": "Preview Changes",
 		"calculation_error": "Calculation error",
@@ -311,11 +311,16 @@
 			"minting_limit_exceeded": "Can not mint more than {{amount}} {{symbol}}.",
 			"global_minting_limit_exceeded": "Global minting limit reached. Maximum {{maxMint}} {{mintSymbol}} can be minted ({{maxCollateral}} {{collateralSymbol}} collateral).",
 			"position_unavailable_limit_exhausted": "Cannot create position. Available capacity ({{available}} {{symbol}}) below minimum requirement ({{minCollateral}} {{collateralSymbol}}).",
+			"no_cloneable_position": "No positions are currently available to clone. All positions may be challenged, expired, or in cooldown. Please try again later.",
 			"expiration_date_out_of_range": "Expiration Date should be between Now and Limit",
 			"amount_greater_than_position_balance": "Amount is greater than the position's balance",
 			"amount_greater_than_max_to_remove": "Amount is greater than the max allowed given the current debt",
 			"amount_greater_than_debt": "Amount is greater than the debt",
 			"collateral_below_min": "Collateral is below minimum required",
+			"collateral_below_min_hint_before": "You can",
+			"collateral_below_min_hint_link": "repay all debt",
+			"collateral_below_min_hint_after": "and withdraw the collateral, this will close the position",
+			"liq_price_exceeds_reference": "New liquidation price exceeds the maximum allowed",
 			"price_too_high": "Price cannot exceed maximum allowed",
 			"price_too_low": "Price cannot be below minimum required for collateral",
 			"insufficient_collateral_for_requirements": "Insufficient collateral for price adjustment"
@@ -335,7 +340,8 @@
 			"extending_success": "Successfully extended position",
 			"adjusting_price": "Adjusting position price...",
 			"adjusting_price_success": "Position price adjusted successfully",
-			"adjust_success": "Position adjusted successfully"
+			"adjust_success": "Position adjusted successfully",
+			"price_adjusted_withdraw_failed": "Liquidation price was adjusted, but collateral withdrawal failed. You can retry the withdrawal or lower the price."
 		}
 	},
 	"my_positions": {

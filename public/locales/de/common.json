@@ -149,7 +149,6 @@
 		"effective_annual_interest": "Effektiver Jahreszins",
 		"apr": "APR",
 		"market_price": "Marktpreis",
-		"original_position": "Ursprüngliche Position",
 		"borrowing_deuro": "Du nimmst JUSD auf",
 		"your_collateral": "Deine Besicherungen",
 		"liquidation_price": "Liquidationspreis",
@@ -234,7 +233,7 @@
 		"price_increase_cooldown_warning": "Die Preiserhöhung löst eine 3-tägige Abkühlphase aus.",
 		"after_cooldown_can_withdraw": "Nach der Abkühlphase können Sie {{amount}} {{symbol}} abheben oder mehr leihen.",
 		"price_below_collateral_limit": "Der Preis kann nicht unter {{min}} {{symbol}} fallen (Sicherheitenlimit).",
-		"adjust_liq_price_btn": "Liquidationspreis anpassen",
+		"adjust_liq_price_btn": "Preis anpassen",
 		"close_position": "Position schließen",
 		"repay_and_close_position": "Rückzahlen & Position schließen",
 		"cooldown_ends_at": "Endet: {{date}}",
@@ -265,6 +264,7 @@
 		"change": "Änderung",
 		"new_collateral": "Neue Sicherheit",
 		"new_liq_price": "Neuer Liquidationspreis",
+		"new_price": "Neuer Preis",
 		"choose_what_stays_constant": "Wähle was konstant bleibt",
 		"preview_changes": "Vorschau",
 		"calculation_error": "Berechnungsfehler",
@@ -308,11 +308,16 @@
 			"minting_limit_exceeded": "Es können nicht mehr als {{amount}} {{symbol}} geprägt werden.",
 			"global_minting_limit_exceeded": "Globales Prägelimit erreicht. Maximal {{maxMint}} {{mintSymbol}} können geprägt werden ({{maxCollateral}} {{collateralSymbol}} Sicherheit).",
 			"position_unavailable_limit_exhausted": "Position nicht verfügbar. Verfügbare Kapazität ({{available}} {{symbol}}) unter Mindestanforderung ({{minCollateral}} {{collateralSymbol}}).",
+			"no_cloneable_position": "Derzeit sind keine Positionen zum Klonen verfügbar. Alle Positionen sind möglicherweise angefochten, abgelaufen oder in der Abkühlphase. Bitte versuchen Sie es später erneut.",
 			"expiration_date_out_of_range": "Das Ablaufdatum sollte zwischen Jetzt und dem Limit liegen.",
 			"amount_greater_than_position_balance": "Der Betrag ist größer als der Saldo der Position.",
 			"amount_greater_than_max_to_remove": "Der Betrag ist größer als der maximale Betrag, der unter Berücksichtigung der aktuellen Schuld abgezogen werden kann.",
 			"amount_greater_than_debt": "Der Betrag ist größer als die Schuld.",
 			"collateral_below_min": "Sicherheit liegt unter dem erforderlichen Minimum",
+			"collateral_below_min_hint_before": "Sie können",
+			"collateral_below_min_hint_link": "alle Schulden zurückzahlen",
+			"collateral_below_min_hint_after": "und die Sicherheit abheben, dies schließt die Position",
+			"liq_price_exceeds_reference": "Der neue Liquidationspreis überschreitet das zulässige Maximum",
 			"price_too_high": "Preis kann das zulässige Maximum nicht überschreiten",
 			"price_too_low": "Preis kann nicht unter dem für die Besicherung erforderlichen Minimum liegen",
 			"insufficient_collateral_for_requirements": "Unzureichende Besicherung für Preisanpassung"
@@ -332,7 +337,8 @@
 			"extending_success": "Position erfolgreich verlängert",
 			"adjusting_price": "Positionspreis wird angepasst...",
 			"adjusting_price_success": "Positionspreis erfolgreich angepasst",
-			"adjust_success": "Position erfolgreich angepasst"
+			"adjust_success": "Position erfolgreich angepasst",
+			"price_adjusted_withdraw_failed": "Der Liquidationspreis wurde angepasst, aber die Sicherheitenentnahme ist fehlgeschlagen. Sie können die Entnahme erneut versuchen oder den Preis senken."
 		}
 	},
 	"my_positions": {

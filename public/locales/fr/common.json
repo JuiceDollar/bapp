@@ -149,7 +149,6 @@
 		"effective_annual_interest": "Taux annuel effectif global",
 		"apr": "TAEG",
 		"market_price": "Cours du marché",
-		"original_position": "Position initiale",
 		"borrowing_deuro": "Vous empruntez des JUSD",
 		"your_collateral": "Votre garantie",
 		"liquidation_price": "Prix de liquidation",
@@ -234,7 +233,7 @@
 		"price_increase_cooldown_warning": "L'augmentation du prix déclenchera une période de refroidissement de 3 jours.",
 		"after_cooldown_can_withdraw": "Après le refroidissement, vous pourrez retirer {{amount}} {{symbol}} ou emprunter plus.",
 		"price_below_collateral_limit": "Le prix ne peut pas descendre en dessous de {{min}} {{symbol}} (limite de collatéral).",
-		"adjust_liq_price_btn": "Ajuster le prix de liquidation",
+		"adjust_liq_price_btn": "Ajuster le prix",
 		"cooldown_ends_at": "Fin: {{date}}",
 		"not_your_position": "Vous ne possédez pas cette position",
 		"non_owner_repay_info": "Vous pouvez rembourser la dette de cette position. Seul le propriétaire peut retirer le collatéral.",
@@ -265,6 +264,7 @@
 		"change": "Changement",
 		"new_collateral": "Nouvelle Garantie",
 		"new_liq_price": "Nouveau Prix de Liquidation",
+		"new_price": "Nouveau prix",
 		"choose_what_stays_constant": "Choisissez ce qui reste constant",
 		"preview_changes": "Aperçu",
 		"calculation_error": "Erreur de calcul",
@@ -308,11 +308,16 @@
 			"minting_limit_exceeded": "Impossible d'émettre plus de {{amount}} {{symbol}}.",
 			"global_minting_limit_exceeded": "Limite d'émission globale atteinte. Maximum {{maxMint}} {{mintSymbol}} peuvent être émis ({{maxCollateral}} {{collateralSymbol}} de garantie).",
 			"position_unavailable_limit_exhausted": "Position indisponible. Capacité disponible ({{available}} {{symbol}}) inférieure au minimum requis ({{minCollateral}} {{collateralSymbol}}).",
+			"no_cloneable_position": "Aucune position disponible pour le clonage. Toutes les positions peuvent être contestées, expirées ou en période de refroidissement. Veuillez réessayer plus tard.",
 			"expiration_date_out_of_range": "La date d'expiration doit être comprise entre maintenant et la limite.",
 			"amount_greater_than_position_balance": "Le montant est supérieur au solde de la position.",
 			"amount_greater_than_max_to_remove": "Le montant est supérieur au montant maximum autorisé compte tenu de la dette actuelle",
 			"amount_greater_than_debt": "Le montant est supérieur à la dette",
 			"collateral_below_min": "La garantie est inférieure au minimum requis",
+			"collateral_below_min_hint_before": "Vous pouvez",
+			"collateral_below_min_hint_link": "rembourser toutes les dettes",
+			"collateral_below_min_hint_after": "et retirer la garantie, cela fermera la position",
+			"liq_price_exceeds_reference": "Le nouveau prix de liquidation dépasse le maximum autorisé",
 			"price_too_high": "Le prix ne peut pas dépasser le maximum autorisé",
 			"price_too_low": "Le prix ne peut pas être inférieur au minimum requis pour la garantie",
 			"insufficient_collateral_for_requirements": "Garantie insuffisante pour l'ajustement du prix"
@@ -332,7 +337,8 @@
 			"extending_success": "Position prolongée avec succès",
 			"adjusting_price": "Ajustement du prix de la position...",
 			"adjusting_price_success": "Prix de la position ajusté avec succès",
-			"adjust_success": "Position ajustée avec succès"
+			"adjust_success": "Position ajustée avec succès",
+			"price_adjusted_withdraw_failed": "Le prix de liquidation a été ajusté, mais le retrait de collatéral a échoué. Vous pouvez réessayer le retrait ou baisser le prix."
 		}
 	},
 	"my_positions": {
