@@ -493,7 +493,7 @@ export const AdjustCollateral = ({
 					value={deltaAmount}
 					onChange={setDeltaAmount}
 					decimals={collateralDecimals}
-					displayDecimals={8}
+					hideTrailingZeros
 					unit={collateralSymbol}
 					isError={Boolean(deltaAmountError)}
 					adornamentRow={
