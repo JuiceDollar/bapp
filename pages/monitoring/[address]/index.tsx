@@ -172,7 +172,7 @@ export default function PositionDetail() {
 									{t("dashboard.manage")}
 								</Button>
 							) : (
-								<Button className="h-10" onClick={() => navigate.push("/mint")}>
+								<Button className="h-10" onClick={() => navigate.push(`/mint?clone=${position.position}`)}>
 									{t("mint.clone")}
 								</Button>
 							)}
