@@ -495,6 +495,7 @@ export const AdjustLoan = ({
 					value={deltaAmount}
 					onChange={handleDeltaChange}
 					decimals={18}
+					hideTrailingZeros
 					unit={position.stablecoinSymbol}
 					isError={Boolean(deltaAmountError)}
 					adornamentRow={
