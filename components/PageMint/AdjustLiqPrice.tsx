@@ -251,21 +251,20 @@ export const AdjustLiqPrice = ({
 					functionName: "repay",
 					args: [requiredDebtReduction],
 				});
+				const repayToastRows = [
+					{
+						title: t("mint.pay_back_amount"),
+						value: `${formatTokenAmount(repayWalletCost, 18, 2, 2)} ${position.stablecoinSymbol}`,
+					},
+					{ title: t("common.txs.transaction"), hash: repayHash },
+				];
 				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: repayHash, confirmations: 1 }), {
 					pending: {
-						render: (
-							<TxToast
-								title={t("mint.txs.pay_back", { symbol: position.stablecoinSymbol })}
-								rows={[{ title: t("common.txs.transaction"), hash: repayHash }]}
-							/>
-						),
+						render: <TxToast title={t("mint.txs.pay_back", { symbol: position.stablecoinSymbol })} rows={repayToastRows} />,
 					},
 					success: {
 						render: (
-							<TxToast
-								title={t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol })}
-								rows={[{ title: t("common.txs.transaction"), hash: repayHash }]}
-							/>
+							<TxToast title={t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol })} rows={repayToastRows} />
 						),
 					},
 				});
