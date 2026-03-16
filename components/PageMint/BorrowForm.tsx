@@ -129,7 +129,7 @@ export default function PositionCreate({}) {
 					if (!genesisPos) return;
 
 					const bestParent = bestCloneableRes?.data?.position ?? null;
-					const noCloneable = bestParent == null;
+					const noCloneable = bestCloneableRes !== null && bestParent == null;
 					const cloneTarget = bestParent ?? genesisPos;
 
 					setDefaultPosition(genesisPos);
