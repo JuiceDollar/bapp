@@ -108,50 +108,44 @@ export default function PositionCreate({}) {
 				setNoCloneableParent(false);
 				const apiClient = getApiClient(chainId);
 
-				// Mainnet: 1) best-cloneable (WCBTC for now; later = user-selected). 2) If null or error, fallback = /positions/list for genesis.
+				// Mainnet: always fetch genesis (contract enforces original's expiration), then try best-cloneable for optimal clone parent.
 				if (chainId === MAINNET_CHAIN_ID) {
-					let defaultPos: PositionQuery | null = null;
-					let bestParent: PositionQuery | null = null;
-					let noCloneable = true;
+					const [listRes, bestCloneableRes] = await Promise.all([
+						apiClient.get<ApiPositionsListing>(`/positions/list`),
+						apiClient
+							.get<{ position: PositionQuery | null }>(
+								`/positions/best-cloneable?collateral=${MAINNET_DEFAULT_COLLATERAL_WCBTC}`
+							)
+							.catch((e: unknown) => {
+								console.warn("best-cloneable endpoint failed, falling back to genesis:", e);
+								return null;
+							}),
+					]);
 
-					try {
-						const bestRes = await apiClient.get<{ position: PositionQuery | null }>(
-							`/positions/best-cloneable?collateral=${MAINNET_DEFAULT_COLLATERAL_WCBTC}`
-						);
-						defaultPos = bestRes.data?.position ?? null;
-						bestParent = defaultPos;
-						noCloneable = defaultPos == null;
-					} catch (e) {
-						console.warn("best-cloneable endpoint failed, falling back to genesis:", e);
-					}
+					const allPositions = listRes.data?.list || [];
+					const genesisPos = allPositions.find(
+						(p: PositionQuery) => p.position.toLowerCase() === MAINNET_GENESIS_POSITION.toLowerCase()
+					);
+					if (!genesisPos) return;
 
-					if (noCloneable) {
-						const listRes = await apiClient.get<ApiPositionsListing>(`/positions/list`);
-						const allPositions = listRes.data?.list || [];
-						const genesisPos = allPositions.find(
-							(p: PositionQuery) => p.position.toLowerCase() === MAINNET_GENESIS_POSITION.toLowerCase()
-						);
-						if (genesisPos) {
-							defaultPos = genesisPos;
-							bestParent = genesisPos;
-						}
-					}
+					const bestParent = bestCloneableRes?.data?.position ?? null;
+					const noCloneable = bestParent == null;
+					const cloneTarget = bestParent ?? genesisPos;
 
-					if (defaultPos) {
-						setDefaultPosition(defaultPos);
-						setNoCloneableParent(noCloneable);
-						setBestParentPosition(bestParent);
-						const nativeToken: TokenBalance = {
-							symbol: WAGMI_CHAIN.nativeCurrency.symbol,
-							name: WAGMI_CHAIN.nativeCurrency.name,
-							address: "0x0000000000000000000000000000000000000000" as Address,
-							decimals: defaultPos.collateralDecimals,
-							balanceOf: 0n,
-							allowance: {},
-						};
-						handleOnSelectedToken(nativeToken, bestParent ?? defaultPos, defaultPos);
-						return;
-					}
+					setDefaultPosition(genesisPos);
+					setNoCloneableParent(noCloneable);
+					setBestParentPosition(cloneTarget);
+
+					const nativeToken: TokenBalance = {
+						symbol: WAGMI_CHAIN.nativeCurrency.symbol,
+						name: WAGMI_CHAIN.nativeCurrency.name,
+						address: "0x0000000000000000000000000000000000000000" as Address,
+						decimals: genesisPos.collateralDecimals,
+						balanceOf: 0n,
+						allowance: {},
+					};
+					handleOnSelectedToken(nativeToken, cloneTarget, genesisPos);
+					return;
 				}
 
 				// Testnet: use default endpoint
