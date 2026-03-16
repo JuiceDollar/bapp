@@ -108,14 +108,22 @@ export default function PositionCreate({}) {
 				setNoCloneableParent(false);
 				const apiClient = getApiClient(chainId);
 
-				// Mainnet: 1) best-cloneable (WCBTC for now; later = user-selected). 2) If null, fallback = /positions/list for genesis.
+				// Mainnet: 1) best-cloneable (WCBTC for now; later = user-selected). 2) If null or error, fallback = /positions/list for genesis.
 				if (chainId === MAINNET_CHAIN_ID) {
-					const bestRes = await apiClient.get<{ position: PositionQuery | null }>(
-						`/positions/best-cloneable?collateral=${MAINNET_DEFAULT_COLLATERAL_WCBTC}`
-					);
-					let defaultPos: PositionQuery | null = bestRes.data?.position ?? null;
-					let bestParent = defaultPos;
-					let noCloneable = defaultPos == null;
+					let defaultPos: PositionQuery | null = null;
+					let bestParent: PositionQuery | null = null;
+					let noCloneable = true;
+
+					try {
+						const bestRes = await apiClient.get<{ position: PositionQuery | null }>(
+							`/positions/best-cloneable?collateral=${MAINNET_DEFAULT_COLLATERAL_WCBTC}`
+						);
+						defaultPos = bestRes.data?.position ?? null;
+						bestParent = defaultPos;
+						noCloneable = defaultPos == null;
+					} catch (e) {
+						console.warn("best-cloneable endpoint failed, falling back to genesis:", e);
+					}
 
 					if (noCloneable) {
 						const listRes = await apiClient.get<ApiPositionsListing>(`/positions/list`);
