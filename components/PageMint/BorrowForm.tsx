@@ -315,7 +315,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 		setExpirationDate(toDate(maxExp));
 		setLiquidationPrice(liqPrice.toString());
 
-		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(position, BigInt(maxAmount), liqPrice, toDate(maxExp));
+		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(position, BigInt(defaultAmount), liqPrice, toDate(maxExp));
 
 		setLoanDetails(loanDetails);
 		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
