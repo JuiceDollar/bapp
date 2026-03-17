@@ -355,6 +355,7 @@
 		"collateral": "Garanzia",
 		"liquidation_price": "Prezzo di Liquidazione",
 		"minted": "Emesso",
+		"amount_borrowed": "Importo prestato",
 		"state": "Stato",
 		"value": "Valore",
 		"market_price": "Prezzo di Mercato",

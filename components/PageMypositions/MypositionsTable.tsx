@@ -21,7 +21,7 @@ export default function MypositionsTable() {
 	const headers: string[] = [
 		t("my_positions.collateral"),
 		t("my_positions.liquidation_price"),
-		t("my_positions.minted"),
+		t("my_positions.amount_borrowed"),
 		t("my_positions.state"),
 	];
 	const subHeaders: string[] = [

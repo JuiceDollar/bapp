@@ -12,6 +12,7 @@ import Button from "@components/Button";
 import { useTranslation } from "next-i18next";
 import { getCarryOnQueryParams, TOKEN_SYMBOL, toQueryString, normalizeTokenSymbol } from "@utils";
 import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
+import { getPositionNetDebtDisplay } from "../../utils/loanCalculations";
 import { useRef } from "react";
 
 interface Props {
@@ -111,10 +112,10 @@ export default function MonitoringRow({ headers, position, tab }: Props) {
 				</div>
 			</div>
 
-			{/* Loan Amount */}
+			{/* Loan Amount (net debt) */}
 			<div className="flex flex-col gap-2">
 				<div className={`col-span-2 text-md`}>
-					{formatCurrency(formatUnits(BigInt(position.principal), 18), 2, 2)} {TOKEN_SYMBOL}
+					{formatCurrency(getPositionNetDebtDisplay(position), 2, 2)} {TOKEN_SYMBOL}
 				</div>
 			</div>
 

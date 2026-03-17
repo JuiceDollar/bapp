@@ -355,6 +355,7 @@
 		"collateral": "Collateral",
 		"liquidation_price": "Liquidation Price",
 		"minted": "Minted",
+		"amount_borrowed": "Amount borrowed",
 		"state": "State",
 		"value": "Value",
 		"market_price": "Market Price",

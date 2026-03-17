@@ -352,6 +352,7 @@
 		"collateral": "Garantie",
 		"liquidation_price": "Prix de liquidation",
 		"minted": "Frappés",
+		"amount_borrowed": "Montant emprunté",
 		"state": "État",
 		"value": "Valeur",
 		"market_price": "Prix du marché",

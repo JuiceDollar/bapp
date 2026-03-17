@@ -352,6 +352,7 @@
 		"collateral": "Colateral",
 		"liquidation_price": "Precio de liquidación",
 		"minted": "Acuñado",
+		"amount_borrowed": "Monto prestado",
 		"state": "Estado",
 		"value": "Valor",
 		"market_price": "Precio de mercado",
