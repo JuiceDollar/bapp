@@ -22,6 +22,22 @@ export const getAvailableToBorrow = (liqPrice: bigint, collateral: bigint, requi
 export const getNetDebt = (principal: bigint, interest: bigint, reserveContribution: number): bigint =>
 	getAmountLended(principal, reserveContribution) + interest;
 
+const toDisplay = (raw: bigint, decimals: number): number => Number(raw) / 10 ** decimals;
+
+/** Net debt as display number for a position (for UI tables). */
+export const getPositionNetDebtDisplay = (p: PositionQuery): number =>
+	toDisplay(getNetDebt(BigInt(p.principal), BigInt(p.interest ?? "0"), p.reserveContribution ?? 0), p.stablecoinDecimals);
+
+/** Available JUSD the user would receive if they borrowed to the liq limit (after reserve). */
+export const getPositionAvailableToReceiveDisplay = (p: PositionQuery): number =>
+	toDisplay(
+		getAmountLended(
+			getAvailableToBorrow(BigInt(p.price || p.virtualPrice), BigInt(p.collateralBalance), BigInt(p.principal)),
+			p.reserveContribution ?? 0
+		),
+		p.stablecoinDecimals
+	);
+
 /**
  * Convert a wallet repayment amount to the raw debt reduction it achieves.
  * Interest is paid 1:1 from wallet. Principal portion gets the reserve discount (burns more debt per wallet unit).

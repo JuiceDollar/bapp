@@ -4,6 +4,7 @@ import { PositionQuery, ChallengesQueryItem } from "@juicedollar/api";
 import { RootState } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
 import { formatCurrency } from "../../utils/format";
+import { getPositionNetDebtDisplay, getPositionAvailableToReceiveDisplay } from "../../utils/loanCalculations";
 import MyPositionsDisplayCollateral from "./MyPositionsDisplayCollateral";
 import { useRouter as useNavigate } from "next/navigation";
 import Button from "@components/Button";
@@ -39,10 +40,11 @@ export default function MypositionsRow({ headers, subHeaders, position, tab }: P
 	// 1 JUSD = 1 USD, so collateral value is directly in USD
 	const balanceUSD: number = balance * collTokenPrice;
 
-	const loanJUSD: number = (parseInt(position.principal) + parseInt(position.interest ?? "0")) / 10 ** position.stablecoinDecimals;
+	const loanJUSD = getPositionNetDebtDisplay(position);
+	const availableJUSD = getPositionAvailableToReceiveDisplay(position);
 
-	const liquidationDEURO: number = parseInt(position.price) / 10 ** (36 - position.collateralDecimals);
-	const liquidationPct: number = (balanceUSD / (liquidationDEURO * balance)) * 100;
+	const liquidationJUSD: number = parseInt(position.price) / 10 ** (36 - position.collateralDecimals);
+	const liquidationPct: number = (balanceUSD / (liquidationJUSD * balance)) * 100;
 
 	const positionChallenges = challenges?.map?.[position.position.toLowerCase() as Address] ?? [];
 	const positionChallengesActive = positionChallenges.filter((ch: ChallengesQueryItem) => ch.status == "Active") ?? [];
@@ -159,18 +161,18 @@ export default function MypositionsRow({ headers, subHeaders, position, tab }: P
 			{/* Liquidation */}
 			<div className="flex flex-col">
 				<span className={liquidationPct < 110 ? `text-md font-bold text-text-warning` : "text-md "}>
-					{formatCurrency(liquidationDEURO, 2, 2)} {TOKEN_SYMBOL}
+					{formatCurrency(liquidationJUSD, 2, 2)} {TOKEN_SYMBOL}
 				</span>
 				<span className="text-sm text-text-subheader">{formatCurrency(collTokenPrice, 2, 2)} USD</span>
 			</div>
 
-			{/* Loan Value */}
+			{/* Loan Amount (net debt) / Available (to receive, after reserve) */}
 			<div className="flex flex-col">
 				<span className="text-md ">
 					{formatCurrency(loanJUSD, 2, 2)} {TOKEN_SYMBOL}
 				</span>
 				<span className="text-sm text-text-subheader">
-					{formatCurrency(balance * liquidationDEURO - loanJUSD, 2, 2)} {TOKEN_SYMBOL}
+					{formatCurrency(availableJUSD, 2, 2)} {TOKEN_SYMBOL}
 				</span>
 			</div>
 
