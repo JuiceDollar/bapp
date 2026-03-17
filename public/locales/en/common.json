@@ -324,7 +324,8 @@
 			"liq_price_exceeds_reference": "New liquidation price exceeds the maximum allowed",
 			"price_too_high": "Price cannot exceed maximum allowed",
 			"price_too_low": "Price cannot be below minimum required for collateral",
-			"insufficient_collateral_for_requirements": "Insufficient collateral for price adjustment"
+			"insufficient_collateral_for_requirements": "Insufficient collateral for price adjustment",
+			"mint_exceeds_max_for_price": "Can mint at most {{amount}} {{symbol}} at this price."
 		},
 		"txs": {
 			"creating_position": "Creating a new position",

@@ -321,7 +321,8 @@
 			"liq_price_exceeds_reference": "Der neue Liquidationspreis überschreitet das zulässige Maximum",
 			"price_too_high": "Preis kann das zulässige Maximum nicht überschreiten",
 			"price_too_low": "Preis kann nicht unter dem für die Besicherung erforderlichen Minimum liegen",
-			"insufficient_collateral_for_requirements": "Unzureichende Besicherung für Preisanpassung"
+			"insufficient_collateral_for_requirements": "Unzureichende Besicherung für Preisanpassung",
+			"mint_exceeds_max_for_price": "Maximal {{amount}} {{symbol}} zu diesem Preis mintbar."
 		},
 		"txs": {
 			"creating_position": "Erstellung einer neuen Position",
