@@ -351,6 +351,7 @@
 		"collateral": "Besicherungen",
 		"liquidation_price": "Liquidationspreis",
 		"minted": "Geprägt",
+		"amount_borrowed": "Ausleihbetrag",
 		"state": "Status",
 		"value": "Wert",
 		"market_price": "Marktpreis",

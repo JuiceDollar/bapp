@@ -21,7 +21,7 @@ export default function MypositionsTable() {
 	const headers: string[] = [
 		t("my_positions.collateral"),
 		t("my_positions.liquidation_price"),
-		t("my_positions.minted"),
+		t("my_positions.amount_borrowed"),
 		t("my_positions.state"),
 	];
 	const subHeaders: string[] = [
@@ -164,7 +164,7 @@ function sortPositions(params: SortPositions): PositionQuery[] {
 			return calc(b) - calc(a);
 		});
 	} else if (tab === headers[2]) {
-		// sort for minted
+		// sort for amount borrowed (net debt)
 		positions.sort((a, b) => {
 			return parseInt(b.principal) - parseInt(a.principal);
 		});
