@@ -195,6 +195,7 @@
 		"pay_back_and_close": "Pay back and close position",
 		"available_to_borrow": "Available to lend",
 		"pay_back_amount": "Pay back amount",
+		"amount_borrowed": "Amount borrowed",
 		"current_expiration_date": "Current expiration date",
 		"days_until_expiration": "{{days}} days until expiration",
 		"expires_today": "Expires today",

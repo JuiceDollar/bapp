@@ -194,6 +194,7 @@
 		"pay_back_and_close": "Zurückzahlen und Position schließen",
 		"available_to_borrow": "Kann ausgeliehen werden",
 		"pay_back_amount": "Rückzahlungsbetrag",
+		"amount_borrowed": "Ausleihbetrag",
 		"current_expiration_date": "Aktuelles Ablaufdatum",
 		"days_until_expiration": "{{days}} Tage bis zum Ablauf",
 		"expires_today": "Läuft heute ab",

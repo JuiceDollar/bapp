@@ -194,6 +194,7 @@
 		"pay_back_and_close": "Pagar y cerrar posición",
 		"available_to_borrow": "Disponible para pedir prestado",
 		"pay_back_amount": "Cantidad a pagar",
+		"amount_borrowed": "Monto prestado",
 		"current_expiration_date": "Fecha de vencimiento actual",
 		"days_until_expiration": "{{days}} días hasta el vencimiento",
 		"expires_today": "Vence hoy",
