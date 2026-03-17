@@ -12,6 +12,7 @@ import { useState } from "react";
 import { useTranslation } from "next-i18next";
 import { INTERNAL_PROTOCOL_POSITIONS } from "@utils";
 import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
+import { getNetDebt } from "../../utils/loanCalculations";
 import { useExpandableTable } from "@hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
