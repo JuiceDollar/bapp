@@ -616,7 +616,11 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 							/>
 						</div>
 						<DetailsExpandablePanel
-							loanDetails={loanDetails}
+							loanDetails={
+								loanDetails && loanDetails.liquidationPrice < BigInt(liquidationPrice)
+									? { ...loanDetails, liquidationPrice: BigInt(liquidationPrice) }
+									: loanDetails
+							}
 							startingLiquidationPrice={BigInt(liquidationPrice)}
 							collateralDecimals={selectedPosition?.collateralDecimals || 0}
 							collateralPriceUsd={collateralPriceUsd}
