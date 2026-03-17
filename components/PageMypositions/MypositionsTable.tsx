@@ -164,7 +164,7 @@ function sortPositions(params: SortPositions): PositionQuery[] {
 			return calc(b) - calc(a);
 		});
 	} else if (tab === headers[2]) {
-		// sort for amount borrowed (net debt)
+		// sort for minted
 		positions.sort((a, b) => {
 			return parseInt(b.principal) - parseInt(a.principal);
 		});
