@@ -281,6 +281,19 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 		2
 	)?.toString();
 
+	const maxYouGet = useMemo(() => {
+		if (!selectedPosition || !collateralAmount || collateralAmount === "0" || !liquidationPrice || liquidationPrice === "0") return 0n;
+		const maxDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
+			selectedPosition,
+			BigInt(collateralAmount),
+			BigInt(liquidationPrice),
+			expirationDate || undefined
+		);
+		return maxDetails.amountToSendToWallet > 0n ? maxDetails.amountToSendToWallet : 0n;
+	}, [selectedPosition, collateralAmount, liquidationPrice, expirationDate]);
+
+	const isBorrowedAmountTooHigh = !!selectedPosition && BigInt(borrowedAmount || "0") > maxYouGet;
+
 	const handleOnSelectedToken = (token: TokenBalance, positionOverride?: PositionQuery, genesisPosition?: PositionQuery) => {
 		const position = positionOverride ?? bestParentPosition ?? defaultPosition;
 		if (!token || !position) return;
@@ -343,33 +356,32 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 
 		if (!selectedPosition) return;
 
-		const loanDetails = getLoanDetailsByCollateralAndYouGetAmount(
+		const details = getLoanDetailsByCollateralAndYouGetAmount(
 			selectedPosition,
 			BigInt(collateralAmount),
 			BigInt(value),
 			expirationDate || undefined
 		);
-		setLoanDetails(loanDetails);
-		setLiquidationPrice(loanDetails.startingLiquidationPrice.toString());
+		setLoanDetails(details);
 	};
 
-	useEffect(() => {
-		if (!selectedPosition || !collateralAmount || !liquidationPrice || !expirationDate) return;
+	const onExpirationDateChange = (date: Date | undefined | null) => {
+		setExpirationDate(date);
+		if (!selectedPosition || !collateralAmount || !date) return;
 
-		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
+		const details = getLoanDetailsByCollateralAndYouGetAmount(
 			selectedPosition,
 			BigInt(collateralAmount),
-			BigInt(liquidationPrice),
-			expirationDate
+			BigInt(borrowedAmount || "0"),
+			date
 		);
-		setLoanDetails(loanDetails);
-		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
-	}, [expirationDate, collateralAmount, liquidationPrice, selectedPosition]);
+		setLoanDetails(details);
+	};
 
 	const handleMaxExpirationDate = () => {
 		const maxExp = defaultPosition?.expiration || selectedPosition?.expiration;
 		if (maxExp) {
-			setExpirationDate(toDate(maxExp));
+			onExpirationDateChange(toDate(maxExp));
 		}
 	};
 
@@ -563,7 +575,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 									: expirationDate
 							}
 							placeholderText="YYYY-MM-DD"
-							onChange={setExpirationDate}
+							onChange={onExpirationDateChange}
 							rightAdornment={expirationDate ? <MaxButton onClick={handleMaxExpirationDate} /> : null}
 						/>
 						<div className="self-stretch text-xs font-medium leading-normal">{t("mint.expiration_date_description")}</div>
@@ -571,7 +583,37 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 					<div className="self-stretch flex-col justify-start items-start gap-4 flex">
 						<div className="self-stretch flex-col justify-start items-center gap-1.5 flex">
 							<InputTitle>{t("mint.you_get")}</InputTitle>
-							<NormalInputOutlined value={borrowedAmount} onChange={onYouGetChange} decimals={18} />
+							<NormalInputOutlined
+								value={borrowedAmount}
+								onChange={onYouGetChange}
+								decimals={18}
+								isError={isBorrowedAmountTooHigh}
+								adornamentRow={
+									selectedPosition && (
+										<div className="self-stretch justify-start items-center inline-flex">
+											<div className="grow shrink basis-0 h-4 px-2 justify-start items-center gap-2 flex max-w-full overflow-hidden">
+												{isBorrowedAmountTooHigh && (
+													<div className="text-text-warning text-xs font-medium leading-none">
+														{t("mint.error.mint_exceeds_max_for_price", {
+															amount: formatCurrency(formatUnits(maxYouGet, 18), 2, 2),
+															symbol: TOKEN_SYMBOL,
+														})}
+													</div>
+												)}
+											</div>
+											<div className="h-7 justify-end items-center gap-2.5 flex">
+												<div className="text-input-label text-xs font-medium leading-none">
+													{formatCurrency(formatUnits(maxYouGet, 18), 2, 2)} {TOKEN_SYMBOL}
+												</div>
+												<MaxButton
+													disabled={maxYouGet === 0n}
+													onClick={() => onYouGetChange(maxYouGet.toString())}
+												/>
+											</div>
+										</div>
+									)
+								}
+							/>
 						</div>
 						<DetailsExpandablePanel
 							loanDetails={loanDetails}
@@ -605,6 +647,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 									!selectedPosition ||
 									!selectedCollateral ||
 									isLiquidationPriceTooHigh ||
+									isBorrowedAmountTooHigh ||
 									!!collateralError ||
 									isMaxedOut ||
 									noCloneableParent ||

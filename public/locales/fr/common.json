@@ -320,7 +320,8 @@
 			"liq_price_exceeds_reference": "Le nouveau prix de liquidation dépasse le maximum autorisé",
 			"price_too_high": "Le prix ne peut pas dépasser le maximum autorisé",
 			"price_too_low": "Le prix ne peut pas être inférieur au minimum requis pour la garantie",
-			"insufficient_collateral_for_requirements": "Garantie insuffisante pour l'ajustement du prix"
+			"insufficient_collateral_for_requirements": "Garantie insuffisante pour l'ajustement du prix",
+			"mint_exceeds_max_for_price": "Maximum {{amount}} {{symbol}} émissible à ce prix."
 		},
 		"txs": {
 			"creating_position": "Création d'une nouvelle position",
