@@ -20,6 +20,10 @@ export enum FormatType {
 	"tiny",
 }
 
+export function getCollateralFractionDigits(collateralDecimals: number, maxDecimals = 8): [number, number] {
+	return [0, Math.min(maxDecimals, collateralDecimals)];
+}
+
 export const formatCurrency = (value: string | number, minimumFractionDigits = 0, maximumFractionDigits = 2, format = FormatType.us) => {
 	const amount = typeof value === "string" ? parseFloat(value) : value;
 

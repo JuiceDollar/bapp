@@ -27,6 +27,7 @@ interface Props {
 	onChange?: (value: string) => void;
 	disabled?: boolean;
 	error?: string;
+	balanceFractionDigits?: [number, number];
 }
 
 export default function TokenInput({
@@ -45,7 +46,9 @@ export default function TokenInput({
 	disabled,
 	onChange,
 	error,
+	balanceFractionDigits,
 }: Props) {
+	const balanceDigits = balanceFractionDigits ?? getDisplayPrecision(symbol);
 	return (
 		<div>
 			<div className="mb-1 flex gap-2 px-1">
@@ -57,7 +60,7 @@ export default function TokenInput({
 					>
 						{balanceLabel}
 						<span className="font-bold text-link">
-							{formatCurrency(formatUnits(max, Number(digit)), ...getDisplayPrecision(symbol))} {symbol}
+							{formatCurrency(formatUnits(max, Number(digit)), ...balanceDigits)} {symbol}
 						</span>
 					</div>
 				)}

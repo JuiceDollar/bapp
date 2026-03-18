@@ -20,6 +20,7 @@ interface Props {
 	usdPrice?: number;
 	logoSize?: number;
 	presentationPrecision?: number;
+	displayFractionDigits?: [number, number];
 }
 
 const getDefaultPrecision = (currency?: string): [number, number] => {
@@ -44,6 +45,7 @@ export default function DisplayAmount({
 	usdPrice,
 	logoSize = 8,
 	presentationPrecision = undefined,
+	displayFractionDigits,
 }: Props) {
 	const url = useContractUrl(address || zeroAddress);
 
@@ -52,8 +54,11 @@ export default function DisplayAmount({
 		window.open(url, "_blank");
 	};
 
-	const [minDec, maxDec] =
-		presentationPrecision !== undefined ? [presentationPrecision, presentationPrecision] : getDefaultPrecision(currency);
+	const [minDec, maxDec] = displayFractionDigits
+		? displayFractionDigits
+		: presentationPrecision !== undefined
+		? [presentationPrecision, presentationPrecision]
+		: getDefaultPrecision(currency);
 
 	return (
 		<div className={`flex items-center ${className}`}>

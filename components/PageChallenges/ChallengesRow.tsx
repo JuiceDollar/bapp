@@ -4,7 +4,7 @@ import { ChallengesId, ChallengesQueryItem } from "@juicedollar/api";
 import { RootState } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
 import TokenLogo from "@components/TokenLogo";
-import { formatCurrency } from "../../utils/format";
+import { formatCurrency, getCollateralFractionDigits } from "../../utils/format";
 import { useRouter as useNavigation } from "next/navigation";
 import Button from "@components/Button";
 import { useContractUrl } from "@hooks";
@@ -65,6 +65,7 @@ export default function ChallengesRow({ headers, challenge, tab }: Props) {
 
 	const challengeRemainingSize: number =
 		(parseInt(challenge.size.toString()) - parseInt(challenge.filledSize.toString())) / 10 ** position.collateralDecimals;
+	const availableFractionDigits = getCollateralFractionDigits(Number(position.collateralDecimals));
 
 	const openExplorer = (e: any) => {
 		e.preventDefault();
@@ -91,8 +92,7 @@ export default function ChallengesRow({ headers, challenge, tab }: Props) {
 					</span>
 					<span className={`col-span-2 text-md font-extrabold text-text-primary`}>{`${formatCurrency(
 						challengeRemainingSize,
-						3,
-						3
+						...availableFractionDigits
 					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</span>
 				</div>
 
@@ -103,8 +103,7 @@ export default function ChallengesRow({ headers, challenge, tab }: Props) {
 					</div>
 					<div className={`col-span-2 text-md text-text-primary font-semibold`}>{`${formatCurrency(
 						challengeRemainingSize,
-						3,
-						3
+						...availableFractionDigits
 					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</div>
 				</div>
 			</div>

@@ -5,7 +5,16 @@ import AppBox from "@components/AppBox";
 import TokenInput from "@components/Input/TokenInput";
 import DisplayAmount from "@components/DisplayAmount";
 import { Address, erc20Abi, formatUnits, maxUint256, zeroAddress } from "viem";
-import { ContractUrl, formatBigInt, formatCurrency, formatDate, shortenAddress, TOKEN_SYMBOL, normalizeTokenSymbol } from "@utils";
+import {
+	ContractUrl,
+	formatBigInt,
+	formatCurrency,
+	formatDate,
+	getCollateralFractionDigits,
+	shortenAddress,
+	TOKEN_SYMBOL,
+	normalizeTokenSymbol,
+} from "@utils";
 import Link from "next/link";
 import Button from "@components/Button";
 import { useAccount, useBlockNumber, useChainId } from "wagmi";
@@ -257,6 +266,10 @@ export default function ChallengePlaceBid() {
 								error={error}
 								placeholder={t("common.collateral_amount")}
 								balanceLabel={t("common.available_label")}
+								balanceFractionDigits={getCollateralFractionDigits(
+									Number(position.collateralDecimals),
+									Number(position.collateralDecimals)
+								)}
 							/>
 							<div className="flex flex-col">
 								<span>
@@ -278,6 +291,10 @@ export default function ChallengePlaceBid() {
 									currency={normalizeTokenSymbol(position.collateralSymbol)}
 									address={position.collateral}
 									digits={position.collateralDecimals}
+									displayFractionDigits={getCollateralFractionDigits(
+										Number(position.collateralDecimals),
+										Number(position.collateralDecimals)
+									)}
 									className="mt-4"
 								/>
 							</AppBox>
