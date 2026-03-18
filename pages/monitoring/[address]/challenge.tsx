@@ -6,15 +6,7 @@ import DisplayAmount from "@components/DisplayAmount";
 import TokenInput from "@components/Input/TokenInput";
 import { erc20Abi, zeroAddress } from "viem";
 import { useEffect, useState } from "react";
-import {
-	ContractUrl,
-	formatBigInt,
-	formatDuration,
-	shortenAddress,
-	TOKEN_SYMBOL,
-	normalizeTokenSymbol,
-	NATIVE_WRAPPED_SYMBOLS,
-} from "@utils";
+import { formatBigInt, formatDuration, shortenAddress, TOKEN_SYMBOL, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { useNativeBalance } from "../../../hooks/useNativeBalance";
 import { useAccount, useBlockNumber, useChainId } from "wagmi";
 import { Address } from "viem";
@@ -54,7 +46,6 @@ export default function PositionChallenge() {
 
 	const positions = useSelector((state: RootState) => state.positions.list?.list || []);
 	const position = positions.find((p) => p.position == addressQuery);
-	const prices = useSelector((state: RootState) => state.prices.coingecko);
 
 	const { t } = useTranslation();
 
@@ -64,7 +55,6 @@ export default function PositionChallenge() {
 
 	useEffect(() => {
 		const acc: Address | undefined = account.address;
-		const fc: Address = ADDRESS[chainId].juiceDollar;
 		if (acc === undefined) return;
 		if (!position || !position.collateral) return;
 
@@ -102,6 +92,7 @@ export default function PositionChallenge() {
 
 	const _collBal: bigint = BigInt(position.collateralBalance);
 	const belowMinBalance: boolean = _collBal < BigInt(position.minimumCollateral);
+	const needsErc20Approve = !isNativeWrappedPosition && amount > userAllowance;
 
 	// ---------------------------------------------------------------------------
 	const onChangeAmount = (value: string) => {
@@ -176,13 +167,14 @@ export default function PositionChallenge() {
 	const handleChallenge = async () => {
 		try {
 			setChallenging(true);
-
+			const challengeValue = isNativeWrappedPosition ? amount : undefined;
 			const challengeWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].mintingHubGateway,
 				abi: MintingHubV2ABI,
 				functionName: "challenge",
 				args: [position.position, amount, BigInt(position.price)],
+				...(challengeValue !== undefined ? { value: challengeValue } : {}),
 			});
 
 			const toastContent = [
@@ -297,8 +289,8 @@ export default function PositionChallenge() {
 							</AppBox>
 						</div>
 						<div className="mx-auto mt-4 w-72 max-w-full flex-col">
-							<GuardToAllowedChainBtn label={amount > userAllowance ? t("common.approve") : t("monitoring.challenge")}>
-								{amount > userAllowance ? (
+							<GuardToAllowedChainBtn label={needsErc20Approve ? t("common.approve") : t("monitoring.challenge")}>
+								{needsErc20Approve ? (
 									<Button isLoading={isApproving} disabled={!!error} onClick={() => handleApprove()}>
 										{t("common.approve")}
 									</Button>
