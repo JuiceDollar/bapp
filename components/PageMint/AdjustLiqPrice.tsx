@@ -32,6 +32,7 @@ enum StrategyKey {
 interface AdjustLiqPriceProps {
 	position: PositionQuery;
 	positionPrice: bigint;
+	virtualPrice: bigint;
 	priceDecimals: number;
 	isInCooldown: boolean;
 	cooldownRemainingFormatted: string | null;
@@ -52,6 +53,7 @@ interface AdjustLiqPriceProps {
 export const AdjustLiqPrice = ({
 	position,
 	positionPrice,
+	virtualPrice,
 	priceDecimals,
 	isInCooldown,
 	cooldownRemainingFormatted,
@@ -71,7 +73,7 @@ export const AdjustLiqPrice = ({
 	const chainId = useChainId() ?? WAGMI_CHAIN.id;
 	const { address: userAddress } = useAccount();
 
-	const [deltaAmount, setDeltaAmount] = useState<string>("");
+	const [targetPriceStr, setTargetPriceStr] = useState<string>("");
 	const [isIncrease, setIsIncrease] = useState(true);
 	const [isTxOnGoing, setIsTxOnGoing] = useState(false);
 	const [activeStrategy, setActiveStrategy] = useState<StrategyKey | null>(null);
@@ -90,8 +92,14 @@ export const AdjustLiqPrice = ({
 	const pairNotation = `${collateralSymbol}/${position.stablecoinSymbol}`;
 	const rc = position.reserveContribution || 0;
 
-	const delta = deltaAmount ? BigInt(deltaAmount) : 0n;
-	const newPrice = isIncrease ? positionPrice + delta : positionPrice > delta ? positionPrice - delta : 0n;
+	const newPrice = targetPriceStr ? BigInt(targetPriceStr) : positionPrice;
+	const delta = isIncrease
+		? newPrice > positionPrice
+			? newPrice - positionPrice
+			: 0n
+		: positionPrice > newPrice
+		? positionPrice - newPrice
+		: 0n;
 	const minPriceNoStrategy = collateralBalance > 0n && currentDebt > 0n ? (currentDebt * PRICE_SCALE) / collateralBalance : 0n;
 	const needsStrategy = !isIncrease && delta > 0n && newPrice < minPriceNoStrategy;
 
@@ -110,9 +118,10 @@ export const AdjustLiqPrice = ({
 
 	const isOwner = useIsPositionOwner(position);
 	const reference = useReferencePosition(position, positionPrice);
-	const maxPriceIncrease = positionPrice * 2n;
-	const deltaIncrease = maxPriceIncrease - positionPrice;
-	const maxDeltaIncrease = deltaIncrease * 10n >= positionPrice ? deltaIncrease : 0n;
+	const increaseBase = virtualPrice > positionPrice ? virtualPrice : positionPrice;
+	const maxPriceIncrease = increaseBase * 2n;
+	const deltaIncrease = maxPriceIncrease - increaseBase;
+	const maxDeltaIncrease = deltaIncrease * 10n >= increaseBase ? deltaIncrease : 0n;
 
 	const useReference = isIncrease && reference.address !== null && newPrice <= reference.price;
 	const showCooldownMessage = isIncrease && !useReference && delta > 0n;
@@ -143,7 +152,7 @@ export const AdjustLiqPrice = ({
 	const needsApproval = needsCollateralApproval || needsJusdApproval;
 
 	useEffect(() => {
-		setDeltaAmount("");
+		setTargetPriceStr("");
 		setActiveStrategy(null);
 	}, [isIncrease]);
 
@@ -151,28 +160,11 @@ export const AdjustLiqPrice = ({
 		if (!needsStrategy) setActiveStrategy(null);
 	}, [needsStrategy]);
 
-	const positionPriceRounded = (positionPrice / PRICE_SCALE) * PRICE_SCALE;
-
 	const handleSliderChange = (val: string) => {
-		if (!val) {
-			setDeltaAmount("");
-			return;
-		}
-		const newPriceValue = BigInt(val);
-		if (!isIncrease && newPriceValue >= positionPrice) {
-			setDeltaAmount("");
-			return;
-		}
-		const rounded = (newPriceValue / PRICE_SCALE) * PRICE_SCALE;
-		if (!isIncrease && rounded >= positionPriceRounded) {
-			setDeltaAmount("");
-			return;
-		}
-		const newDelta = isIncrease ? rounded - positionPrice : positionPrice - rounded;
-		setDeltaAmount(newDelta > 0n ? newDelta.toString() : "");
+		setTargetPriceStr(val || "");
 	};
 
-	const newPriceForDisplay = (newPrice / PRICE_SCALE) * PRICE_SCALE;
+	const newPriceForDisplay = targetPriceStr ? newPrice : virtualPrice;
 
 	const handleApprove = async () => {
 		setIsTxOnGoing(true);
@@ -342,6 +334,7 @@ export const AdjustLiqPrice = ({
 	const isDisabled =
 		!isOwner ||
 		delta === 0n ||
+		(isIncrease && newPrice <= virtualPrice) ||
 		(isIncrease && isInCooldown) ||
 		(needsStrategy && activeStrategy === null) ||
 		(activeStrategy === StrategyKey.ADD_COLLATERAL && !canAffordAddCollateral) ||
@@ -386,9 +379,10 @@ export const AdjustLiqPrice = ({
 					<SliderInputOutlined
 						value={newPriceForDisplay.toString()}
 						onChange={handleSliderChange}
-						min={isIncrease ? positionPrice : sliderDecreaseMin}
+						min={isIncrease ? increaseBase : sliderDecreaseMin}
 						max={isIncrease ? maxPriceIncrease : positionPrice}
 						decimals={priceDecimals}
+						displayDecimals={2}
 						hideTrailingZeros
 					/>
 				)}
@@ -510,13 +504,13 @@ export const AdjustLiqPrice = ({
 				<div className="flex justify-between items-center gap-3 text-xs sm:text-sm">
 					<span className="text-text-muted2 flex-shrink-0">{t("mint.current_liquidation_price")}</span>
 					<span className="font-medium text-text-title text-right flex-1 min-w-0">
-						{formatCurrency(formatUnits(positionPrice, priceDecimals), 2, 2)} {pairNotation}
+						{formatCurrency(formatUnits(virtualPrice, priceDecimals), 2, 2)} {pairNotation}
 					</span>
 				</div>
 				<div className="flex justify-between items-center gap-3 text-xs sm:text-base pt-1.5 sm:pt-2 border-t border-gray-300 dark:border-gray-600">
 					<span className="font-semibold sm:font-bold text-text-title flex-shrink-0">{t("mint.new_liq_price")}</span>
 					<span className="font-semibold sm:font-bold text-text-title text-right flex-1 min-w-0">
-						{formatCurrency(formatUnits(delta > 0n ? newPrice : positionPrice, priceDecimals), 2, 2)} {pairNotation}
+						{formatCurrency(formatUnits(newPriceForDisplay, priceDecimals), 2, 2)} {pairNotation}
 					</span>
 				</div>
 			</div>
