@@ -89,6 +89,13 @@ export function BigNumberInput({
 			return;
 		}
 
+		if (displayDecimals !== undefined) {
+			const dotIdx = value.indexOf(".");
+			if (dotIdx !== -1 && value.length - dotIdx - 1 > displayDecimals) {
+				return;
+			}
+		}
+
 		let newValue: BigNumber;
 		try {
 			newValue = parseUnits(value, decimals);

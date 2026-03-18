@@ -13,6 +13,7 @@ interface PositionManageData {
 	position: PositionQuery | undefined;
 	principal: bigint;
 	positionPrice: bigint;
+	virtualPrice: bigint;
 	collateralBalance: bigint;
 	currentDebt: bigint;
 	collateralRequirement: bigint;
@@ -80,6 +81,7 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 						args: [userAddress as Address, position.position as Address],
 					},
 					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "getInterest" },
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "virtualPrice" },
 			  ]
 			: [],
 	});
@@ -95,11 +97,12 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 	const jusdBalance = data?.[8]?.result || 0n;
 	const collateralAllowance = data?.[9]?.result || 0n;
 	const interest = (data?.[10]?.result as bigint) || 0n;
+	const virtualPriceRaw = (data?.[11]?.result as bigint) || 0n;
 
 	const collateralDecimals = position?.collateralDecimals || 18;
 	const priceDecimals = 36 - collateralDecimals;
-	const debtRatio = collateralBalance > 0n ? (currentDebt * BigInt(10 ** priceDecimals)) / collateralBalance : 0n;
-	const liqPrice = debtRatio > positionPrice ? debtRatio : positionPrice;
+	const virtualPriceValue = virtualPriceRaw > 0n ? virtualPriceRaw : positionPrice;
+	const liqPrice = virtualPriceValue;
 	const netDebt = getNetDebt(principal, interest, position?.reserveContribution ?? 0);
 
 	const now = BigInt(Math.floor(Date.now() / 1000));
@@ -120,6 +123,7 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 		position,
 		principal,
 		positionPrice,
+		virtualPrice: virtualPriceValue,
 		collateralBalance,
 		currentDebt,
 		interest,
