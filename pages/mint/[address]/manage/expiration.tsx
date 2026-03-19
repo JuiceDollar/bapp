@@ -13,7 +13,7 @@ export default function ManageExpiration() {
 	const router = useRouter();
 	const { address: addressQuery } = router.query;
 
-	const { position, isLoading } = usePositionManageData(addressQuery);
+	const { position, isLoading, isInCooldown, cooldownRemainingFormatted, cooldownEndsAt } = usePositionManageData(addressQuery);
 
 	if (isLoading || !position) {
 		return (
@@ -37,7 +37,12 @@ export default function ManageExpiration() {
 			<div className="md:mt-8 flex justify-center">
 				<AppCard className="max-w-lg w-full p-6 flex flex-col gap-y-6">
 					<SectionTitle className="!mb-0 text-center !text-xl">{t("mint.adjust_your_borrowing_position")}</SectionTitle>
-					<AdjustExpiration position={position} />
+					<AdjustExpiration
+						position={position}
+						isInCooldown={isInCooldown}
+						cooldownRemainingFormatted={cooldownRemainingFormatted}
+						cooldownEndsAt={cooldownEndsAt}
+					/>
 				</AppCard>
 			</div>
 		</>

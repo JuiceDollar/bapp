@@ -85,9 +85,12 @@ const selectStyles: StylesConfig<PriceOption, false> = {
 
 interface AdjustExpirationProps {
 	position: PositionQuery;
+	isInCooldown: boolean;
+	cooldownRemainingFormatted: string | null;
+	cooldownEndsAt?: Date;
 }
 
-export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
+export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingFormatted, cooldownEndsAt }: AdjustExpirationProps) => {
 	const [expirationDate, setExpirationDate] = useState<Date | undefined | null>(undefined);
 	const [isTxOnGoing, setIsTxOnGoing] = useState(false);
 	const [selectedTargetPrice, setSelectedTargetPrice] = useState<string | null>(null);
@@ -615,6 +618,14 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 				</div>
 			)}
 
+			{isInCooldown && (
+				<div className="text-xs sm:text-sm text-text-muted2 px-1">
+					{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
+					<br />
+					{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
+				</div>
+			)}
+
 			{/* Approval + Execute buttons */}
 			{!isOwner ? (
 				<Button className="text-lg leading-snug !font-extrabold" disabled>
@@ -625,7 +636,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					className="text-lg leading-snug !font-extrabold"
 					onClick={handleApproveCollateral}
 					isLoading={isTxOnGoing}
-					disabled={isTxOnGoing || noTargetsAvailable}
+					disabled={isTxOnGoing || noTargetsAvailable || isInCooldown}
 				>
 					{t("common.approve")} {collSymbol}
 				</Button>
@@ -634,7 +645,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 					className="text-lg leading-snug !font-extrabold"
 					onClick={handleApproveJusd}
 					isLoading={isTxOnGoing}
-					disabled={isTxOnGoing || noTargetsAvailable}
+					disabled={isTxOnGoing || noTargetsAvailable || isInCooldown}
 				>
 					{t("mint.approve_jusd_to_extend")}
 				</Button>
@@ -649,7 +660,8 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 						!isExtending ||
 						!selectedTarget ||
 						hasInsufficientBalance ||
-						hasInsufficientCollateral
+						hasInsufficientCollateral ||
+						isInCooldown
 					}
 				>
 					<>

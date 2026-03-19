@@ -335,7 +335,7 @@ export const AdjustLiqPrice = ({
 		!isOwner ||
 		delta === 0n ||
 		(isIncrease && newPrice <= virtualPrice) ||
-		(isIncrease && isInCooldown) ||
+		isInCooldown ||
 		(needsStrategy && activeStrategy === null) ||
 		(activeStrategy === StrategyKey.ADD_COLLATERAL && !canAffordAddCollateral) ||
 		(activeStrategy === StrategyKey.REPAY_DEBT && !canAffordRepayDebt);
@@ -515,14 +515,14 @@ export const AdjustLiqPrice = ({
 				</div>
 			</div>
 
-			{isIncrease && isInCooldown && (
+			{isInCooldown && (
 				<div className="text-xs sm:text-sm text-text-muted2 px-3 sm:px-4">
 					{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}
 					<br />
 					{t("mint.cooldown_ends_at", { date: cooldownEndsAt?.toLocaleString() })}
 				</div>
 			)}
-			{showCooldownMessage && (
+			{showCooldownMessage && !isInCooldown && (
 				<div className="text-xs sm:text-sm text-text-muted2 px-3 sm:px-4">
 					<div className="font-semibold mb-0.5 sm:mb-1">{t("mint.cooldown_active")}</div>
 					{t("mint.cooldown_increase_info")}
