@@ -420,7 +420,7 @@
 		"expiration_date": "Expiration Date",
 		"cooldown": "Cooldown",
 		"liquidation_price": "Liquidation Price",
-		"cooldown_message": "This position is subject to a cooldown period that ends on {{formatDate}} as its owner has recently increased the applicable liquidation price. The cooldown period gives other users an opportunity to challenge the position before additional dEuros can be minted.",
+		"cooldown_message": "This position is subject to a cooldown period that ends on {{formatDate}} as its owner has recently increased the applicable liquidation price. The cooldown period gives other users an opportunity to challenge the position before additional JUSD can be minted.",
 		"active_challenges": "Active Challenges",
 		"remaining_size": "Remaining Size",
 		"bid": "Bid",

@@ -417,7 +417,7 @@
 		"expiration_date": "Fecha de Caducidad",
 		"cooldown": "Período de Enfriamiento",
 		"liquidation_price": "Precio de liquidación",
-		"cooldown_message": "Esta posición está sujeta a un período de enfriamiento que finaliza el {{formatDate}}, ya que su propietario recientemente aumentó el precio de liquidación aplicable. El período de enfriamiento brinda a otros usuarios la oportunidad de desafiar la posición antes de que se puedan acuñar más dEuros.",
+		"cooldown_message": "Esta posición está sujeta a un período de enfriamiento que finaliza el {{formatDate}}, ya que su propietario recientemente aumentó el precio de liquidación aplicable. El período de enfriamiento brinda a otros usuarios la oportunidad de desafiar la posición antes de que se puedan acuñar más JUSD.",
 		"active_challenges": "Desafíos Activos",
 		"remaining_size": "Tamaño Restante",
 		"bid": "Oferta",

@@ -417,7 +417,7 @@
 		"expiration_date": "Date d'expiration",
 		"cooldown": "Délai de refroidissement",
 		"liquidation_price": "Prix de liquidation",
-		"cooldown_message": "Cette position est soumise à une période de refroidissement qui prend fin le {{formatDate}} car son propriétaire a récemment augmenté le prix de liquidation applicable. La période de refroidissement donne aux autres utilisateurs la possibilité de contester la position avant que des dEuros supplémentaires puissent être émis.",
+		"cooldown_message": "Cette position est soumise à une période de refroidissement qui prend fin le {{formatDate}} car son propriétaire a récemment augmenté le prix de liquidation applicable. La période de refroidissement donne aux autres utilisateurs la possibilité de contester la position avant que des JUSD supplémentaires puissent être émis.",
 		"active_challenges": "Contestations actives",
 		"remaining_size": "Taille restante",
 		"bid": "Offre",
