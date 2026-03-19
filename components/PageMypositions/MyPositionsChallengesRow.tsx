@@ -4,7 +4,7 @@ import { ChallengesId, ChallengesQueryItem } from "@juicedollar/api";
 import { RootState } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
 import TokenLogo from "@components/TokenLogo";
-import { formatCurrency } from "../../utils/format";
+import { formatCurrency, getCollateralFractionDigits } from "../../utils/format";
 import { useContractUrl } from "@hooks";
 import MyPositionsChallengesCancel from "./MyPositionsChallengesCancel";
 import { TOKEN_SYMBOL, normalizeTokenSymbol } from "@utils";
@@ -58,6 +58,7 @@ export default function MyPositionsChallengesRow({ headers, challenge, tab }: Pr
 
 	const challengeRemainingSize: number =
 		(parseInt(challenge.size.toString()) - parseInt(challenge.filledSize.toString())) / 10 ** position.collateralDecimals;
+	const remainingFractionDigits = getCollateralFractionDigits(Number(position.collateralDecimals));
 
 	const openExplorer = (e: any) => {
 		e.preventDefault();
@@ -80,8 +81,7 @@ export default function MyPositionsChallengesRow({ headers, challenge, tab }: Pr
 					</span>
 					<span className={`col-span-2 text-md font-extrabold`}>{`${formatCurrency(
 						challengeRemainingSize,
-						3,
-						3
+						...remainingFractionDigits
 					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</span>
 				</div>
 
@@ -92,8 +92,7 @@ export default function MyPositionsChallengesRow({ headers, challenge, tab }: Pr
 					</div>
 					<div className={`col-span-2 text-md  font-semibold`}>{`${formatCurrency(
 						challengeRemainingSize,
-						3,
-						3
+						...remainingFractionDigits
 					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</div>
 				</div>
 			</div>

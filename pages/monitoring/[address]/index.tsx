@@ -4,7 +4,15 @@ import Link from "next/link";
 import AppBox from "@components/AppBox";
 import DisplayLabel from "@components/DisplayLabel";
 import DisplayAmount from "@components/DisplayAmount";
-import { formatDate, getCarryOnQueryParams, shortenAddress, TOKEN_SYMBOL, toQueryString, normalizeTokenSymbol } from "@utils";
+import {
+	formatDate,
+	getCarryOnQueryParams,
+	getCollateralFractionDigits,
+	shortenAddress,
+	TOKEN_SYMBOL,
+	toQueryString,
+	normalizeTokenSymbol,
+} from "@utils";
 import { Address, formatUnits, zeroAddress } from "viem";
 import { useContractUrl, useExplorerChain } from "@hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -230,6 +238,7 @@ function ActiveAuctionsRow({ position, challenge }: Props) {
 						digits={position.collateralDecimals}
 						currency={normalizeTokenSymbol(position.collateralSymbol)}
 						address={position.collateral}
+						displayFractionDigits={getCollateralFractionDigits(Number(position.collateralDecimals))}
 						className="mt-2"
 					/>
 				</AppBox>
