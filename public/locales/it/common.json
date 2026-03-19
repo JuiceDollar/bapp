@@ -245,6 +245,7 @@
 		"cooldown_active": "Periodo di attesa attivo",
 		"cooldown_increase_info": "Dopo aver aumentato il prezzo di liquidazione, si applica un periodo di attesa di 3 giorni prima di poter aumentare il prestito.",
 		"cooldown_reference_info": "Una volta che esiste un prezzo di liquidazione più alto nel sistema, gli aumenti futuri saranno istantanei.",
+		"liquidation_price_blocked_by_challenge": "Questa posizione ha una sfida attiva. Non puoi modificare il prezzo di liquidazione finché la sfida non è risolta.",
 		"confirm_close_position": "Conferma & Chiudi Posizione",
 		"tooltip_add_collateral": "Aggiungi più garanzia",
 		"tooltip_add_liq_price": "Aggiungi prezzo di liquidazione più alto",

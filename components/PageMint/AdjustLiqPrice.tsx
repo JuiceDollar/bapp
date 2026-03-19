@@ -35,6 +35,7 @@ interface AdjustLiqPriceProps {
 	virtualPrice: bigint;
 	priceDecimals: number;
 	isInCooldown: boolean;
+	isChallenged: boolean;
 	cooldownRemainingFormatted: string | null;
 	cooldownEndsAt?: Date;
 	collateralBalance: bigint;
@@ -56,6 +57,7 @@ export const AdjustLiqPrice = ({
 	virtualPrice,
 	priceDecimals,
 	isInCooldown,
+	isChallenged,
 	cooldownRemainingFormatted,
 	cooldownEndsAt,
 	collateralBalance,
@@ -159,6 +161,12 @@ export const AdjustLiqPrice = ({
 	useEffect(() => {
 		if (!needsStrategy) setActiveStrategy(null);
 	}, [needsStrategy]);
+
+	useEffect(() => {
+		if (isInCooldown && !isIncrease && activeStrategy === StrategyKey.REPAY_DEBT) {
+			setActiveStrategy(null);
+		}
+	}, [isInCooldown, isIncrease, activeStrategy]);
 
 	const handleSliderChange = (val: string) => {
 		setTargetPriceStr(val || "");
@@ -331,12 +339,15 @@ export const AdjustLiqPrice = ({
 		}
 	};
 
+	const hideRepayStrategyInCooldown = isInCooldown && !isIncrease;
 	const isDisabled =
 		!isOwner ||
 		delta === 0n ||
+		isChallenged ||
 		(isIncrease && newPrice <= virtualPrice) ||
-		isInCooldown ||
+		(isIncrease && isInCooldown) ||
 		(needsStrategy && activeStrategy === null) ||
+		(hideRepayStrategyInCooldown && activeStrategy === StrategyKey.REPAY_DEBT) ||
 		(activeStrategy === StrategyKey.ADD_COLLATERAL && !canAffordAddCollateral) ||
 		(activeStrategy === StrategyKey.REPAY_DEBT && !canAffordRepayDebt);
 
@@ -401,39 +412,41 @@ export const AdjustLiqPrice = ({
 						</div>
 					)}
 					<div className="text-sm font-medium text-text-muted2">{t("mint.position_needs_adjustments")}</div>
-					<div
-						role="button"
-						tabIndex={0}
-						onClick={() => setActiveStrategy(activeStrategy === StrategyKey.REPAY_DEBT ? null : StrategyKey.REPAY_DEBT)}
-						onKeyDown={(e) =>
-							e.key === "Enter" &&
-							setActiveStrategy(activeStrategy === StrategyKey.REPAY_DEBT ? null : StrategyKey.REPAY_DEBT)
-						}
-						className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
-					>
-						<span
-							className={`flex items-center ${
-								activeStrategy === StrategyKey.REPAY_DEBT
-									? "text-button-textGroup-primary-text"
-									: "text-button-textGroup-secondary-text"
-							}`}
+					{!hideRepayStrategyInCooldown && (
+						<div
+							role="button"
+							tabIndex={0}
+							onClick={() => setActiveStrategy(activeStrategy === StrategyKey.REPAY_DEBT ? null : StrategyKey.REPAY_DEBT)}
+							onKeyDown={(e) =>
+								e.key === "Enter" &&
+								setActiveStrategy(activeStrategy === StrategyKey.REPAY_DEBT ? null : StrategyKey.REPAY_DEBT)
+							}
+							className="flex flex-row items-center gap-x-1 px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity"
 						>
-							{activeStrategy === StrategyKey.REPAY_DEBT ? (
-								<RemoveCircleOutlineIcon color="currentColor" />
-							) : (
-								<AddCircleOutlineIcon color="currentColor" />
-							)}
-						</span>
-						<span
-							className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
-								activeStrategy === StrategyKey.REPAY_DEBT
-									? "text-button-textGroup-primary-text"
-									: "text-button-textGroup-secondary-text"
-							}`}
-						>
-							{t("mint.repay_debt_strategy")}
-						</span>
-					</div>
+							<span
+								className={`flex items-center ${
+									activeStrategy === StrategyKey.REPAY_DEBT
+										? "text-button-textGroup-primary-text"
+										: "text-button-textGroup-secondary-text"
+								}`}
+							>
+								{activeStrategy === StrategyKey.REPAY_DEBT ? (
+									<RemoveCircleOutlineIcon color="currentColor" />
+								) : (
+									<AddCircleOutlineIcon color="currentColor" />
+								)}
+							</span>
+							<span
+								className={`!text-sm !font-bold sm:!text-base sm:!font-extrabold leading-tight whitespace-nowrap mt-0.5 ${
+									activeStrategy === StrategyKey.REPAY_DEBT
+										? "text-button-textGroup-primary-text"
+										: "text-button-textGroup-secondary-text"
+								}`}
+							>
+								{t("mint.repay_debt_strategy")}
+							</span>
+						</div>
+					)}
 					<div
 						role="button"
 						tabIndex={0}
@@ -515,6 +528,9 @@ export const AdjustLiqPrice = ({
 				</div>
 			</div>
 
+			{isChallenged && (
+				<div className="text-xs sm:text-sm text-text-muted2 px-3 sm:px-4">{t("mint.liquidation_price_blocked_by_challenge")}</div>
+			)}
 			{isInCooldown && (
 				<div className="text-xs sm:text-sm text-text-muted2 px-3 sm:px-4">
 					{t("mint.cooldown_please_wait", { remaining: cooldownRemainingFormatted })}

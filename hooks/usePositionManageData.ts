@@ -29,6 +29,7 @@ interface PositionManageData {
 	isInCooldown: boolean;
 	cooldownRemainingFormatted: string | null;
 	cooldownEndsAt: Date | undefined;
+	isChallenged: boolean;
 	currentPosition: SolverPosition | null;
 	refetch: () => void;
 	isLoading: boolean;
@@ -82,6 +83,7 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 					},
 					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "getInterest" },
 					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "virtualPrice" },
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "challengedAmount" },
 			  ]
 			: [],
 	});
@@ -98,6 +100,7 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 	const collateralAllowance = data?.[9]?.result || 0n;
 	const interest = (data?.[10]?.result as bigint) || 0n;
 	const virtualPriceRaw = (data?.[11]?.result as bigint) || 0n;
+	const challengedAmount = (data?.[12]?.result as bigint) ?? 0n;
 
 	const collateralDecimals = position?.collateralDecimals || 18;
 	const priceDecimals = 36 - collateralDecimals;
@@ -113,6 +116,8 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 		? `${Math.floor(cooldownRemaining / 3600)}h ${Math.floor((cooldownRemaining % 3600) / 60)}m`
 		: null;
 	const cooldownEndsAt = isInCooldown ? new Date(Number(cooldownBigInt) * 1000) : undefined;
+
+	const isChallenged = challengedAmount > 0n;
 
 	const currentPosition: SolverPosition | null = useMemo(() => {
 		if (!position) return null;
@@ -139,6 +144,7 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 		isInCooldown,
 		cooldownRemainingFormatted,
 		cooldownEndsAt,
+		isChallenged,
 		currentPosition,
 		refetch,
 		isLoading,
