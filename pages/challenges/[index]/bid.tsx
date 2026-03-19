@@ -266,10 +266,7 @@ export default function ChallengePlaceBid() {
 								error={error}
 								placeholder={t("common.collateral_amount")}
 								balanceLabel={t("common.available_label")}
-								balanceFractionDigits={getCollateralFractionDigits(
-									Number(position.collateralDecimals),
-									Number(position.collateralDecimals)
-								)}
+								balanceFractionDigits={getCollateralFractionDigits(Number(position.collateralDecimals))}
 							/>
 							<div className="flex flex-col">
 								<span>
@@ -291,10 +288,7 @@ export default function ChallengePlaceBid() {
 									currency={normalizeTokenSymbol(position.collateralSymbol)}
 									address={position.collateral}
 									digits={position.collateralDecimals}
-									displayFractionDigits={getCollateralFractionDigits(
-										Number(position.collateralDecimals),
-										Number(position.collateralDecimals)
-									)}
+									displayFractionDigits={getCollateralFractionDigits(Number(position.collateralDecimals))}
 									className="mt-4"
 								/>
 							</AppBox>
