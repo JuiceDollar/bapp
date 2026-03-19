@@ -420,7 +420,7 @@
 		"expiration_date": "Data di Scadenza",
 		"cooldown": "Periodo di Attesa",
 		"liquidation_price": "Prezzo di Liquidazione",
-		"cooldown_message": "Questa posizione è soggetta a un periodo di attesa che termina il {{formatDate}} poiché il proprietario ha recentemente aumentato il prezzo di liquidazione applicabile. Il periodo di attesa offre ad altri utenti l'opportunità di sfidare la posizione prima che possano essere emessi ulteriori dEuro.",
+		"cooldown_message": "Questa posizione è soggetta a un periodo di attesa che termina il {{formatDate}} poiché il proprietario ha recentemente aumentato il prezzo di liquidazione applicabile. Il periodo di attesa offre ad altri utenti l'opportunità di sfidare la posizione prima che possano essere emessi ulteriori JUSD.",
 		"active_challenges": "Sfide Attive",
 		"remaining_size": "Dimensione Rimanente",
 		"bid": "Offerta",
