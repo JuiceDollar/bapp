@@ -578,7 +578,7 @@ export const AdjustExpiration = ({ position }: AdjustExpirationProps) => {
 			)}
 
 			{/* Insufficient balance warnings */}
-			{hasInsufficientBalance && (
+			{hasInsufficientBalance && rollParams && selectedTarget && (
 				<div className="p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
 					<div className="text-xs font-medium text-red-600 dark:text-red-400">
 						{t("mint.insufficient_balance", { symbol: position.stablecoinSymbol })}
