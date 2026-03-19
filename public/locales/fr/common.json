@@ -242,6 +242,7 @@
 		"cooldown_active": "Refroidissement actif",
 		"cooldown_increase_info": "Après avoir augmenté votre prix de liquidation, une période de refroidissement de 3 jours s'applique avant que vous puissiez augmenter votre prêt.",
 		"cooldown_reference_info": "Une fois qu'un prix de liquidation plus élevé existe dans le système, les augmentations futures seront instantanées.",
+		"liquidation_price_blocked_by_challenge": "Cette position fait l'objet d'un défi actif. Vous ne pouvez pas modifier le prix de liquidation tant que le défi n'est pas résolu.",
 		"confirm_close_position": "Confirmer et Fermer la Position",
 		"tooltip_add_collateral": "Ajouter plus de garantie",
 		"tooltip_add_liq_price": "Ajouter un prix de liquidation plus élevé",

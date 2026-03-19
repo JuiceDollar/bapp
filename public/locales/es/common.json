@@ -242,6 +242,7 @@
 		"cooldown_active": "Cooldown activo",
 		"cooldown_increase_info": "Después de aumentar tu precio de liquidación, se aplica un cooldown de 3 días antes de que puedas aumentar tu préstamo.",
 		"cooldown_reference_info": "Una vez que exista un precio de liquidación más alto en el sistema, los aumentos futuros serán instantáneos.",
+		"liquidation_price_blocked_by_challenge": "Esta posición tiene un desafío activo. No puedes cambiar el precio de liquidación hasta que se resuelva el desafío.",
 		"confirm_close_position": "Confirmar y Cerrar Posición",
 		"tooltip_add_collateral": "Agregar más colateral",
 		"tooltip_add_liq_price": "Agregar precio de liquidación más alto",

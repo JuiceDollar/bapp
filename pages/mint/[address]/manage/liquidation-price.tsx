@@ -19,6 +19,7 @@ export default function ManageLiquidationPrice() {
 		virtualPrice,
 		priceDecimals,
 		isInCooldown,
+		isChallenged,
 		cooldownRemainingFormatted,
 		cooldownEndsAt,
 		currentPosition,
@@ -63,6 +64,7 @@ export default function ManageLiquidationPrice() {
 						virtualPrice={virtualPrice}
 						priceDecimals={priceDecimals}
 						isInCooldown={isInCooldown}
+						isChallenged={isChallenged}
 						cooldownRemainingFormatted={cooldownRemainingFormatted}
 						cooldownEndsAt={cooldownEndsAt}
 						collateralBalance={collateralBalance}
