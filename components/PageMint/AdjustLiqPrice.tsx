@@ -197,7 +197,6 @@ export const AdjustLiqPrice = ({
 			const success = await approveToken({
 				tokenAddress: position.collateral as Address,
 				spender: position.position as Address,
-				amount: requiredCollateralAdd * 10n,
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				t,
 				onSuccess: refetch,
@@ -210,7 +209,6 @@ export const AdjustLiqPrice = ({
 			const success = await approveToken({
 				tokenAddress: position.stablecoinAddress as Address,
 				spender: position.position as Address,
-				amount: repayWalletCost * 10n,
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				t,
 				onSuccess: refetch,

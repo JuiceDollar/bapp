@@ -1,4 +1,4 @@
-import { Address, erc20Abi } from "viem";
+import { Address, erc20Abi, maxUint256 } from "viem";
 import { waitForTransactionReceipt } from "@wagmi/core";
 import { toast } from "react-toastify";
 import { WAGMI_CONFIG } from "../app.config";
@@ -9,20 +9,19 @@ import { mainnet, testnet } from "@config";
 interface ApproveParams {
 	tokenAddress: Address;
 	spender: Address;
-	amount: bigint;
 	chainId: typeof mainnet.id | typeof testnet.id;
 	t: (key: string) => string;
 	onSuccess?: () => void;
 }
 
-export const approveToken = async ({ tokenAddress, spender, amount, chainId, t, onSuccess }: ApproveParams): Promise<boolean> => {
+export const approveToken = async ({ tokenAddress, spender, chainId, t, onSuccess }: ApproveParams): Promise<boolean> => {
 	try {
 		const hash = await simulateAndWrite({
 			chainId: chainId as typeof mainnet.id | typeof testnet.id,
 			address: tokenAddress,
 			abi: erc20Abi,
 			functionName: "approve",
-			args: [spender, amount],
+			args: [spender, maxUint256],
 		});
 
 		await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash, confirmations: 1 }), {

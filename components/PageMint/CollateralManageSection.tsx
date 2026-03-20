@@ -8,7 +8,7 @@ import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { RootState, store } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
-import { Address, erc20Abi, formatUnits, zeroAddress } from "viem";
+import { Address, erc20Abi, formatUnits, maxUint256, zeroAddress } from "viem";
 import { formatCurrency, shortenAddress, NATIVE_WRAPPED_SYMBOLS, normalizeTokenSymbol, TOKEN_SYMBOL } from "@utils";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { useChainId, useReadContracts } from "wagmi";
@@ -185,7 +185,7 @@ export const CollateralManageSection = () => {
 				address: position.collateral as Address,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [position.position, BigInt(amount)],
+				args: [position.position, maxUint256],
 			});
 
 			const toastContent = [

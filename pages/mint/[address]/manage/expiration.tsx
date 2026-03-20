@@ -36,7 +36,9 @@ export default function ManageExpiration() {
 			</Head>
 			<div className="md:mt-8 flex justify-center">
 				<AppCard className="max-w-lg w-full p-6 flex flex-col gap-y-6">
-					<SectionTitle className="!mb-0 text-center !text-xl">{t("mint.adjust_your_borrowing_position")}</SectionTitle>
+					<SectionTitle className="!mb-0 text-center !text-xl" onBack={() => router.push(`/mint/${addressQuery}/manage`)}>
+						{t("mint.adjust_your_borrowing_position")}
+					</SectionTitle>
 					<AdjustExpiration
 						position={position}
 						isInCooldown={isInCooldown}
