@@ -4,7 +4,7 @@ import AppBox from "@components/AppBox";
 import Button from "@components/Button";
 import DisplayAmount from "@components/DisplayAmount";
 import TokenInput from "@components/Input/TokenInput";
-import { erc20Abi, zeroAddress } from "viem";
+import { erc20Abi, maxUint256, zeroAddress } from "viem";
 import { useEffect, useState } from "react";
 import { formatBigInt, formatDuration, shortenAddress, TOKEN_SYMBOL, normalizeTokenSymbol, NATIVE_WRAPPED_SYMBOLS } from "@utils";
 import { useNativeBalance } from "../../../hooks/useNativeBalance";
@@ -121,7 +121,7 @@ export default function PositionChallenge() {
 				address: position.collateral as Address,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].mintingHubGateway, amount],
+				args: [ADDRESS[chainId].mintingHubGateway, maxUint256],
 			});
 
 			const toastContent = [
