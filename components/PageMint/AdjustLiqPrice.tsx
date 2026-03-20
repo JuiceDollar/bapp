@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "next-i18next";
-import { Address, formatUnits } from "viem";
-import { formatCurrency, formatTokenAmount, normalizeTokenSymbol, NATIVE_GAS_BUFFER } from "@utils";
+import { Address, erc20Abi, formatUnits } from "viem";
+import { readContracts } from "@wagmi/core";
+import {
+	formatCurrency,
+	formatTokenAmount,
+	normalizeTokenSymbol,
+	NATIVE_GAS_BUFFER,
+	MAX_REPAY_FOR_PRICE_ADJUST_BPS,
+	LIQ_PRICE_POST_REPAY_HEADROOM_DIVISOR,
+} from "@utils";
 import { isNativeWrappedToken } from "../../utils/tokenDisplay";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
@@ -21,7 +29,7 @@ import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { useReferencePosition } from "../../hooks/useReferencePosition";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { approveToken } from "../../hooks/useApproveToken";
-import { debtReductionToWalletCost, walletRepayToDebtReduction, getNetDebt } from "../../utils/loanCalculations";
+import { debtReductionToWalletCost, walletRepayToDebtReduction, getNetDebt, minLiqPriceForRequirement } from "../../utils/loanCalculations";
 import { mainnet, testnet } from "@config";
 
 enum StrategyKey {
@@ -108,10 +116,13 @@ export const AdjustLiqPrice = ({
 	const minPriceViaAddCollateral =
 		collateralBalance + maxWalletForAdd > 0n ? (currentDebt * PRICE_SCALE) / (collateralBalance + maxWalletForAdd) : positionPrice;
 
-	const maxRepayableForPriceAdjust = (currentDebt * 95n) / 100n;
+	const maxRepayableForPriceAdjust = (currentDebt * MAX_REPAY_FOR_PRICE_ADJUST_BPS) / 10000n;
 	const maxDebtRepayableByWallet = walletRepayToDebtReduction(jusdBalance, interest, rc);
 	const effectiveMaxRepay = maxDebtRepayableByWallet < maxRepayableForPriceAdjust ? maxDebtRepayableByWallet : maxRepayableForPriceAdjust;
-	const residualDebt = currentDebt > effectiveMaxRepay ? currentDebt - effectiveMaxRepay : (currentDebt * 5n) / 100n;
+	const residualDebt =
+		currentDebt > effectiveMaxRepay
+			? currentDebt - effectiveMaxRepay
+			: (currentDebt * (10000n - MAX_REPAY_FOR_PRICE_ADJUST_BPS)) / 10000n;
 	const minPriceViaRepayDebt =
 		residualDebt > 0n && collateralBalance > 0n ? (residualDebt * PRICE_SCALE) / collateralBalance : positionPrice;
 
@@ -211,11 +222,10 @@ export const AdjustLiqPrice = ({
 		try {
 			setIsTxOnGoing(true);
 
-			const priceToastRows = [
-				{ title: t("mint.new_price"), value: `${formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} ${pairNotation}` },
-			];
-
 			if (activeStrategy === StrategyKey.ADD_COLLATERAL && requiredCollateralAdd > 0n) {
+				const priceToastRows = [
+					{ title: t("mint.new_price"), value: `${formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} ${pairNotation}` },
+				];
 				const newCollateral = collateralBalance + requiredCollateralAdd;
 				const adjustHash = await simulateAndWrite({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
@@ -268,12 +278,40 @@ export const AdjustLiqPrice = ({
 						),
 					},
 				});
+				const cid = chainId as typeof mainnet.id | typeof testnet.id;
+				const postRepayReads = await readContracts(WAGMI_CONFIG, {
+					contracts: [
+						{
+							chainId: cid,
+							address: position.position as Address,
+							abi: PositionV2ABI,
+							functionName: "getCollateralRequirement",
+						},
+						{
+							chainId: cid,
+							address: position.collateral as Address,
+							abi: erc20Abi,
+							functionName: "balanceOf",
+							args: [position.position as Address],
+						},
+					],
+				});
+				const requirementAfter = postRepayReads[0].status === "success" ? (postRepayReads[0].result as bigint) : 0n;
+				const colAfter = postRepayReads[1].status === "success" ? (postRepayReads[1].result as bigint) : collateralBalance;
+				const minLiq = minLiqPriceForRequirement(requirementAfter, colAfter);
+				const priceToSet = minLiq > 0n ? minLiq + minLiq / LIQ_PRICE_POST_REPAY_HEADROOM_DIVISOR : newPrice;
+				const priceToastRows = [
+					{
+						title: t("mint.new_price"),
+						value: `${formatCurrency(formatUnits(priceToSet, priceDecimals), 2, 2)} ${pairNotation}`,
+					},
+				];
 				const priceHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: cid,
 					address: position.position as Address,
 					abi: PositionV2ABI,
 					functionName: "adjustPrice",
-					args: [newPrice],
+					args: [priceToSet],
 				});
 				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: priceHash, confirmations: 1 }), {
 					pending: {
@@ -294,6 +332,9 @@ export const AdjustLiqPrice = ({
 					},
 				});
 			} else {
+				const priceToastRows = [
+					{ title: t("mint.new_price"), value: `${formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} ${pairNotation}` },
+				];
 				const adjustHash = useReference
 					? await simulateAndWrite({
 							chainId: chainId as typeof mainnet.id | typeof testnet.id,
