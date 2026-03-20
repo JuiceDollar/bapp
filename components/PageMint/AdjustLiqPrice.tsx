@@ -1,15 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "next-i18next";
-import { Address, erc20Abi, formatUnits } from "viem";
-import { readContracts } from "@wagmi/core";
-import {
-	formatCurrency,
-	formatTokenAmount,
-	normalizeTokenSymbol,
-	NATIVE_GAS_BUFFER,
-	MAX_REPAY_FOR_PRICE_ADJUST_BPS,
-	LIQ_PRICE_POST_REPAY_HEADROOM_DIVISOR,
-} from "@utils";
+import { Address, formatUnits } from "viem";
+import { formatCurrency, formatTokenAmount, normalizeTokenSymbol, NATIVE_GAS_BUFFER, MAX_REPAY_FOR_PRICE_ADJUST_BPS } from "@utils";
 import { isNativeWrappedToken } from "../../utils/tokenDisplay";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
 import { AddCircleOutlineIcon } from "@components/SvgComponents/add_circle_outline";
@@ -29,7 +21,14 @@ import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { useReferencePosition } from "../../hooks/useReferencePosition";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { approveToken } from "../../hooks/useApproveToken";
-import { debtReductionToWalletCost, walletRepayToDebtReduction, getNetDebt, minLiqPriceForRequirement } from "../../utils/loanCalculations";
+import {
+	collateralRequirementFromParts,
+	debtReductionToWalletCost,
+	walletRepayToDebtReduction,
+	getNetDebt,
+	minCollateralForPrice,
+	maxRequirementAtPrice,
+} from "../../utils/loanCalculations";
 import { mainnet, testnet } from "@config";
 
 enum StrategyKey {
@@ -139,19 +138,26 @@ export const AdjustLiqPrice = ({
 	const useReference = isIncrease && reference.address !== null && newPrice <= reference.price;
 	const showCooldownMessage = isIncrease && !useReference && delta > 0n;
 
-	const rawRequiredCollateralAdd =
-		needsStrategy && newPrice > 0n && currentDebt > 0n ? (currentDebt * PRICE_SCALE) / newPrice - collateralBalance : 0n;
-	const requiredCollateralAdd = rawRequiredCollateralAdd > 0n ? (rawRequiredCollateralAdd * 101n) / 100n : 0n;
+	const requirementNow = collateralRequirementFromParts(principal, interest, rc);
+	const requirementBuffered = requirementNow + requirementNow / 10000n + 1n;
+	const minColAtTarget = needsStrategy && newPrice > 0n ? minCollateralForPrice(requirementBuffered, newPrice) : 0n;
+	const requiredCollateralAdd = needsStrategy && minColAtTarget > collateralBalance ? minColAtTarget - collateralBalance : 0n;
 
-	const rawRequiredDebtReduction =
-		needsStrategy && newPrice > 0n && collateralBalance > 0n ? currentDebt - (newPrice * collateralBalance) / PRICE_SCALE : 0n;
-	const rawBuffered = rawRequiredDebtReduction > 0n ? (rawRequiredDebtReduction * 101n) / 100n : 0n;
-	const requiredDebtReduction =
-		rawBuffered > maxRepayableForPriceAdjust ? maxRepayableForPriceAdjust : rawBuffered > currentDebt ? currentDebt : rawBuffered;
+	const maxReqAtTargetPrice = maxRequirementAtPrice(collateralBalance, newPrice);
+	const newPrincipalTarget =
+		needsStrategy && newPrice > 0n && collateralBalance > 0n
+			? maxReqAtTargetPrice < principal
+				? maxReqAtTargetPrice
+				: principal > 0n
+				? principal - 1n
+				: 0n
+			: principal;
+	const totalDebtReduction = principal + interest > newPrincipalTarget ? principal + interest - newPrincipalTarget : 0n;
+	const repayWalletCost = totalDebtReduction > 0n ? debtReductionToWalletCost(totalDebtReduction, interest, rc) : 0n;
+	const repayNewDebt = getNetDebt(newPrincipalTarget, 0n, rc);
 
-	const netDebt = getNetDebt(principal, interest, rc);
-	const repayWalletCost = debtReductionToWalletCost(requiredDebtReduction, interest, rc);
-	const repayNewDebt = netDebt > repayWalletCost ? netDebt - repayWalletCost : 0n;
+	const repayPlanImpossible = needsStrategy && totalDebtReduction > effectiveMaxRepay;
+	const addCollateralPlanImpossible = needsStrategy && minColAtTarget > collateralBalance + maxWalletForAdd;
 
 	const canAffordAddCollateral = requiredCollateralAdd <= maxWalletForAdd;
 	const canAffordRepayDebt = repayWalletCost <= jusdBalance;
@@ -204,7 +210,7 @@ export const AdjustLiqPrice = ({
 			const success = await approveToken({
 				tokenAddress: position.stablecoinAddress as Address,
 				spender: position.position as Address,
-				amount: requiredDebtReduction * 10n,
+				amount: repayWalletCost * 10n,
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				t,
 				onSuccess: refetch,
@@ -223,10 +229,10 @@ export const AdjustLiqPrice = ({
 			setIsTxOnGoing(true);
 
 			if (activeStrategy === StrategyKey.ADD_COLLATERAL && requiredCollateralAdd > 0n) {
+				const newCollateral = collateralBalance + requiredCollateralAdd;
 				const priceToastRows = [
 					{ title: t("mint.new_price"), value: `${formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} ${pairNotation}` },
 				];
-				const newCollateral = collateralBalance + requiredCollateralAdd;
 				const adjustHash = await simulateAndWrite({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: position.position as Address,
@@ -253,80 +259,43 @@ export const AdjustLiqPrice = ({
 						),
 					},
 				});
-			} else if (activeStrategy === StrategyKey.REPAY_DEBT && requiredDebtReduction > 0n) {
-				const repayHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
-					address: position.position as Address,
-					abi: PositionV2ABI,
-					functionName: "repay",
-					args: [requiredDebtReduction],
-				});
-				const repayToastRows = [
+			} else if (activeStrategy === StrategyKey.REPAY_DEBT) {
+				const cid = chainId as typeof mainnet.id | typeof testnet.id;
+				const toastRows = [
 					{
 						title: t("mint.pay_back_amount"),
 						value: `${formatTokenAmount(repayWalletCost, 18, 2, 2)} ${position.stablecoinSymbol}`,
 					},
-					{ title: t("common.txs.transaction"), hash: repayHash },
-				];
-				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: repayHash, confirmations: 1 }), {
-					pending: {
-						render: <TxToast title={t("mint.txs.pay_back", { symbol: position.stablecoinSymbol })} rows={repayToastRows} />,
-					},
-					success: {
-						render: (
-							<TxToast title={t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol })} rows={repayToastRows} />
-						),
-					},
-				});
-				const cid = chainId as typeof mainnet.id | typeof testnet.id;
-				const postRepayReads = await readContracts(WAGMI_CONFIG, {
-					contracts: [
-						{
-							chainId: cid,
-							address: position.position as Address,
-							abi: PositionV2ABI,
-							functionName: "getCollateralRequirement",
-						},
-						{
-							chainId: cid,
-							address: position.collateral as Address,
-							abi: erc20Abi,
-							functionName: "balanceOf",
-							args: [position.position as Address],
-						},
-					],
-				});
-				const requirementAfter = postRepayReads[0].status === "success" ? (postRepayReads[0].result as bigint) : 0n;
-				const colAfter = postRepayReads[1].status === "success" ? (postRepayReads[1].result as bigint) : collateralBalance;
-				const minLiq = minLiqPriceForRequirement(requirementAfter, colAfter);
-				const priceToSet = minLiq > 0n ? minLiq + minLiq / LIQ_PRICE_POST_REPAY_HEADROOM_DIVISOR : newPrice;
-				const priceToastRows = [
 					{
 						title: t("mint.new_price"),
-						value: `${formatCurrency(formatUnits(priceToSet, priceDecimals), 2, 2)} ${pairNotation}`,
+						value: `${formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} ${pairNotation}`,
 					},
 				];
-				const priceHash = await simulateAndWrite({
+				const adjustHash = await simulateAndWrite({
 					chainId: cid,
 					address: position.position as Address,
 					abi: PositionV2ABI,
-					functionName: "adjustPrice",
-					args: [priceToSet],
+					functionName: "adjust",
+					args: [newPrincipalTarget, collateralBalance, newPrice, false],
 				});
-				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: priceHash, confirmations: 1 }), {
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: adjustHash, confirmations: 1 }), {
 					pending: {
 						render: (
 							<TxToast
-								title={t("mint.txs.adjusting_price")}
-								rows={[...priceToastRows, { title: t("common.txs.transaction"), hash: priceHash }]}
+								title={`${t("mint.txs.pay_back", { symbol: position.stablecoinSymbol })} & ${t(
+									"mint.txs.adjusting_price"
+								)}`}
+								rows={[...toastRows, { title: t("common.txs.transaction"), hash: adjustHash }]}
 							/>
 						),
 					},
 					success: {
 						render: (
 							<TxToast
-								title={t("mint.txs.adjusting_price_success")}
-								rows={[...priceToastRows, { title: t("common.txs.transaction"), hash: priceHash }]}
+								title={`${t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol })} & ${t(
+									"mint.txs.adjusting_price_success"
+								)}`}
+								rows={[...toastRows, { title: t("common.txs.transaction"), hash: adjustHash }]}
 							/>
 						),
 					},
@@ -389,8 +358,8 @@ export const AdjustLiqPrice = ({
 		(isIncrease && isInCooldown) ||
 		(needsStrategy && activeStrategy === null) ||
 		(hideRepayStrategyInCooldown && activeStrategy === StrategyKey.REPAY_DEBT) ||
-		(activeStrategy === StrategyKey.ADD_COLLATERAL && !canAffordAddCollateral) ||
-		(activeStrategy === StrategyKey.REPAY_DEBT && !canAffordRepayDebt);
+		(activeStrategy === StrategyKey.ADD_COLLATERAL && (!canAffordAddCollateral || addCollateralPlanImpossible)) ||
+		(activeStrategy === StrategyKey.REPAY_DEBT && (!canAffordRepayDebt || repayPlanImpossible));
 
 	const getButtonLabel = () => {
 		if (!isOwner) return t("mint.not_your_position");
@@ -538,7 +507,7 @@ export const AdjustLiqPrice = ({
 					</div>
 				)}
 
-				{activeStrategy === StrategyKey.REPAY_DEBT && requiredDebtReduction > 0n && (
+				{activeStrategy === StrategyKey.REPAY_DEBT && totalDebtReduction > 0n && (
 					<>
 						<div className="flex justify-between items-center gap-3 text-xs sm:text-sm">
 							<span className="text-text-muted2 flex-shrink-0">{t("mint.repay")}</span>

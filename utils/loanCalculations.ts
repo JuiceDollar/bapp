@@ -86,6 +86,15 @@ export const ceilDivPPM = (a: bigint, ppm: bigint): bigint => (a === 0n ? 0n : (
 export const minLiqPriceForRequirement = (collateralRequirement: bigint, collateral: bigint): bigint =>
 	collateral > 0n ? (collateralRequirement * BigInt(1e18) + collateral - 1n) / collateral : 0n;
 
+export const collateralRequirementFromParts = (principal: bigint, interest: bigint, reserveContribution: number): bigint =>
+	principal + ceilDivPPM(interest, BigInt(reserveContribution));
+
+export const minCollateralForPrice = (collateralRequirement: bigint, price: bigint): bigint =>
+	price > 0n ? (collateralRequirement * BigInt(1e18) + price - 1n) / price : 0n;
+
+export const maxRequirementAtPrice = (collateral: bigint, price: bigint): bigint =>
+	collateral > 0n && price > 0n ? (collateral * price) / BigInt(1e18) : 0n;
+
 export type LoanDetails = {
 	loanAmount: bigint;
 	apr: number;
