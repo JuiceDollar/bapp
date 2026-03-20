@@ -4,7 +4,7 @@ import { formatBigInt, formatCurrency, SAVINGS_VAULT_SYMBOL, shortenAddress, TOK
 import { useAccount, useChainId, useReadContract } from "wagmi";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
-import { erc20Abi, formatUnits, zeroAddress } from "viem";
+import { erc20Abi, formatUnits, maxUint256, zeroAddress } from "viem";
 import Button from "@components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowDownLong } from "@fortawesome/free-solid-svg-icons";
@@ -69,7 +69,7 @@ export default function InteractionStablecoinAndSavingVault({
 				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].savingsVaultJUSD, amount],
+				args: [ADDRESS[chainId].savingsVaultJUSD, maxUint256],
 			});
 
 			const toastContent = [

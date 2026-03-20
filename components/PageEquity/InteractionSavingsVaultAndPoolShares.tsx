@@ -4,7 +4,7 @@ import { formatBigInt, formatCurrency, POOL_SHARE_TOKEN_SYMBOL, SAVINGS_VAULT_SY
 import { useAccount, useChainId, useClient, useReadContract } from "wagmi";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
-import { erc20Abi, formatUnits, zeroAddress } from "viem";
+import { erc20Abi, formatUnits, maxUint256, zeroAddress } from "viem";
 import Button from "@components/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowDownLong } from "@fortawesome/free-solid-svg-icons";
@@ -86,7 +86,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].frontendGateway, amount],
+				args: [ADDRESS[chainId].frontendGateway, maxUint256],
 			});
 
 			const toastContent = [
@@ -217,7 +217,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 				address: ADDRESS[chainId].equity,
 				abi: EquityABI,
 				functionName: "approve",
-				args: [ADDRESS[chainId].frontendGateway, amount],
+				args: [ADDRESS[chainId].frontendGateway, maxUint256],
 			});
 
 			const toastContent = [

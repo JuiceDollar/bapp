@@ -366,7 +366,6 @@ export const AdjustLoan = ({
 		await approveToken({
 			tokenAddress: position.collateral as Address,
 			spender: position.position as Address,
-			amount: collateralDepositAmount * 2n,
 			chainId: chainId as typeof mainnet.id | typeof testnet.id,
 			t,
 			onSuccess: refetchAllowance,
@@ -381,7 +380,6 @@ export const AdjustLoan = ({
 		await approveToken({
 			tokenAddress: ADDRESS[chainId]?.juiceDollar as Address,
 			spender: position.position as Address,
-			amount: repayAmount * 2n,
 			chainId: chainId as typeof mainnet.id | typeof testnet.id,
 			t,
 			onSuccess: refetchAllowance,
