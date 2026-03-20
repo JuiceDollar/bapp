@@ -3,7 +3,7 @@ import { faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 
 export const SectionTitle = ({
 	id,
-	className,
+	className = "",
 	children,
 	onBack,
 }: {
