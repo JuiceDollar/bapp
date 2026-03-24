@@ -30,7 +30,7 @@ export const CONFIG: ConfigEnv = {
 		mainnet: process.env.NEXT_PUBLIC_PONDER_URL_MAINNET!,
 		testnet: process.env.NEXT_PUBLIC_PONDER_URL_TESTNET!,
 	},
-	wagmiId: "b49c3a590c4407316a6fd6eae6531e90",
+	wagmiId: process.env.NEXT_PUBLIC_WAGMI_ID ?? "b49c3a590c4407316a6fd6eae6531e90",
 	chain: process.env.NEXT_PUBLIC_CHAIN_NAME!,
 	network: {
 		mainnet: process.env.NEXT_PUBLIC_RPC_URL_MAINNET!,

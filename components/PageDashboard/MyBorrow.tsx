@@ -2,7 +2,7 @@ import { SecondaryLinkButton } from "@components/Button";
 import TokenLogo from "@components/TokenLogo";
 import { useTranslation } from "next-i18next";
 import { Fragment, useMemo, useRef } from "react";
-import { HeaderCell, NoDataRow } from "./SectionTable";
+import { HeaderCell, LinkTitle, NoDataRow } from "./SectionTable";
 import { useAccount } from "wagmi";
 import { RootState } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
@@ -11,6 +11,7 @@ import { formatCurrency, TOKEN_SYMBOL, normalizeTokenSymbol } from "@utils";
 import { useRouter } from "next/router";
 import { getPublicViewAddress } from "../../utils/url";
 import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
+import { getNetDebt } from "../../utils/loanCalculations";
 interface BorrowData {
 	position: `0x${string}`;
 	symbol: string;
@@ -162,7 +163,10 @@ export const MyBorrow = () => {
 			ownedPositions.map((position) => {
 				const { principal, interest, collateralBalance, collateralDecimals, collateralSymbol } = position;
 				const amountBorrowed = formatCurrency(
-					formatUnits(BigInt(principal) + BigInt(interest ?? "0"), position.stablecoinDecimals),
+					formatUnits(
+						getNetDebt(BigInt(principal), BigInt(interest ?? "0"), position.reserveContribution),
+						position.stablecoinDecimals
+					),
 					2,
 					2
 				) as string;
@@ -188,13 +192,14 @@ export const MyBorrow = () => {
 		[ownedPositions, prices]
 	);
 
-	const totalOwed = ownedPositions.reduce((acc, curr) => acc + BigInt(curr.principal) + BigInt(curr.interest ?? "0"), 0n);
+	const totalOwed = ownedPositions.reduce(
+		(acc, curr) => acc + getNetDebt(BigInt(curr.principal), BigInt(curr.interest ?? "0"), curr.reserveContribution),
+		0n
+	);
 
 	return (
 		<div className="w-full h-full p-4 sm:p-8 flex flex-col items-start">
-			<div className="pb-7 items-center justify-start flex gap-2">
-				<span className="text-text-primary text-2xl font-black">{t("dashboard.my_borrow")}</span>
-			</div>
+			<LinkTitle href="/mypositions">{t("dashboard.my_borrow")}</LinkTitle>
 			<div className="w-full flex flex-row justify-between items-center">
 				<DesktopTable borrowData={borrowData} />
 				<MobileTable borrowData={borrowData} />

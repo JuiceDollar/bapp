@@ -4,7 +4,15 @@ import Link from "next/link";
 import AppBox from "@components/AppBox";
 import DisplayLabel from "@components/DisplayLabel";
 import DisplayAmount from "@components/DisplayAmount";
-import { formatDate, getCarryOnQueryParams, shortenAddress, TOKEN_SYMBOL, toQueryString, normalizeTokenSymbol } from "@utils";
+import {
+	formatDate,
+	getCarryOnQueryParams,
+	getCollateralFractionDigits,
+	shortenAddress,
+	TOKEN_SYMBOL,
+	toQueryString,
+	normalizeTokenSymbol,
+} from "@utils";
 import { Address, formatUnits, zeroAddress } from "viem";
 import { useContractUrl, useExplorerChain } from "@hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -19,6 +27,7 @@ import { readContract } from "wagmi/actions";
 import { ChallengesQueryItem, PositionQuery } from "@juicedollar/api";
 import { useRouter as useNavigation } from "next/navigation";
 import Button, { SecondaryLinkButton } from "@components/Button";
+import { useIsPositionOwner } from "../../../hooks/useIsPositionOwner";
 import { ADDRESS, JuiceDollarABI } from "@juicedollar/jusd";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
@@ -40,6 +49,7 @@ export default function PositionDetail() {
 	const ownerLink = useContractUrl(position?.owner || zeroAddress, chain);
 	const navigate = useNavigation();
 	const { t } = useTranslation();
+	const isOwner = useIsPositionOwner(position);
 
 	useEffect(() => {
 		if (!position) return;
@@ -160,14 +170,20 @@ export default function PositionDetail() {
 							</AppBox>
 						</div>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-							<Button
-								className="h-10"
-								onClick={() =>
-									navigate.push(`/mint/${position.position}/manage${toQueryString(getCarryOnQueryParams(router))}`)
-								}
-							>
-								{t("dashboard.manage")}
-							</Button>
+							{isOwner ? (
+								<Button
+									className="h-10"
+									onClick={() =>
+										navigate.push(`/mint/${position.position}/manage${toQueryString(getCarryOnQueryParams(router))}`)
+									}
+								>
+									{t("dashboard.manage")}
+								</Button>
+							) : (
+								<Button className="h-10" onClick={() => navigate.push(`/mint?clone=${position.position}`)}>
+									{t("mint.clone")}
+								</Button>
+							)}
 							<SecondaryLinkButton
 								className="h-10"
 								href={`/monitoring/${position.position}/${maturity <= 0 ? "forceSell" : "challenge"}`}
@@ -222,6 +238,7 @@ function ActiveAuctionsRow({ position, challenge }: Props) {
 						digits={position.collateralDecimals}
 						currency={normalizeTokenSymbol(position.collateralSymbol)}
 						address={position.collateral}
+						displayFractionDigits={getCollateralFractionDigits(Number(position.collateralDecimals))}
 						className="mt-2"
 					/>
 				</AppBox>

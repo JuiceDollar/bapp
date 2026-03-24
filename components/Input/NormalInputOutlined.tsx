@@ -9,6 +9,8 @@ interface NormalInputOutlinedProps {
 	adornamentRow?: React.ReactNode;
 	unit?: string;
 	isError?: boolean;
+	displayDecimals?: number;
+	hideTrailingZeros?: boolean;
 }
 
 export function NormalInputOutlined({
@@ -19,6 +21,8 @@ export function NormalInputOutlined({
 	adornamentRow,
 	unit,
 	isError,
+	displayDecimals,
+	hideTrailingZeros,
 }: NormalInputOutlinedProps) {
 	const [isFocused, setIsFocused] = useState(false);
 
@@ -41,6 +45,8 @@ export function NormalInputOutlined({
 						value={value}
 						onChange={onChange}
 						decimals={decimals}
+						displayDecimals={displayDecimals}
+						hideTrailingZeros={hideTrailingZeros}
 						onFocus={() => setIsFocused(true)}
 						onBlur={() => setIsFocused(false)}
 					/>

@@ -16,6 +16,7 @@ export type BigNumberInputProps = {
 	onFocus?: () => void;
 	onBlur?: () => void;
 	hideTrailingZeros?: boolean;
+	displayDecimals?: number;
 };
 
 export function BigNumberInput({
@@ -32,12 +33,18 @@ export function BigNumberInput({
 	onFocus,
 	onBlur,
 	hideTrailingZeros,
+	displayDecimals,
 }: BigNumberInputProps) {
 	const inputRef = React.useRef<any>(null);
+	const inputValueRef = React.useRef("");
 
 	const [inputValue, setInputvalue] = React.useState("");
 
-	// update current value
+	// Keep ref in sync so the effect below can read the latest inputValue without depending on it
+	inputValueRef.current = inputValue;
+
+	// Sync external value prop → local inputValue. Must NOT depend on inputValue
+	// to avoid overwriting user keystrokes mid-typing.
 	React.useEffect(() => {
 		if (!value) {
 			setInputvalue("");
@@ -45,20 +52,26 @@ export function BigNumberInput({
 			let parseInputValue;
 
 			try {
-				parseInputValue = parseUnits(inputValue || "0", decimals);
+				parseInputValue = parseUnits(inputValueRef.current || "0", decimals);
 			} catch {
 				// do nothing
 			}
 
 			if (!parseInputValue || !parseInputValue.eq(value)) {
 				let formatted = formatUnits(value, decimals);
+				if (displayDecimals !== undefined) {
+					const dotIdx = formatted.indexOf(".");
+					if (dotIdx !== -1 && formatted.length - dotIdx - 1 > displayDecimals) {
+						formatted = formatted.slice(0, dotIdx + displayDecimals + 1);
+					}
+				}
 				if (hideTrailingZeros) {
 					formatted = formatted.replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
 				}
 				setInputvalue(formatted);
 			}
 		}
-	}, [value, decimals, inputValue, hideTrailingZeros]);
+	}, [value, decimals, hideTrailingZeros, displayDecimals]);
 
 	React.useEffect(() => {
 		if (!renderInput && autofocus && inputRef) {
@@ -74,6 +87,13 @@ export function BigNumberInput({
 			onChange(value);
 			setInputvalue(value);
 			return;
+		}
+
+		if (displayDecimals !== undefined) {
+			const dotIdx = value.indexOf(".");
+			if (dotIdx !== -1 && value.length - dotIdx - 1 > displayDecimals) {
+				return;
+			}
 		}
 
 		let newValue: BigNumber;

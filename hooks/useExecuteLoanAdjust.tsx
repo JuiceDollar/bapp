@@ -8,13 +8,17 @@ import { store } from "../redux/redux.store";
 import { mainnet, testnet } from "@config";
 import { executeTx } from "./useApproveToken";
 import { SolverOutcome } from "../utils/positionSolver";
+import { readContract } from "wagmi/actions";
+import { WAGMI_CONFIG } from "../app.config";
 
 interface ExecuteLoanAdjustParams {
 	chainId: number;
 	outcome: SolverOutcome;
 	position: PositionQuery;
 	principal: bigint;
+	isOwner: boolean;
 	isNativeWrappedPosition: boolean;
+	walletDelta?: bigint;
 	t: (key: string, params?: Record<string, string>) => string;
 	onSuccess: () => void;
 }
@@ -24,28 +28,42 @@ export const executeLoanAdjust = async ({
 	outcome,
 	position,
 	principal,
+	isOwner,
 	isNativeWrappedPosition,
+	walletDelta,
 	t,
 	onSuccess,
 }: ExecuteLoanAdjustParams): Promise<void> => {
 	const posAddr = position.position as Address;
-	const depositAmount = outcome.deltaCollateral > 0n ? outcome.deltaCollateral : 0n;
 	const isWithdrawing = outcome.deltaCollateral < 0n;
-	const LiqPrice = outcome.next.liqPrice;
-
-	// Contract: repay branch executes when newPrincipal < principal
+	const isRepayOnly = outcome.deltaDebt < 0n && outcome.deltaCollateral === 0n;
 	const isFullClose = outcome.next.debt === 0n && principal > 0n;
+	// When the solver keeps the price unchanged (deltaLiqPrice === 0), use the exact on-chain price.
+	// The solver's liqPrice may be inflated by debtRatio > positionPrice (due to interest accrual),
+	// and sending a higher price via adjust() triggers a cooldown (no reference = 3-day freeze).
+	const LiqPrice =
+		isRepayOnly || (isFullClose && isOwner)
+			? BigInt(position.price)
+			: outcome.deltaLiqPrice === 0n
+			? await readContract(WAGMI_CONFIG, { address: posAddr, abi: PositionV2ABI, functionName: "price" })
+			: outcome.next.liqPrice;
 
 	// Case 3: repay ≤ interest → need separate repay() call first
 	const needsSeparateRepay = !isFullClose && outcome.deltaDebt < 0n && outcome.next.debt >= principal;
 
+	// Use principal + deltaDebt (not outcome.next.debt) so the principal
+	// reduction sent to the contract is a clean number.  outcome.next.debt
+	// includes stale interest which produces fractional on-chain burns.
+	const rawNewPrincipal = principal + outcome.deltaDebt;
 	const newPrincipal = isFullClose
-		? 0n // Case 1: close position
-		: outcome.deltaDebt >= 0n
-		? principal + outcome.deltaDebt // Borrow
-		: outcome.next.debt < principal
-		? outcome.next.debt // Case 2: repay > interest
-		: principal; // Case 3 & 4: no principal change in adjust()
+		? 0n
+		: needsSeparateRepay
+		? principal // repay ≤ interest: principal unchanged in adjust()
+		: rawNewPrincipal > 0n
+		? rawNewPrincipal
+		: 0n;
+
+	const debtDisplayAmount = walletDelta != null ? walletDelta : outcome.deltaDebt > 0n ? outcome.deltaDebt : -outcome.deltaDebt;
 
 	const rows = [
 		outcome.deltaCollateral !== 0n && {
@@ -58,47 +76,89 @@ export const executeLoanAdjust = async ({
 		},
 		outcome.deltaDebt !== 0n && {
 			title: outcome.deltaDebt > 0n ? t("mint.borrow_more") : t("mint.repay"),
-			value: formatPositionValue(outcome.deltaDebt > 0n ? outcome.deltaDebt : -outcome.deltaDebt, 18, position.stablecoinSymbol),
+			value: formatPositionValue(debtDisplayAmount, 18, position.stablecoinSymbol),
 		},
 	].filter(Boolean) as { title: string; value: string }[];
 
 	const txTitle = isFullClose
 		? t("mint.close_position")
 		: outcome.deltaDebt < 0n
-		? `${t("mint.repay")} ${formatPositionValue(-outcome.deltaDebt, 18, position.stablecoinSymbol)}`
+		? `${t("mint.repay")} ${formatPositionValue(debtDisplayAmount, 18, position.stablecoinSymbol)}`
 		: outcome.deltaDebt > 0n
-		? `${t("mint.lending")} ${formatPositionValue(outcome.deltaDebt, 18, position.stablecoinSymbol)}`
+		? `${t("mint.lending")} ${formatPositionValue(debtDisplayAmount, 18, position.stablecoinSymbol)}`
 		: t("mint.adjust_position");
 
-	// Case 3: call repay() first
-	if (needsSeparateRepay) {
+	if (newPrincipal > principal) {
+		// _checkCollateral uses _getCollateralRequirement() (not getDebt()) which
+		// overcollateralizes interest by reserveContribution via _ceilDivPPM.
+		const freshColReq = await readContract(WAGMI_CONFIG, {
+			address: posAddr,
+			abi: PositionV2ABI,
+			functionName: "getCollateralRequirement",
+		});
+		// _checkCollateral in _mint uses the current stored price (before any price adjustment)
+		const currentPrice = BigInt(position.price);
+		const freshTotalReq = freshColReq + outcome.deltaDebt;
+		const collateralCapacity = (currentPrice * outcome.next.collateral) / BigInt(1e18);
+
+		if (collateralCapacity < freshTotalReq) {
+			const bufferedReq = freshTotalReq + freshTotalReq / 10000n;
+			const freshMinCollateral = (bufferedReq * BigInt(1e18) + currentPrice - 1n) / currentPrice;
+			const shortfall = freshMinCollateral - outcome.next.collateral;
+
+			if (shortfall > outcome.next.collateral / 100n) {
+				throw new Error(t("mint.error.amount_exceeds_capacity"));
+			}
+			outcome.next.collateral = freshMinCollateral;
+			outcome.deltaCollateral = freshMinCollateral - BigInt(position.collateralBalance);
+		}
+	}
+
+	if (isRepayOnly) {
+		if (isFullClose && isOwner) {
+			// Owner full close: adjust() returns collateral in same tx
+			await executeTx({
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				contractParams: {
+					address: posAddr,
+					abi: PositionV2ABI,
+					functionName: "adjust",
+					args: [0n, outcome.next.collateral, LiqPrice, isWithdrawing && isNativeWrappedPosition],
+				},
+				pendingTitle: txTitle,
+				successTitle: txTitle,
+				rows,
+			});
+		} else {
+			// Non-owner full close OR any partial repay: permissionless repayFull() or repay()
+			await executeTx({
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				contractParams: {
+					address: posAddr,
+					abi: PositionV2ABI,
+					functionName: isFullClose ? "repayFull" : "repay",
+					args: isFullClose ? [] : [-outcome.deltaDebt],
+				},
+				pendingTitle: t("mint.txs.pay_back", { symbol: position.stablecoinSymbol }),
+				successTitle: t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol }),
+				rows,
+			});
+		}
+	} else {
 		await executeTx({
 			chainId: chainId as typeof mainnet.id | typeof testnet.id,
 			contractParams: {
 				address: posAddr,
 				abi: PositionV2ABI,
-				functionName: "repay",
-				args: [-outcome.deltaDebt],
+				functionName: "adjust",
+				args: [newPrincipal, outcome.next.collateral, LiqPrice, isWithdrawing && isNativeWrappedPosition],
+				value: isNativeWrappedPosition && outcome.deltaCollateral > 0n ? outcome.deltaCollateral : undefined,
 			},
-			pendingTitle: t("mint.txs.pay_back", { symbol: position.stablecoinSymbol }),
-			successTitle: t("mint.txs.pay_back_success", { symbol: position.stablecoinSymbol }),
-			rows: [{ title: t("common.txs.amount"), value: formatPositionValue(-outcome.deltaDebt, 18, position.stablecoinSymbol) }],
+			pendingTitle: txTitle,
+			successTitle: txTitle,
+			rows,
 		});
 	}
-
-	await executeTx({
-		chainId: chainId as typeof mainnet.id | typeof testnet.id,
-		contractParams: {
-			address: posAddr,
-			abi: PositionV2ABI,
-			functionName: "adjust",
-			args: [newPrincipal, outcome.next.collateral, LiqPrice, isWithdrawing && isNativeWrappedPosition],
-			value: isNativeWrappedPosition && depositAmount > 0n ? depositAmount : undefined,
-		},
-		pendingTitle: txTitle,
-		successTitle: txTitle,
-		rows,
-	});
 
 	store.dispatch(fetchPositionsList(chainId));
 	onSuccess();

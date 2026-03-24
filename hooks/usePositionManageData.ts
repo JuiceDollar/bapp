@@ -7,17 +7,21 @@ import { ADDRESS, PositionV2ABI } from "@juicedollar/jusd";
 import { usePositionMaxAmounts } from "./usePositionMaxAmounts";
 import { PositionQuery } from "@juicedollar/api";
 import { SolverPosition } from "../utils/positionSolver";
+import { getNetDebt } from "../utils/loanCalculations";
 
 interface PositionManageData {
 	position: PositionQuery | undefined;
 	principal: bigint;
 	positionPrice: bigint;
+	virtualPrice: bigint;
 	collateralBalance: bigint;
 	currentDebt: bigint;
 	collateralRequirement: bigint;
 	liqPrice: bigint;
 	minimumCollateral: bigint;
 	jusdAllowance: bigint;
+	interest: bigint;
+	netDebt: bigint;
 	jusdBalance: bigint;
 	collateralAllowance: bigint;
 	walletBalance: bigint;
@@ -25,6 +29,7 @@ interface PositionManageData {
 	isInCooldown: boolean;
 	cooldownRemainingFormatted: string | null;
 	cooldownEndsAt: Date | undefined;
+	isChallenged: boolean;
 	currentPosition: SolverPosition | null;
 	refetch: () => void;
 	isLoading: boolean;
@@ -76,6 +81,9 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 						functionName: "allowance",
 						args: [userAddress as Address, position.position as Address],
 					},
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "getInterest" },
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "virtualPrice" },
+					{ chainId, address: position.position, abi: PositionV2ABI, functionName: "challengedAmount" },
 			  ]
 			: [],
 	});
@@ -90,11 +98,15 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 	const jusdAllowance = data?.[7]?.result || 0n;
 	const jusdBalance = data?.[8]?.result || 0n;
 	const collateralAllowance = data?.[9]?.result || 0n;
+	const interest = (data?.[10]?.result as bigint) || 0n;
+	const virtualPriceRaw = (data?.[11]?.result as bigint) || 0n;
+	const challengedAmount = (data?.[12]?.result as bigint) ?? 0n;
 
 	const collateralDecimals = position?.collateralDecimals || 18;
 	const priceDecimals = 36 - collateralDecimals;
-	const debtRatio = collateralBalance > 0n ? (currentDebt * BigInt(10 ** priceDecimals)) / collateralBalance : 0n;
-	const liqPrice = debtRatio > positionPrice ? debtRatio : positionPrice;
+	const virtualPriceValue = virtualPriceRaw > 0n ? virtualPriceRaw : positionPrice;
+	const liqPrice = virtualPriceValue;
+	const netDebt = getNetDebt(principal, interest, position?.reserveContribution ?? 0);
 
 	const now = BigInt(Math.floor(Date.now() / 1000));
 	const cooldownBigInt = BigInt(cooldown);
@@ -105,17 +117,22 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 		: null;
 	const cooldownEndsAt = isInCooldown ? new Date(Number(cooldownBigInt) * 1000) : undefined;
 
+	const isChallenged = challengedAmount > 0n;
+
 	const currentPosition: SolverPosition | null = useMemo(() => {
 		if (!position) return null;
-		return { collateral: collateralBalance, debt: currentDebt, liqPrice, expiration: position.expiration };
-	}, [position, collateralBalance, currentDebt, liqPrice]);
+		return { collateral: collateralBalance, debt: currentDebt, liqPrice: positionPrice, expiration: position.expiration };
+	}, [position, collateralBalance, currentDebt, positionPrice]);
 
 	return {
 		position,
 		principal,
 		positionPrice,
+		virtualPrice: virtualPriceValue,
 		collateralBalance,
 		currentDebt,
+		interest,
+		netDebt,
 		collateralRequirement,
 		liqPrice,
 		minimumCollateral,
@@ -127,6 +144,7 @@ export const usePositionManageData = (addressQuery: string | string[] | undefine
 		isInCooldown,
 		cooldownRemainingFormatted,
 		cooldownEndsAt,
+		isChallenged,
 		currentPosition,
 		refetch,
 		isLoading,

@@ -20,7 +20,7 @@ export default function PositionManage() {
 	const router = useRouter();
 	const { address: addressQuery } = router.query;
 
-	const { position, collateralBalance, currentDebt, liqPrice, isInCooldown, cooldownRemainingFormatted, cooldownEndsAt, isLoading } =
+	const { position, collateralBalance, netDebt, liqPrice, isInCooldown, cooldownRemainingFormatted, cooldownEndsAt, isLoading } =
 		usePositionManageData(addressQuery);
 
 	const handleSelectTarget = (target: Target) => {
@@ -62,7 +62,7 @@ export default function PositionManage() {
 					<AdjustPosition
 						position={position}
 						collateralBalance={collateralBalance}
-						currentDebt={currentDebt}
+						netDebt={netDebt}
 						liqPrice={liqPrice}
 						onSelectTarget={handleSelectTarget}
 						isInCooldown={isInCooldown}

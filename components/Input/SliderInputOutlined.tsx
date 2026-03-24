@@ -14,6 +14,7 @@ interface SliderInputOutlinedProps {
 	usdPrice?: string;
 	disabled?: boolean;
 	hideTrailingZeros?: boolean;
+	displayDecimals?: number;
 }
 
 export function SliderInputOutlined({
@@ -27,6 +28,7 @@ export function SliderInputOutlined({
 	usdPrice,
 	disabled,
 	hideTrailingZeros,
+	displayDecimals,
 }: SliderInputOutlinedProps) {
 	const [isFocused, setIsFocused] = useState(false);
 
@@ -41,13 +43,13 @@ export function SliderInputOutlined({
 						: "before:border-input-border hover:before:border-input-borderHover"
 				}`}
 			>
-				<div className="h-18 self-stretch justify-between inline-flex flex-col sm:flex-row">
-					<div className="flex-col justify-center items-start inline-flex">
+				<div className="self-stretch justify-between items-center inline-flex flex-col gap-0 sm:flex-row sm:h-18">
+					<div className="flex-col justify-center items-start inline-flex min-w-0 w-full sm:flex-1">
 						<div className="self-stretch px-2 bg-white rounded-xl flex-col justify-center items-start flex">
 							<div className="h-11 self-stretch justify-start items-center gap-1 inline-flex overflow-hidden">
 								<TokenLogo currency="JUSD" size={6} />
 								<BigNumberInput
-									className={`w-full pl-0 text-input-primary placeholder:text-input-placeholder text-2xl font-medium leading-tight ${
+									className={`w-full pl-0 text-input-primary placeholder:text-input-placeholder text-xl font-medium sm:text-2xl leading-tight ${
 										isError ? "!text-text-warning" : ""
 									}`}
 									placeholder="0"
@@ -58,14 +60,12 @@ export function SliderInputOutlined({
 									onBlur={() => setIsFocused(false)}
 									disabled={disabled}
 									hideTrailingZeros={hideTrailingZeros}
+									displayDecimals={displayDecimals}
 								/>
 							</div>
 						</div>
-						<div className="px-2 justify-start items-center gap-2.5 inline-flex">
-							<div className="grow shrink basis-0 h-4 justify-start items-center gap-2 flex"></div>
-						</div>
 					</div>
-					<div className="px-3 py-4 mt-2 sm:mt-0 bg-input-bg rounded-lg flex-col justify-center items-start gap-1 inline-flex">
+					<div className="w-full sm:flex-1 min-w-0 px-3 py-2 bg-input-bg rounded-lg flex-col justify-center items-start gap-1 inline-flex">
 						<div className="self-stretch justify-start items-center gap-2 inline-flex">
 							<div className="grow shrink basis-0 text-[#5c637b] text-[10px] font-extrabold leading-[9px]">MIN</div>
 							<div className="text-right text-[#5c637b] text-[10px] font-extrabold leading-[9px]">MAX</div>

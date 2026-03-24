@@ -4,7 +4,7 @@ import { BidsQueryItem, ChallengesId } from "@juicedollar/api";
 import { RootState } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
 import TokenLogo from "@components/TokenLogo";
-import { formatCurrency } from "../../utils/format";
+import { formatCurrency, getCollateralFractionDigits } from "../../utils/format";
 import { useContractUrl } from "@hooks";
 import { useRouter as useNavigation } from "next/navigation";
 import Button from "@components/Button";
@@ -38,6 +38,7 @@ export default function MyPositionsBidsRow({ headers, bid, tab }: Props) {
 	};
 
 	const isDisabled: boolean = challenge.status !== "Active" || account.address !== bid.bidder;
+	const filledSizeFractionDigits = getCollateralFractionDigits(Number(position.collateralDecimals));
 
 	return (
 		<TableRow
@@ -61,8 +62,7 @@ export default function MyPositionsBidsRow({ headers, bid, tab }: Props) {
 					</span>
 					<span className={`col-span-2 text-md font-extrabold`}>{`${formatCurrency(
 						formatUnits(bid.filledSize, position.collateralDecimals),
-						3,
-						3
+						...filledSizeFractionDigits
 					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</span>
 				</div>
 
@@ -73,8 +73,7 @@ export default function MyPositionsBidsRow({ headers, bid, tab }: Props) {
 					</div>
 					<div className={`col-span-2 text-md  font-semibold`}>{`${formatCurrency(
 						formatUnits(bid.filledSize, position.collateralDecimals),
-						3,
-						3
+						...filledSizeFractionDigits
 					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</div>
 				</div>
 			</div>

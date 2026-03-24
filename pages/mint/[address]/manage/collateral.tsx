@@ -16,6 +16,7 @@ export default function ManageCollateral() {
 	const {
 		position,
 		principal,
+		interest,
 		positionPrice,
 		collateralBalance,
 		currentDebt,
@@ -53,7 +54,9 @@ export default function ManageCollateral() {
 			</Head>
 			<div className="md:mt-8 flex justify-center">
 				<AppCard className="max-w-lg w-full p-6 flex flex-col gap-y-6">
-					<SectionTitle className="!mb-0 text-center !text-xl">{t("mint.adjust_your_borrowing_position")}</SectionTitle>
+					<SectionTitle className="!mb-0 text-center !text-xl" onBack={() => router.push(`/mint/${addressQuery}/manage`)}>
+						{t("mint.adjust_your_borrowing_position")}
+					</SectionTitle>
 					<AdjustCollateral
 						position={position}
 						collateralBalance={collateralBalance}
@@ -61,6 +64,7 @@ export default function ManageCollateral() {
 						collateralRequirement={collateralRequirement}
 						positionPrice={positionPrice}
 						principal={principal}
+						interest={interest}
 						walletBalance={walletBalance}
 						minimumCollateral={minimumCollateral}
 						jusdBalance={jusdBalance}

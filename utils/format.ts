@@ -20,6 +20,10 @@ export enum FormatType {
 	"tiny",
 }
 
+export function getCollateralFractionDigits(collateralDecimals: number, maxDecimals = 8): [number, number] {
+	return [0, Math.min(maxDecimals, collateralDecimals)];
+}
+
 export const formatCurrency = (value: string | number, minimumFractionDigits = 0, maximumFractionDigits = 2, format = FormatType.us) => {
 	const amount = typeof value === "string" ? parseFloat(value) : value;
 
@@ -78,6 +82,36 @@ export const formatBigInt = (value?: bigint, units = 18, displayDec = 2): string
 	}
 
 	return displayNum;
+};
+
+/**
+ * Format a bigint token amount with min/max display decimals.
+ * Uses the bigint directly for the non-zero check — avoids float precision loss
+ * that causes tiny positive values to display as "0.0000".
+ */
+export const formatTokenAmount = (value: bigint, tokenDecimals: number, minDp: number, maxDp: number): string => {
+	const isNeg = value < 0n;
+	const abs = isNeg ? -value : value;
+	const str = formatUnits(abs, tokenDecimals);
+	const num = parseFloat(str);
+
+	const formatter = new Intl.NumberFormat("en-US", {
+		minimumFractionDigits: minDp,
+		maximumFractionDigits: maxDp,
+	});
+	const formatted = formatter.format(num);
+
+	// If Intl rounded to zero but the bigint is non-zero, show "< smallest displayable"
+	if (abs > 0n && parseFloat(formatted.replace(/,/g, "")) === 0) {
+		const smallest = Math.pow(10, -maxDp);
+		const smallestStr = new Intl.NumberFormat("en-US", {
+			minimumFractionDigits: maxDp,
+			maximumFractionDigits: maxDp,
+		}).format(smallest);
+		return `< ${smallestStr}`;
+	}
+
+	return `${isNeg ? "-" : ""}${formatted}`;
 };
 
 export const roundToWholeUnits = (value: string, decimals: number): string => {
