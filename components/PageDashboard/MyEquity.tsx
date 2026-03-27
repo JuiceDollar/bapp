@@ -73,11 +73,17 @@ export const MyEquity = () => {
 		<div className="w-full h-full p-4 sm:p-8 flex flex-col items-start">
 			<LinkTitle href={"/equity"}>{t("dashboard.my_equity")}</LinkTitle>
 			<div className="w-full flex flex-row justify-between items-center">
-				<div className="w-full grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] grid-rows-[auto_auto]">
+				<div
+					className={`w-full grid grid-rows-[auto_auto] ${
+						isEquityData ? "grid-cols-[auto_1fr_auto]" : "grid-cols-1 sm:grid-cols-[auto_1fr_auto]"
+					}`}
+				>
 					{/** Headers */}
-					<span className="hidden sm:block"></span>
-					<HeaderCell className="hidden sm:block">{t("dashboard.current_investment")}</HeaderCell>
-					<HeaderCell className="hidden sm:block text-right">{t("dashboard.symbol_amount", { symbol: TOKEN_SYMBOL })}</HeaderCell>
+					<span className={isEquityData ? "" : "hidden sm:block"}></span>
+					<HeaderCell className={isEquityData ? "" : "hidden sm:block"}>{t("dashboard.current_investment")}</HeaderCell>
+					<HeaderCell className={isEquityData ? "text-right" : "hidden sm:block text-right"}>
+						{t("dashboard.symbol_amount", { symbol: TOKEN_SYMBOL })}
+					</HeaderCell>
 					{isEquityData ? (
 						equityData.map((item) => <EquityRow key={item.symbol} {...item} />)
 					) : (

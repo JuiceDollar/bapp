@@ -85,11 +85,11 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 				<>
 					{borrowData.map((item) => (
 						<div className="w-full flex flex-col gap-1 border-b border-borders-dividerLight" key={item.position}>
-							<div className="mb-2 w-full flex flex-col justify-start items-start gap-1">
+							<div className="mb-2 w-full flex flex-row justify-between items-center">
 								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">{t("dashboard.collateral")}</div>
-								<div className="flex flex-row items-center gap-2">
+								<div className="flex flex-row items-center gap-1.5">
 									<div className="flex items-center justify-center">
-										<TokenLogo currency={item.symbol} size={8} />
+										<TokenLogo currency={item.symbol} size={5} />
 									</div>
 									<div className="font-medium text-base leading-tight">
 										{item.collateralAmount} {item.symbol}
