@@ -47,11 +47,15 @@ export const MySavings = () => {
 		<div className="w-full h-full p-4 sm:p-8 flex flex-col items-start">
 			<LinkTitle href={"/savings"}>{t("dashboard.my_savings")}</LinkTitle>
 			<div className="w-full flex flex-row justify-between items-center">
-				<div className="w-full grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr_1fr] grid-rows-[auto_auto] gap-y-1">
-					<span className="hidden sm:block w-11 pr-3"></span>
-					<HeaderCell className="hidden sm:block">{t("dashboard.current_investment")}</HeaderCell>
-					<HeaderCell className="hidden sm:block">{t("dashboard.total_earned")}</HeaderCell>
-					<HeaderCell className="hidden sm:block">{t("dashboard.interest_to_be_collected")}</HeaderCell>
+				<div
+					className={`w-full grid grid-rows-[auto_auto] gap-y-1 ${
+						savingsData ? "grid-cols-[auto_1fr_1fr_1fr]" : "grid-cols-1 sm:grid-cols-[auto_1fr_1fr_1fr]"
+					}`}
+				>
+					<span className={`${savingsData ? "w-11 pr-3" : "hidden sm:block w-11 pr-3"}`}></span>
+					<HeaderCell className={savingsData ? "" : "hidden sm:block"}>{t("dashboard.current_investment")}</HeaderCell>
+					<HeaderCell className={savingsData ? "" : "hidden sm:block"}>{t("dashboard.total_earned")}</HeaderCell>
+					<HeaderCell className={savingsData ? "" : "hidden sm:block"}>{t("dashboard.interest_to_be_collected")}</HeaderCell>
 					{savingsData ? (
 						<SavingsRow
 							balance={userSavingsBalance}
