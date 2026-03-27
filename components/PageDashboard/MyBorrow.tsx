@@ -136,7 +136,9 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 					))}
 				</>
 			) : (
-				<NoDataRow className="col-span-5">{t("dashboard.no_borrowings_yet")}</NoDataRow>
+				<div className="w-full py-[1.125rem] mb-1.5 flex items-center justify-center">
+					<span className="text-text-muted2 text-base font-[350] leading-tight">{t("dashboard.no_borrowings_yet")}</span>
+				</div>
 			)}
 		</div>
 	);

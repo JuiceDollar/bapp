@@ -73,15 +73,17 @@ export const MyEquity = () => {
 		<div className="w-full h-full p-4 sm:p-8 flex flex-col items-start">
 			<LinkTitle href={"/equity"}>{t("dashboard.my_equity")}</LinkTitle>
 			<div className="w-full flex flex-row justify-between items-center">
-				<div className="w-full grid grid-cols-[auto_1fr_auto] grid-rows-[auto_auto]">
+				<div className="w-full grid grid-cols-1 sm:grid-cols-[auto_1fr_auto] grid-rows-[auto_auto]">
 					{/** Headers */}
-					<span></span>
-					<HeaderCell>{t("dashboard.current_investment")}</HeaderCell>
-					<HeaderCell className="text-right">{t("dashboard.symbol_amount", { symbol: TOKEN_SYMBOL })}</HeaderCell>
+					<span className="hidden sm:block"></span>
+					<HeaderCell className="hidden sm:block">{t("dashboard.current_investment")}</HeaderCell>
+					<HeaderCell className="hidden sm:block text-right">{t("dashboard.symbol_amount", { symbol: TOKEN_SYMBOL })}</HeaderCell>
 					{isEquityData ? (
 						equityData.map((item) => <EquityRow key={item.symbol} {...item} />)
 					) : (
-						<NoDataRow className="col-span-2">{t("dashboard.no_investments_yet")}</NoDataRow>
+						<NoDataRow className="col-span-1 sm:col-span-2 text-center justify-self-center">
+							{t("dashboard.no_investments_yet")}
+						</NoDataRow>
 					)}
 				</div>
 			</div>

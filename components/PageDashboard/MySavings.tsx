@@ -47,11 +47,11 @@ export const MySavings = () => {
 		<div className="w-full h-full p-4 sm:p-8 flex flex-col items-start">
 			<LinkTitle href={"/savings"}>{t("dashboard.my_savings")}</LinkTitle>
 			<div className="w-full flex flex-row justify-between items-center">
-				<div className="w-full grid grid-cols-[auto_1fr_1fr_1fr] grid-rows-[auto_auto] gap-y-1">
-					<span className="w-11 pr-3"></span>
-					<HeaderCell>{t("dashboard.current_investment")}</HeaderCell>
-					<HeaderCell>{t("dashboard.total_earned")}</HeaderCell>
-					<HeaderCell>{t("dashboard.interest_to_be_collected")}</HeaderCell>
+				<div className="w-full grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr_1fr] grid-rows-[auto_auto] gap-y-1">
+					<span className="hidden sm:block w-11 pr-3"></span>
+					<HeaderCell className="hidden sm:block">{t("dashboard.current_investment")}</HeaderCell>
+					<HeaderCell className="hidden sm:block">{t("dashboard.total_earned")}</HeaderCell>
+					<HeaderCell className="hidden sm:block">{t("dashboard.interest_to_be_collected")}</HeaderCell>
 					{savingsData ? (
 						<SavingsRow
 							balance={userSavingsBalance}
@@ -59,7 +59,9 @@ export const MySavings = () => {
 							interestToBeCollected={interestToBeCollected}
 						/>
 					) : (
-						<NoDataRow className="col-span-3">{t("dashboard.no_savings_yet")}</NoDataRow>
+						<NoDataRow className="col-span-1 sm:col-span-3 text-center justify-self-center">
+							{t("dashboard.no_savings_yet")}
+						</NoDataRow>
 					)}
 				</div>
 			</div>
