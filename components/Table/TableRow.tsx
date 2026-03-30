@@ -11,6 +11,7 @@ interface Props {
 	subHeaders?: string[];
 	tab: string;
 	showFirstHeader?: boolean;
+	mobileFirstColumnSplit?: boolean;
 }
 
 export default function TableRow({
@@ -24,6 +25,7 @@ export default function TableRow({
 	classNameMobile = "",
 	tab,
 	showFirstHeader = false,
+	mobileFirstColumnSplit = false,
 }: Props) {
 	return (
 		<div
@@ -47,6 +49,7 @@ export default function TableRow({
 					className={classNameMobile}
 					tab={tab}
 					showFirstHeader={showFirstHeader}
+					mobileFirstColumnSplit={mobileFirstColumnSplit}
 				>
 					{children}
 				</TableRowMobile>
@@ -65,9 +68,18 @@ interface TableRowMobileProps {
 	className: string;
 	tab: string;
 	showFirstHeader?: boolean;
+	mobileFirstColumnSplit?: boolean;
 }
 
-function TableRowMobile({ children, headers, subHeaders, className, tab, showFirstHeader = false }: TableRowMobileProps) {
+function TableRowMobile({
+	children,
+	headers,
+	subHeaders,
+	className,
+	tab,
+	showFirstHeader = false,
+	mobileFirstColumnSplit = false,
+}: TableRowMobileProps) {
 	if (headers.length === 0) {
 		return <div className={`${className} md:hidden justify-items-center text-center gap-6 grid flex-grow grid-cols-1`}>{children}</div>;
 	} else {
@@ -75,34 +87,59 @@ function TableRowMobile({ children, headers, subHeaders, className, tab, showFir
 			<div className={`${className} md:hidden grid-cols-1 flex-1`}>
 				{children.map((c, idx) => (
 					<div className="mt-1.5 flex" key={headers[idx] + idx}>
-						<div className="flex-1 text-left">
-							{idx === 0 ? (
-								<>
-									{showFirstHeader && (
-										<div className={`mb-2 ${headers[idx] == tab ? "text-text-primary font-bold" : "text-text-muted"}`}>
-											{headers[idx]}
-										</div>
-									)}
-									<div className={`${headers[idx] == tab ? "text-text-primary font-bold" : "text-text-muted"}`}>{c}</div>
-								</>
-							) : subHeaders.length === 0 ? (
-								<div className={`${headers[idx] == tab ? "text-text-primary font-bold" : "text-text-muted"}`}>
-									{headers[idx]}
-								</div>
-							) : (
-								<div>
+						{idx === 0 && mobileFirstColumnSplit && showFirstHeader ? (
+							<>
+								<div className="flex-1 text-left">
 									<div className={`${headers[idx] == tab ? "text-text-primary font-bold" : "text-text-muted"}`}>
 										{headers[idx]}
 									</div>
-									<div className={`${headers[idx] == tab ? "text-text-subheader font-bold" : "text-text-muted"}`}>
-										{subHeaders[idx]}
-									</div>
 								</div>
-							)}
-						</div>
-						<div className={`${headers[idx] == tab ? "!text-text-primary !font-bold" : "!text-text-muted"} text-right`}>
-							{idx === 0 ? "" : c}
-						</div>
+								<div
+									className={`${
+										headers[idx] == tab ? "!text-text-primary !font-bold" : "!text-text-muted"
+									} text-right flex min-w-0 items-center justify-end`}
+								>
+									{c}
+								</div>
+							</>
+						) : (
+							<>
+								<div className="flex-1 text-left">
+									{idx === 0 ? (
+										<>
+											{showFirstHeader && (
+												<div
+													className={`mb-2 ${
+														headers[idx] == tab ? "text-text-primary font-bold" : "text-text-muted"
+													}`}
+												>
+													{headers[idx]}
+												</div>
+											)}
+											<div className={`${headers[idx] == tab ? "text-text-primary font-bold" : "text-text-muted"}`}>
+												{c}
+											</div>
+										</>
+									) : subHeaders.length === 0 ? (
+										<div className={`${headers[idx] == tab ? "text-text-primary font-bold" : "text-text-muted"}`}>
+											{headers[idx]}
+										</div>
+									) : (
+										<div>
+											<div className={`${headers[idx] == tab ? "text-text-primary font-bold" : "text-text-muted"}`}>
+												{headers[idx]}
+											</div>
+											<div className={`${headers[idx] == tab ? "text-text-subheader font-bold" : "text-text-muted"}`}>
+												{subHeaders[idx]}
+											</div>
+										</div>
+									)}
+								</div>
+								<div className={`${headers[idx] == tab ? "!text-text-primary !font-bold" : "!text-text-muted"} text-right`}>
+									{idx === 0 ? "" : c}
+								</div>
+							</>
+						)}
 					</div>
 				))}
 			</div>
