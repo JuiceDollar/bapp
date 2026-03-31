@@ -12,7 +12,7 @@ import { TxToast, toastTxError } from "@components/TxToast";
 import { toast } from "react-toastify";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../app.config";
-import { ADDRESS, JuiceDollarABI, EquityABI, FrontendGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, JuiceDollarABI, EquityABI, FrontendGatewayV2ABI } from "@juicedollar/jusd";
 import { useFrontendCode } from "../../hooks/useFrontendCode";
 import { useTranslation } from "next-i18next";
 import { TokenInputSelectOutlined } from "@components/Input/TokenInputSelectOutlined";
@@ -126,7 +126,7 @@ export default function InteractionStablecoinAndPoolShares({
 			const investWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
-				abi: FrontendGatewayABI,
+				abi: FrontendGatewayV2ABI,
 				functionName: "invest",
 				args: [amount, result, frontendCode],
 			});
@@ -246,7 +246,7 @@ export default function InteractionStablecoinAndPoolShares({
 			const redeemWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
-				abi: FrontendGatewayABI,
+				abi: FrontendGatewayV2ABI,
 				functionName: "redeem",
 				args: [account, amount, deuroResult, frontendCode],
 			});

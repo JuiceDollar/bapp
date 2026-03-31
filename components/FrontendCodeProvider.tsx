@@ -7,7 +7,7 @@ import {
 	ZERO_FRONTEND_CODE,
 } from "@utils";
 import { useRouter } from "next/router";
-import { FrontendGatewayABI } from "@juicedollar/jusd";
+import { FrontendGatewayV2ABI } from "@juicedollar/jusd";
 import { zeroAddress } from "viem";
 import { ADDRESS } from "@juicedollar/jusd";
 import { readContract } from "wagmi/actions";
@@ -40,7 +40,7 @@ export const FrontendCodeProvider: React.FC<{ children: React.ReactNode }> = ({ 
 					const [, owner] = await readContract(WAGMI_CONFIG, {
 						chainId: chainId as typeof mainnet.id | typeof testnet.id,
 						address: ADDRESS[chainId].frontendGateway,
-						abi: FrontendGatewayABI,
+						abi: FrontendGatewayV2ABI,
 						functionName: "frontendCodes",
 						args: [code],
 					});
@@ -59,7 +59,7 @@ export const FrontendCodeProvider: React.FC<{ children: React.ReactNode }> = ({ 
 					const lastUsedCode = await readContract(WAGMI_CONFIG, {
 						chainId: chainId as typeof mainnet.id | typeof testnet.id,
 						address: ADDRESS[chainId].frontendGateway,
-						abi: FrontendGatewayABI,
+						abi: FrontendGatewayV2ABI,
 						functionName: "lastUsedFrontendCode",
 						args: [address],
 					});

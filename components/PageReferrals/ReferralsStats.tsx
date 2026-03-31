@@ -4,7 +4,7 @@ import { useChainId } from "wagmi";
 import { readContract, waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { useTranslation } from "next-i18next";
-import { ADDRESS, FrontendGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, FrontendGatewayV2ABI } from "@juicedollar/jusd";
 import { formatUnits, zeroAddress } from "viem";
 import { WAGMI_CONFIG } from "../../app.config";
 import { formatCurrency, TOKEN_SYMBOL } from "@utils";
@@ -28,7 +28,7 @@ export const ReferralsStats = () => {
 			const [balance, owner] = await readContract(WAGMI_CONFIG, {
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
-				abi: FrontendGatewayABI,
+				abi: FrontendGatewayV2ABI,
 				functionName: "frontendCodes",
 				args: [myFrontendCode],
 			});
@@ -53,7 +53,7 @@ export const ReferralsStats = () => {
 			const tx = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
-				abi: FrontendGatewayABI,
+				abi: FrontendGatewayV2ABI,
 				functionName: "withdrawRewards",
 				args: [myFrontendCode],
 			});

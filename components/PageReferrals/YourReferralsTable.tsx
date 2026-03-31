@@ -17,7 +17,7 @@ import { RootState } from "../../redux/redux.store";
 import { gql, useQuery } from "@apollo/client";
 import { formatUnits } from "viem";
 import { useChainId } from "wagmi";
-import { ADDRESS, SavingsGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, SavingsGatewayV2ABI } from "@juicedollar/jusd";
 import { readContract } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
 import { mainnet, testnet } from "@config";
@@ -106,7 +106,7 @@ export default function YourReferralsTable() {
 						const accruedInterest = await readContract(WAGMI_CONFIG, {
 							chainId: chainId as typeof mainnet.id | typeof testnet.id,
 							address: ADDRESS[chainId].savingsGateway,
-							abi: SavingsGatewayABI,
+							abi: SavingsGatewayV2ABI,
 							functionName: "accruedInterest",
 							args: [address as `0x${string}`],
 						});

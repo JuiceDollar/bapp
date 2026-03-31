@@ -8,7 +8,7 @@ import { toastTxError, TxToast } from "@components/TxToast";
 import { useAccount, useChainId } from "wagmi";
 import Button from "@components/Button";
 import { formatUnits } from "viem";
-import { ADDRESS, SavingsGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, SavingsGatewayV2ABI } from "@juicedollar/jusd";
 import { useFrontendCode } from "../../hooks/useFrontendCode";
 import { useTranslation } from "next-i18next";
 import { mainnet, testnet } from "@config";
@@ -40,7 +40,7 @@ export default function SavingsActionInterest({ balance, interest, disabled, set
 			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
-				abi: SavingsGatewayABI,
+				abi: SavingsGatewayV2ABI,
 				functionName: "adjust",
 				args: [balance, frontendCode],
 			});
