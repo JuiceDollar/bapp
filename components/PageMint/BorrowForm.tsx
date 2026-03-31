@@ -23,15 +23,13 @@ import {
 	NATIVE_WRAPPED_SYMBOLS,
 	normalizeTokenSymbol,
 	formatPositionValue,
-	MAINNET_CHAIN_ID,
-	MAINNET_DEFAULT_COLLATERAL_WCBTC,
-	MAINNET_GENESIS_POSITION,
+	MAINNET_WCBTC_ADDRESS,
 } from "@utils";
 import { TokenBalance, useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { RootState, store } from "../../redux/redux.store";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { useTranslation } from "next-i18next";
-import { ADDRESS, MintingHubGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
 import { useAccount, useChainId } from "wagmi";
 import { WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
 import { getApiClient } from "@utils";
@@ -115,13 +113,11 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 				const apiClient = getApiClient(chainId);
 
 				// Mainnet: always fetch genesis (contract enforces original's expiration), then try best-cloneable for optimal clone parent.
-				if (chainId === MAINNET_CHAIN_ID) {
+				if (chainId === mainnet.id) {
 					const [listRes, bestCloneableRes] = await Promise.all([
 						apiClient.get<ApiPositionsListing>(`/positions/list`),
 						apiClient
-							.get<{ position: PositionQuery | null }>(
-								`/positions/best-cloneable?collateral=${MAINNET_DEFAULT_COLLATERAL_WCBTC}`
-							)
+							.get<{ position: PositionQuery | null }>(`/positions/best-cloneable?collateral=${MAINNET_WCBTC_ADDRESS}`)
 							.catch((e: unknown) => {
 								console.warn("best-cloneable endpoint failed, falling back to genesis:", e);
 								return null;
@@ -130,7 +126,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 
 					const allPositions = listRes.data?.list || [];
 					const genesisPos = allPositions.find(
-						(p: PositionQuery) => p.position.toLowerCase() === MAINNET_GENESIS_POSITION.toLowerCase()
+						(p: PositionQuery) => p.position.toLowerCase() === ADDRESS[chainId].genesisPosition.toLowerCase()
 					);
 
 					if (!genesisPos) return;
@@ -412,7 +408,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 			const hash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: gatewayAddress,
-				abi: MintingHubGatewayABI,
+				abi: MintingHubGatewayV2ABI,
 				functionName: "clone",
 				args: [
 					address as Address,
