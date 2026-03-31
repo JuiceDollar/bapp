@@ -21,7 +21,7 @@ import { useSelector } from "react-redux";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { useRouter as useNavigation } from "next/navigation";
-import { ADDRESS, JuiceDollarABI, MintingHubV3ABI } from "@juicedollar/jusd";
+import { ADDRESS, JuiceDollarABI, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import { mainnet, testnet } from "@config";
@@ -67,7 +67,7 @@ export default function MonitoringForceSell() {
 			const _price = await readContract(WAGMI_CONFIG, {
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDR.mintingHubGateway,
-				abi: MintingHubV3ABI,
+				abi: MintingHubGatewayV2ABI,
 				functionName: "expiredPurchasePrice",
 				args: [position.position],
 			});
@@ -124,7 +124,7 @@ export default function MonitoringForceSell() {
 			const bidWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubV3ABI,
+				abi: MintingHubGatewayV2ABI,
 				functionName: "buyExpiredCollateral",
 				args: [position.position, amount],
 			});

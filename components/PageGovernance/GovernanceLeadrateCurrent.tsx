@@ -16,7 +16,7 @@ import { useAccount, useChainId } from "wagmi";
 import { WAGMI_CONFIG } from "../../app.config";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
-import { ADDRESS, SavingsV3ABI } from "@juicedollar/jusd";
+import { ADDRESS, SavingsGatewayV2ABI } from "@juicedollar/jusd";
 import { toastTxError, TxToast } from "@components/TxToast";
 import { toast } from "react-toastify";
 import { useTranslation } from "next-i18next";
@@ -59,7 +59,7 @@ export default function GovernanceLeadrateCurrent({}: Props) {
 			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
-				abi: SavingsV3ABI,
+				abi: SavingsGatewayV2ABI,
 				functionName: "proposeChange",
 				args: [newRate, []],
 			});

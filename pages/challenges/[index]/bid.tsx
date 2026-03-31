@@ -30,7 +30,7 @@ import { useSelector } from "react-redux";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { useRouter as useNavigation } from "next/navigation";
-import { ADDRESS, JuiceDollarABI, MintingHubV3ABI } from "@juicedollar/jusd";
+import { ADDRESS, JuiceDollarABI, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
 import { ChallengesId } from "@juicedollar/api";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
@@ -94,9 +94,9 @@ export default function ChallengePlaceBid() {
 			const _price = await readContract(WAGMI_CONFIG, {
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDR.mintingHubGateway,
-				abi: MintingHubV3ABI,
+				abi: MintingHubGatewayV2ABI,
 				functionName: "price",
-				args: [BigInt(challenge.number.toString())],
+				args: [parseInt(challenge.number.toString())],
 			});
 			setAuctionPrice(_price);
 		};
@@ -204,7 +204,7 @@ export default function ChallengePlaceBid() {
 			const bidWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubV3ABI,
+				abi: MintingHubGatewayV2ABI,
 				functionName: "bid",
 				args: [parseInt(challenge.number.toString()), amount, false],
 			});
