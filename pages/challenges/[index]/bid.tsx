@@ -96,7 +96,7 @@ export default function ChallengePlaceBid() {
 				address: ADDR.mintingHubGateway,
 				abi: MintingHubV3ABI,
 				functionName: "price",
-				args: [parseInt(challenge.number.toString())],
+				args: [BigInt(challenge.number.toString())],
 			});
 			setAuctionPrice(_price);
 		};

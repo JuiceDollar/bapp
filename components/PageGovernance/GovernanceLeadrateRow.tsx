@@ -7,7 +7,7 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { useAccount, useChainId } from "wagmi";
-import { ADDRESS, SavingsABI } from "@juicedollar/jusd";
+import { ADDRESS, SavingsV3ABI } from "@juicedollar/jusd";
 import { ApiLeadrateInfo, LeadrateProposed } from "@juicedollar/api";
 import Button from "@components/Button";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
@@ -48,7 +48,7 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
-				abi: SavingsABI,
+				abi: SavingsV3ABI,
 				functionName: "applyChange",
 				args: [],
 			});
@@ -94,7 +94,7 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
-				abi: SavingsABI,
+				abi: SavingsV3ABI,
 				functionName: "proposeChange",
 				args: [info.rate, []],
 			});
