@@ -1,150 +1,22 @@
-import { test, expect, chromium, type BrowserContext, type Page } from "@playwright/test";
-import { MetaMask, getExtensionId } from "@synthetixio/synpress-metamask/playwright";
-import { prepareExtension } from "@synthetixio/synpress-cache";
+import { test, expect, type BrowserContext, type Page } from "@playwright/test";
+import { MetaMask } from "@synthetixio/synpress-metamask/playwright";
 import * as fs from "fs";
-import * as path from "path";
+import {
+	setupMetaMask,
+	connectWalletIfNeeded,
+	forceConnectWallet,
+	verifyTransactionOnCitreascan,
+	captureExplorerScreenshot,
+} from "../../helpers/wallet";
 
 const SEED_PHRASE = process.env.WALLET_SEED_PHRASE || "";
 const WALLET_PASSWORD = process.env.WALLET_PASSWORD || "";
 const WALLET_ADDRESS = process.env.WALLET_ADDRESS || "";
 
-// Citreascan API configuration
-const CITREASCAN_API = "https://testnet.citreascan.com/api/v2";
 const CONFIRMATION_TIMEOUT_MS = 30000; // 30 seconds for Citrea Testnet
-const POLL_INTERVAL_MS = 1000;
-
-interface CitreascanTransaction {
-	hash: string;
-	status: string;
-	result: string;
-	timestamp: string;
-	from: { hash: string };
-	to: { hash: string };
-	value: string;
-}
-
-interface CitreascanResponse {
-	items: CitreascanTransaction[];
-}
-
-// Ensure screenshot directory exists
 const SCREENSHOT_DIR = "test-results/screenshots";
 
-/**
- * Open Citreascan explorer in a new tab and capture screenshot
- * Waits 10s, takes screenshot. If not confirmed, waits 30s more, reloads and takes another screenshot.
- * @param context - Browser context to create new tab
- * @param txHash - Transaction hash to view
- * @param screenshotPrefix - Prefix for screenshot filename
- * @returns Promise that resolves when done
- */
-async function captureExplorerScreenshot(context: BrowserContext, txHash: string, screenshotPrefix: string): Promise<void> {
-	// Ensure screenshot directory exists
-	if (!fs.existsSync(SCREENSHOT_DIR)) {
-		fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
-	}
-
-	const explorerUrl = `https://testnet.citreascan.com/tx/${txHash}`;
-	console.log(`\n   📷 OPENING CITREASCAN EXPLORER`);
-	console.log(`   URL: ${explorerUrl}`);
-
-	const explorerPage = await context.newPage();
-	await explorerPage.bringToFront();
-
-	await explorerPage.goto(explorerUrl);
-	await explorerPage.waitForLoadState("networkidle");
-
-	// Wait for transaction details to render (Citreascan shows "Status and method" row with "Success")
-	// The success badge is a span with green background containing "Success" text
-	const successSelector = 'span:has-text("Success"), text="Success"';
-
-	try {
-		// Wait up to 5 seconds for Success status to appear
-		await explorerPage.locator(successSelector).first().waitFor({ state: "visible", timeout: 5000 });
-		console.log("   ✅ Transaction confirmed on explorer");
-	} catch {
-		// If not visible after 5s, wait 3 more seconds and reload once
-		console.log("   ⏳ Waiting for confirmation...");
-		await explorerPage.waitForTimeout(3000);
-		await explorerPage.reload();
-		await explorerPage.waitForLoadState("networkidle");
-	}
-
-	// Take screenshot
-	const screenshot = path.join(SCREENSHOT_DIR, `${screenshotPrefix}-explorer.png`);
-	await explorerPage.screenshot({ path: screenshot, fullPage: true });
-	console.log(`   📸 Screenshot: ${screenshot}`);
-
-	await explorerPage.close();
-}
-
-/**
- * Verify transaction is confirmed on Citreascan within timeout
- * @param walletAddress - The wallet address to check transactions for
- * @param beforeTimestamp - Only consider transactions after this timestamp
- * @param timeoutMs - Maximum time to wait for confirmation (default: 10s)
- * @returns The confirmed transaction or throws error
- */
-async function verifyTransactionOnCitreascan(
-	walletAddress: string,
-	beforeTimestamp: Date,
-	timeoutMs: number = CONFIRMATION_TIMEOUT_MS
-): Promise<CitreascanTransaction> {
-	const startTime = Date.now();
-	let lastError: Error | null = null;
-
-	console.log(`   Checking Citreascan for wallet: ${walletAddress}`);
-	console.log(`   Looking for transactions after: ${beforeTimestamp.toISOString()}`);
-
-	while (Date.now() - startTime < timeoutMs) {
-		try {
-			const response = await fetch(`${CITREASCAN_API}/addresses/${walletAddress}/transactions`);
-
-			if (!response.ok) {
-				throw new Error(`Citreascan API error: ${response.status}`);
-			}
-
-			const data: CitreascanResponse = await response.json();
-
-			if (data.items && data.items.length > 0) {
-				// Find the most recent transaction that occurred after our beforeTimestamp
-				const recentTx = data.items.find((tx) => {
-					const txTime = new Date(tx.timestamp);
-					return txTime > beforeTimestamp;
-				});
-
-				if (recentTx) {
-					if (recentTx.status === "ok" && recentTx.result === "success") {
-						const elapsed = Date.now() - startTime;
-						console.log(`   ✅ Transaction confirmed on blockchain in ${elapsed}ms`);
-						console.log(`   TX Hash: ${recentTx.hash}`);
-						console.log(`   Status: ${recentTx.status}, Result: ${recentTx.result}`);
-						return recentTx;
-					} else if (recentTx.status === "error" || recentTx.result === "error") {
-						throw new Error(`Transaction failed on blockchain: ${recentTx.hash}`);
-					}
-				}
-			}
-		} catch (error) {
-			lastError = error as Error;
-		}
-
-		// Wait before next poll
-		await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-	}
-
-	throw new Error(
-		`Transaction not confirmed on Citreascan within ${timeoutMs}ms. ` + `Last error: ${lastError?.message || "No transaction found"}`
-	);
-}
-
-if (!SEED_PHRASE || !WALLET_PASSWORD) {
-	throw new Error("WALLET_SEED_PHRASE and WALLET_PASSWORD must be set in environment variables");
-}
-
-if (!WALLET_ADDRESS) {
-	throw new Error("WALLET_ADDRESS must be set in environment variables for blockchain verification");
-}
+const WALLET_ENV_MISSING = !SEED_PHRASE || !WALLET_PASSWORD || !WALLET_ADDRESS;
 
 // Citrea Testnet configuration
 const CITREA_TESTNET = {
@@ -155,181 +27,6 @@ const CITREA_TESTNET = {
 	blockExplorerUrl: "https://testnet.citreascan.com",
 };
 
-/**
- * Connect wallet if not already connected
- * Checks for wallet address display AND valid balance to determine connection status
- * @param page - Playwright page
- * @param metamask - MetaMask instance
- * @returns Promise that resolves when wallet is connected
- */
-/**
- * Force connect wallet - always performs connection regardless of current state
- */
-async function forceConnectWallet(page: Page, metamask: MetaMask): Promise<void> {
-	console.log("📍 Force connecting wallet...");
-
-	// First, check if there's a connect button visible
-	const connectButton = page.getByRole("button", { name: /connect/i });
-	const connectVisible = await connectButton.isVisible({ timeout: 5000 }).catch(() => false);
-
-	if (connectVisible) {
-		// Fresh page, just click connect
-		await connectButton.click();
-	} else {
-		// Might be "connected" (cached state) - disconnect first
-		console.log("   No connect button found, looking for wallet menu...");
-		const walletButton = page.locator("text=/0x[a-fA-F0-9]{4}/i").first();
-		const walletButtonVisible = await walletButton.isVisible({ timeout: 3000 }).catch(() => false);
-
-		if (walletButtonVisible) {
-			await walletButton.click();
-			await page.waitForTimeout(500);
-			const disconnectOption = page.getByText(/disconnect/i).first();
-			const disconnectVisible = await disconnectOption.isVisible({ timeout: 2000 }).catch(() => false);
-			if (disconnectVisible) {
-				await disconnectOption.click();
-				console.log("   Disconnected wallet");
-				await page.waitForTimeout(1000);
-			} else {
-				await page.keyboard.press("Escape");
-			}
-		}
-
-		// Reload and try again
-		await page.reload();
-		await page.waitForLoadState("networkidle");
-		const newConnectBtn = page.getByRole("button", { name: /connect/i });
-		await expect(newConnectBtn).toBeVisible({ timeout: 10000 });
-		await newConnectBtn.click();
-	}
-
-	// Select MetaMask from wallet modal
-	console.log("📍 Select MetaMask from modal");
-	await page.waitForTimeout(1000);
-	const walletOption = page.getByText(/metamask/i).first();
-	await expect(walletOption).toBeVisible({ timeout: 5000 });
-	await walletOption.click();
-
-	// Approve connection in MetaMask
-	console.log("📍 Approve connection in MetaMask");
-	await metamask.connectToDapp();
-	await page.waitForTimeout(2000);
-
-	// Handle network switch if prompted
-	console.log("📍 Handle network switch");
-	try {
-		const switchNetworkButton = page.getByRole("button", { name: /switch network/i });
-		const isSwitchVisible = await switchNetworkButton.isVisible({ timeout: 3000 }).catch(() => false);
-		if (isSwitchVisible) {
-			await switchNetworkButton.click();
-			await page.waitForTimeout(3000);
-		}
-	} catch {
-		// Network switch not needed
-	}
-
-	// Verify connection
-	console.log("📍 Verifying connection...");
-	await page.waitForTimeout(2000);
-	const walletAddress = page.locator("text=/0x[a-fA-F0-9]{4}/i").first();
-	await expect(walletAddress).toBeVisible({ timeout: 10000 });
-	console.log("   ✅ Wallet connected!");
-}
-
-async function connectWalletIfNeeded(page: Page, metamask: MetaMask): Promise<void> {
-	// Check if wallet is already connected AND has a valid balance (not 0)
-	const walletAddressVisible = await page
-		.locator("text=/0x[a-fA-F0-9]{4}/i")
-		.first()
-		.isVisible({ timeout: 3000 })
-		.catch(() => false);
-
-	if (walletAddressVisible) {
-		// Check if balance is loaded (not 0)
-		const balanceText = await page
-			.locator("text=/\\d+\\.?\\d*\\s*cBTC/")
-			.first()
-			.textContent({ timeout: 5000 })
-			.catch(() => "0 cBTC");
-		const balanceMatch = balanceText?.match(/([\d.]+)\s*cBTC/);
-		const balance = balanceMatch ? parseFloat(balanceMatch[1]) : 0;
-
-		if (balance > 0) {
-			console.log(`   ✓ Wallet already connected with balance: ${balance} cBTC`);
-			return;
-		}
-		console.log("   ⚠️ Wallet appears connected but balance is 0, forcing reconnection...");
-	}
-
-	// Connect wallet - first check if there's a connect button
-	console.log("📍 Connect wallet");
-	const connectButton = page.getByRole("button", { name: /connect/i });
-	const connectVisible = await connectButton.isVisible({ timeout: 5000 }).catch(() => false);
-
-	if (!connectVisible) {
-		// No connect button - try to disconnect first by looking for a disconnect option
-		console.log("   Looking for disconnect option...");
-		const walletButton = page.locator("text=/0x[a-fA-F0-9]{4}/i").first();
-		const walletButtonVisible = await walletButton.isVisible({ timeout: 2000 }).catch(() => false);
-		if (walletButtonVisible) {
-			await walletButton.click();
-			await page.waitForTimeout(500);
-			const disconnectOption = page.getByText(/disconnect/i).first();
-			const disconnectVisible = await disconnectOption.isVisible({ timeout: 2000 }).catch(() => false);
-			if (disconnectVisible) {
-				await disconnectOption.click();
-				console.log("   Disconnected wallet, now reconnecting...");
-				await page.waitForTimeout(1000);
-			} else {
-				await page.keyboard.press("Escape");
-			}
-		}
-		// Reload and try again
-		await page.reload();
-		await page.waitForLoadState("networkidle");
-	}
-
-	// Now click connect
-	const connectBtn = page.getByRole("button", { name: /connect/i });
-	await expect(connectBtn).toBeVisible({ timeout: 10000 });
-	await connectBtn.click();
-
-	// Select MetaMask from wallet modal
-	console.log("📍 Select MetaMask");
-	await page.waitForTimeout(1000);
-	const walletOption = page.getByText(/metamask/i).first();
-	await expect(walletOption).toBeVisible({ timeout: 5000 });
-	await walletOption.click();
-
-	// Approve connection in MetaMask
-	console.log("📍 Approve connection in MetaMask");
-	await metamask.connectToDapp();
-	await page.waitForTimeout(2000);
-
-	// Handle network switch if prompted (click button, MetaMask auto-approves on known networks)
-	console.log("📍 Handle network switch");
-	try {
-		const switchNetworkButton = page.getByRole("button", { name: /switch network/i });
-		const isSwitchVisible = await switchNetworkButton.isVisible({ timeout: 3000 }).catch(() => false);
-		if (isSwitchVisible) {
-			await switchNetworkButton.click();
-			// Wait for MetaMask to process the network switch
-			await page.waitForTimeout(3000);
-		}
-	} catch {
-		console.log("   No network switch needed");
-	}
-
-	// Close any modal that might be open
-	await page.keyboard.press("Escape");
-	await page.waitForTimeout(500);
-
-	// Verify wallet is connected
-	console.log("📍 Verify wallet connected");
-	await expect(page.locator("text=/0x[a-fA-F0-9]{4}/i").first()).toBeVisible({ timeout: 15000 });
-	console.log("   ✓ Wallet connected successfully");
-}
-
 test.describe("Loan Creation", () => {
 	// Increase timeout for wallet transactions (5 minutes for full lifecycle with explorer screenshots)
 	test.setTimeout(300000);
@@ -338,23 +35,12 @@ test.describe("Loan Creation", () => {
 	let page: Page;
 
 	test.beforeAll(async () => {
-		const extensionPath = await prepareExtension();
+		if (WALLET_ENV_MISSING) {
+			test.skip(true, "WALLET_SEED_PHRASE, WALLET_PASSWORD and WALLET_ADDRESS must be set — skipping wallet tests");
+			return;
+		}
 
-		context = await chromium.launchPersistentContext("", {
-			headless: false,
-			viewport: { width: 1280, height: 720 },
-			args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
-		});
-
-		const extensionId = await getExtensionId(context, "MetaMask");
-
-		await new Promise((r) => setTimeout(r, 2000));
-		const pages = context.pages();
-		const metamaskPage = pages.find((p) => p.url().includes("chrome-extension://"));
-		if (!metamaskPage) throw new Error("MetaMask not found");
-
-		metamask = new MetaMask(context, metamaskPage, WALLET_PASSWORD, extensionId);
-		await metamask.importWallet(SEED_PHRASE);
+		({ context, metamask } = await setupMetaMask(WALLET_PASSWORD, SEED_PHRASE));
 
 		// Add Citrea Testnet to MetaMask
 		await metamask.addNetwork(CITREA_TESTNET);

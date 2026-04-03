@@ -44,13 +44,31 @@ export default defineConfig({
 		video: "on-first-retry",
 	},
 
-	/* Configure projects for Chrome only */
+	/* Configure projects */
 	projects: [
 		{
+			// Headless project for smoke/functional tests (no wallet required). Used in CI.
+			name: "chromium-headless",
+			testIgnore: "**/wallet/**",
+			use: {
+				...devices["Desktop Chrome"],
+				headless: true,
+			},
+		},
+		{
+			// Headed project for wallet/MetaMask tests (requires Synpress extension).
+			name: "chromium-wallet",
+			testMatch: "**/wallet/**",
+			use: {
+				...devices["Desktop Chrome"],
+				headless: false,
+			},
+		},
+		{
+			// Legacy project: runs everything headed (local dev convenience).
 			name: "chromium",
 			use: {
 				...devices["Desktop Chrome"],
-				// Use headed mode for MetaMask interaction
 				headless: false,
 			},
 		},

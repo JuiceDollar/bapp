@@ -1,36 +1,20 @@
-import { test, expect, chromium, type BrowserContext } from "@playwright/test";
-import { MetaMask, getExtensionId } from "@synthetixio/synpress-metamask/playwright";
-import { prepareExtension } from "@synthetixio/synpress-cache";
+import { test, expect, type BrowserContext } from "@playwright/test";
+import { MetaMask } from "@synthetixio/synpress-metamask/playwright";
+import { setupMetaMask } from "../../helpers/wallet";
 
 const SEED_PHRASE = process.env.WALLET_SEED_PHRASE || "";
 const WALLET_PASSWORD = process.env.WALLET_PASSWORD || "";
-
-if (!SEED_PHRASE || !WALLET_PASSWORD) {
-	throw new Error("WALLET_SEED_PHRASE and WALLET_PASSWORD must be set in environment variables");
-}
 
 test.describe("Wallet Connect", () => {
 	let context: BrowserContext;
 	let metamask: MetaMask;
 
 	test.beforeAll(async () => {
-		const extensionPath = await prepareExtension();
-
-		context = await chromium.launchPersistentContext("", {
-			headless: false,
-			viewport: { width: 1280, height: 720 },
-			args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
-		});
-
-		const extensionId = await getExtensionId(context, "MetaMask");
-
-		await new Promise((r) => setTimeout(r, 2000));
-		const pages = context.pages();
-		const metamaskPage = pages.find((p) => p.url().includes("chrome-extension://"));
-		if (!metamaskPage) throw new Error("MetaMask not found");
-
-		metamask = new MetaMask(context, metamaskPage, WALLET_PASSWORD, extensionId);
-		await metamask.importWallet(SEED_PHRASE);
+		if (!SEED_PHRASE || !WALLET_PASSWORD) {
+			test.skip(true, "WALLET_SEED_PHRASE and WALLET_PASSWORD not set — skipping wallet tests");
+			return;
+		}
+		({ context, metamask } = await setupMetaMask(WALLET_PASSWORD, SEED_PHRASE));
 	});
 
 	test.afterAll(async () => {
