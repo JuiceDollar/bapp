@@ -2,37 +2,12 @@ import TokenLogo from "@components/TokenLogo";
 import { useTranslation } from "next-i18next";
 import { HeaderCell, LinkTitle, NoDataRow } from "./SectionTable";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
-import { formatCurrency, POOL_SHARE_TOKEN_SYMBOL } from "@utils";
+import { formatCurrency, POOL_SHARE_TOKEN_SYMBOL, TOKEN_SYMBOL } from "@utils";
 import { ADDRESS, EquityABI } from "@juicedollar/jusd";
 import { useChainId, useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { useRouter } from "next/router";
 import { getPublicViewAddress } from "../../utils/url";
-import { TOKEN_SYMBOL } from "@utils";
-
-const EquityRow = ({
-	symbol,
-	currentInvestment = "0.00",
-	amount = "0.00",
-}: {
-	symbol: string;
-	currentInvestment: string;
-	amount: string;
-}) => {
-	return (
-		<>
-			<div className="flex items-center py-1.5">
-				<span className="flex items-center pr-3">
-					<TokenLogo currency={symbol} size={8} />
-				</span>
-			</div>
-			<span className="flex items-center text-text-primary text-base font-medium leading-[1.25rem]">
-				{currentInvestment} {symbol}
-			</span>
-			<span className="flex items-center justify-end text-text-primary text-base font-extrabold leading-[1.25rem]">{amount}</span>
-		</>
-	);
-};
 
 export const MyEquity = () => {
 	const { t } = useTranslation();
@@ -41,13 +16,7 @@ export const MyEquity = () => {
 	const overwrite = getPublicViewAddress(router);
 
 	const { balancesByAddress } = useWalletERC20Balances(
-		[
-			{
-				name: POOL_SHARE_TOKEN_SYMBOL,
-				symbol: POOL_SHARE_TOKEN_SYMBOL,
-				address: ADDRESS[chainId].equity,
-			},
-		],
+		[{ name: POOL_SHARE_TOKEN_SYMBOL, symbol: POOL_SHARE_TOKEN_SYMBOL, address: ADDRESS[chainId].equity }],
 		{ accountAddress: overwrite as `0x${string}` }
 	);
 
@@ -58,50 +27,72 @@ export const MyEquity = () => {
 		args: [balancesByAddress[ADDRESS[chainId].equity]?.balanceOf || 0n],
 	});
 
-	const equityData = [
-		{
-			symbol: POOL_SHARE_TOKEN_SYMBOL,
-			currentInvestment: formatCurrency(formatUnits(balancesByAddress[ADDRESS[chainId].equity]?.balanceOf || 0n, 18), 2, 2) as string,
-			amount: formatCurrency(formatUnits(deuroNative, 18), 2, 2) as string,
-		},
-	];
-
-	const totalInvested = deuroNative;
-	const isEquityData = totalInvested > 0;
+	const hasData = deuroNative > 0n;
+	const investmentFmt = formatCurrency(formatUnits(balancesByAddress[ADDRESS[chainId].equity]?.balanceOf || 0n, 18), 2, 2) as string;
+	const amountFmt = formatCurrency(formatUnits(deuroNative, 18), 2, 2) as string;
 
 	return (
 		<div className="w-full h-full p-4 sm:p-8 flex flex-col items-start">
-			<LinkTitle href={"/equity"}>{t("dashboard.my_equity")}</LinkTitle>
-			<div className="w-full flex flex-row justify-between items-center">
-				<div
-					className={`w-full grid grid-rows-[auto_auto] ${
-						isEquityData ? "grid-cols-[auto_1fr_auto]" : "grid-cols-1 sm:grid-cols-[auto_1fr_auto]"
-					}`}
-				>
-					{/** Headers */}
-					<span className={isEquityData ? "" : "hidden sm:block"}></span>
-					<HeaderCell className={isEquityData ? "" : "hidden sm:block"}>{t("dashboard.current_investment")}</HeaderCell>
-					<HeaderCell className={isEquityData ? "text-right" : "hidden sm:block text-right"}>
-						{t("dashboard.symbol_amount", { symbol: TOKEN_SYMBOL })}
-					</HeaderCell>
-					{isEquityData ? (
-						equityData.map((item) => <EquityRow key={item.symbol} {...item} />)
-					) : (
-						<NoDataRow className="col-span-1 sm:col-span-2 text-center justify-self-center">
-							{t("dashboard.no_investments_yet")}
-						</NoDataRow>
-					)}
-				</div>
+			<LinkTitle href="/equity">{t("dashboard.my_equity")}</LinkTitle>
+
+			{/* Desktop table */}
+			<div className="hidden sm:grid w-full grid-cols-[auto_1fr_auto] grid-rows-[auto_auto]">
+				<span />
+				<HeaderCell>{t("dashboard.current_investment")}</HeaderCell>
+				<HeaderCell className="text-right">{t("dashboard.symbol_amount", { symbol: TOKEN_SYMBOL })}</HeaderCell>
+				{hasData ? (
+					<>
+						<div className="flex items-center py-1.5 pr-3">
+							<TokenLogo currency={POOL_SHARE_TOKEN_SYMBOL} size={8} />
+						</div>
+						<span className="flex items-center text-text-primary text-base font-medium leading-[1.25rem]">
+							{investmentFmt} {POOL_SHARE_TOKEN_SYMBOL}
+						</span>
+						<span className="flex items-center justify-end text-text-primary text-base font-extrabold leading-[1.25rem]">
+							{amountFmt}
+						</span>
+					</>
+				) : (
+					<NoDataRow className="col-span-2">{t("dashboard.no_investments_yet")}</NoDataRow>
+				)}
 			</div>
-			{isEquityData && (
+
+			{/* Mobile stacked rows */}
+			<div className="sm:hidden w-full flex flex-col gap-3">
+				{hasData ? (
+					<>
+						<div className="w-full flex flex-row justify-between items-center gap-2">
+							<span className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
+								{t("dashboard.current_investment")}
+							</span>
+							<div className="flex flex-row items-center gap-1.5 shrink-0">
+								<TokenLogo currency={POOL_SHARE_TOKEN_SYMBOL} size={5} />
+								<span className="text-text-primary text-base font-medium leading-tight">
+									{investmentFmt} {POOL_SHARE_TOKEN_SYMBOL}
+								</span>
+							</div>
+						</div>
+						<div className="w-full flex flex-row justify-between items-center gap-2">
+							<span className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
+								{t("dashboard.symbol_amount", { symbol: TOKEN_SYMBOL })}
+							</span>
+							<span className="text-text-primary text-base font-extrabold leading-tight shrink-0">{amountFmt}</span>
+						</div>
+					</>
+				) : (
+					<div className="w-full py-[1.125rem] flex items-center justify-center">
+						<span className="text-text-muted2 text-base font-[350] leading-tight">{t("dashboard.no_investments_yet")}</span>
+					</div>
+				)}
+			</div>
+
+			{hasData && (
 				<div className="w-full pt-5 flex-1 flex items-end">
 					<div className="flex flex-row justify-between items-center w-full">
 						<span className="text-text-primary text-base font-extrabold leading-[1.25rem]">
 							{t("dashboard.total_invested")}
 						</span>
-						<span className="text-text-primary text-base font-extrabold leading-[1.25rem]">
-							{formatCurrency(formatUnits(totalInvested, 18), 2, 2) as string}
-						</span>
+						<span className="text-text-primary text-base font-extrabold leading-[1.25rem]">{amountFmt}</span>
 					</div>
 				</div>
 			)}
