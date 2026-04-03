@@ -1,5 +1,6 @@
 import TokenLogo from "@components/TokenLogo";
-import { useTranslation } from "next-i18next";
+import { Trans, useTranslation } from "next-i18next";
+import Link from "next/link";
 import { HeaderCell, LinkTitle, NoDataRow } from "./SectionTable";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { formatCurrency, POOL_SHARE_TOKEN_SYMBOL } from "@utils";
@@ -81,7 +82,16 @@ export const MyEquity = () => {
 					{isEquityData ? (
 						equityData.map((item) => <EquityRow key={item.symbol} {...item} />)
 					) : (
-						<NoDataRow className="col-span-2">{t("dashboard.no_investments_yet")}</NoDataRow>
+						<NoDataRow className="col-span-2">
+							<Trans
+								i18nKey="dashboard.no_investments_yet"
+								components={{
+									equity: (
+										<Link href="/equity" className="font-medium text-text-labelButton hover:opacity-70 no-underline" />
+									),
+								}}
+							/>
+						</NoDataRow>
 					)}
 				</div>
 			</div>
