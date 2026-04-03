@@ -1,5 +1,5 @@
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
-import { MetaMask } from "@synthetixio/synpress-metamask/playwright";
+import type { MetaMask } from "@synthetixio/synpress-metamask/playwright";
 import * as fs from "fs";
 import {
 	setupMetaMask,
@@ -7,7 +7,7 @@ import {
 	forceConnectWallet,
 	verifyTransactionOnCitreascan,
 	captureExplorerScreenshot,
-} from "../../helpers/wallet";
+} from "../helpers/wallet";
 
 const SEED_PHRASE = process.env.WALLET_SEED_PHRASE || "";
 const WALLET_PASSWORD = process.env.WALLET_PASSWORD || "";

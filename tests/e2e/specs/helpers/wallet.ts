@@ -1,6 +1,8 @@
 import { expect, chromium, type BrowserContext, type Page } from "@playwright/test";
-import { MetaMask, getExtensionId } from "@synthetixio/synpress-metamask/playwright";
-import { prepareExtension } from "@synthetixio/synpress-cache";
+// Use `import type` so TypeScript erases it at compile-time — no CJS require() is emitted.
+// Runtime values (MetaMask constructor, getExtensionId, prepareExtension) are loaded via
+// dynamic import() inside setupMetaMask, which works in both CJS and ESM contexts.
+import type { MetaMask } from "@synthetixio/synpress-metamask/playwright";
 
 // ---------------------------------------------------------------------------
 // MetaMask Setup
@@ -12,6 +14,10 @@ export interface MetaMaskSetup {
 }
 
 export async function setupMetaMask(password: string, seedPhrase: string): Promise<MetaMaskSetup> {
+	// Dynamic imports keep CJS-compiled output from using require() on ESM-only packages.
+	const { MetaMask: MetaMaskClass, getExtensionId } = await import("@synthetixio/synpress-metamask/playwright");
+	const { prepareExtension } = await import("@synthetixio/synpress-cache");
+
 	const extensionPath = await prepareExtension();
 
 	const context = await chromium.launchPersistentContext("", {
@@ -27,7 +33,7 @@ export async function setupMetaMask(password: string, seedPhrase: string): Promi
 	const metamaskPage = pages.find((p) => p.url().includes("chrome-extension://"));
 	if (!metamaskPage) throw new Error("MetaMask extension page not found");
 
-	const metamask = new MetaMask(context, metamaskPage, password, extensionId);
+	const metamask = new MetaMaskClass(context, metamaskPage, password, extensionId) as MetaMask;
 	await metamask.importWallet(seedPhrase);
 
 	return { context, metamask };
