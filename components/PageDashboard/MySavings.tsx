@@ -53,18 +53,18 @@ export const MySavings = () => {
 							</span>
 							<div className="flex flex-row items-center gap-1.5 shrink-0">
 								<TokenLogo currency={TOKEN_SYMBOL} size={5} />
-								<span className="text-text-primary text-base font-extrabold leading-tight">{balanceFmt}</span>
+								<span className="text-text-primary text-sm font-extrabold leading-tight">{balanceFmt}</span>
 							</div>
 						</div>
 						<div className="w-full flex flex-row justify-between items-center gap-2">
 							<span className="text-text-muted2 text-xs font-medium leading-[1.125rem]">{t("dashboard.total_earned")}</span>
-							<span className="text-text-primary text-base font-medium leading-tight">{earnedFmt}</span>
+							<span className="text-text-primary text-sm font-medium leading-tight">{earnedFmt}</span>
 						</div>
 						<div className="w-full flex flex-row justify-between items-center gap-2">
 							<span className="text-text-muted2 text-xs font-medium leading-[1.125rem] min-w-0 flex-1">
 								{t("dashboard.interest_to_be_collected")}
 							</span>
-							<span className="text-text-primary text-base font-medium leading-tight shrink-0">{interestFmt}</span>
+							<span className="text-text-primary text-sm font-medium leading-tight shrink-0">{interestFmt}</span>
 						</div>
 					</>
 				) : (
@@ -75,9 +75,9 @@ export const MySavings = () => {
 			</div>
 
 			{hasData && (
-				<div className="w-full flex-1 pt-10 flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
+				<div className="w-full flex-1 pt-10 flex flex-row items-stretch justify-center gap-2 sm:gap-4">
 					<Button
-						className="w-full h-10"
+						className="flex-1 min-w-0 h-9 px-2 text-sm sm:h-10 sm:px-4 sm:text-base"
 						disabled={interestToBeCollected === 0n}
 						isLoading={isReinvesting}
 						onClick={handleReinvest}
@@ -86,7 +86,7 @@ export const MySavings = () => {
 						{t("dashboard.reinvest")}
 					</Button>
 					<SecondaryButton
-						className="w-full h-10"
+						className="flex-1 min-w-0 h-9 px-2 text-sm sm:h-10 sm:px-4 sm:text-base"
 						disabled={interestToBeCollected === 0n}
 						isLoading={isClaiming}
 						onClick={claimInterest}

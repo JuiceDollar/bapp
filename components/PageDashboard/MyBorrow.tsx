@@ -91,7 +91,7 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 									<div className="flex items-center justify-center">
 										<TokenLogo currency={item.symbol} size={5} />
 									</div>
-									<div className="font-medium text-base leading-tight">
+									<div className="font-medium text-sm leading-tight">
 										{item.collateralAmount} {item.symbol}
 									</div>
 								</div>
@@ -101,7 +101,7 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
 									{t("dashboard.liquidation_price")}
 								</div>
-								<div className="font-medium text-base leading-tight">
+								<div className="font-medium text-sm leading-tight">
 									{item.liquidationPrice} {TOKEN_SYMBOL}
 								</div>
 							</div>
@@ -110,12 +110,12 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
 									{t("dashboard.collateralization")}
 								</div>
-								<div className="font-medium text-base leading-tight">{item.collateralization} %</div>
+								<div className="font-medium text-sm leading-tight">{item.collateralization} %</div>
 							</div>
 
 							<div className="w-full flex flex-row justify-between items-center">
 								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">{t("dashboard.loan_due_in")}</div>
-								<div className="font-medium text-base leading-tight">
+								<div className="font-medium text-sm leading-tight">
 									{item.loanDueIn} {t("common.days")}
 								</div>
 							</div>
@@ -124,7 +124,7 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
 									{t("dashboard.amount_borrowed")}
 								</div>
-								<div className="font-extrabold text-base leading-tight">
+								<div className="font-extrabold text-sm leading-tight">
 									{item.amountBorrowed} {TOKEN_SYMBOL}
 								</div>
 							</div>

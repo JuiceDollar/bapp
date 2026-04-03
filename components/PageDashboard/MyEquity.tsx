@@ -67,7 +67,7 @@ export const MyEquity = () => {
 							</span>
 							<div className="flex flex-row items-center gap-1.5 shrink-0">
 								<TokenLogo currency={POOL_SHARE_TOKEN_SYMBOL} size={5} />
-								<span className="text-text-primary text-base font-medium leading-tight">
+								<span className="text-text-primary text-sm font-medium leading-tight">
 									{investmentFmt} {POOL_SHARE_TOKEN_SYMBOL}
 								</span>
 							</div>
@@ -76,7 +76,7 @@ export const MyEquity = () => {
 							<span className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
 								{t("dashboard.symbol_amount", { symbol: TOKEN_SYMBOL })}
 							</span>
-							<span className="text-text-primary text-base font-extrabold leading-tight shrink-0">{amountFmt}</span>
+							<span className="text-text-primary text-sm font-extrabold leading-tight shrink-0">{amountFmt}</span>
 						</div>
 					</>
 				) : (
