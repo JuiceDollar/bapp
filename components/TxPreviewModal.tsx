@@ -3,6 +3,7 @@ import { useTranslation } from "next-i18next";
 import { formatUnits, maxUint256 } from "viem";
 import Button from "@components/Button";
 import { SecondaryButton } from "@components/Button";
+import TokenLogo from "@components/TokenLogo";
 import { formatBigInt, shortenAddress } from "@utils";
 import { WAGMI_CHAIN } from "../app.config";
 import type { TraceResult } from "../utils/traceTransaction";
@@ -73,9 +74,14 @@ export default function TxPreviewModal({ traceResult, nativeValue, onConfirm, on
 								const isUnlimited = a.amount >= maxUint256 / 2n;
 								const display = isUnlimited ? t("common.txs.unlimited") : formatBigInt(a.amount, a.decimals, 2);
 								return (
-									<div key={`appr-${i}`} className="flex justify-between items-center py-1">
-										<span className="text-sm font-medium text-text-primary">
-											{a.symbol} → {shortenAddress(a.spender)}
+									<div key={`appr-${i}`} className="flex justify-between items-center gap-2 py-1">
+										<span className="text-sm font-medium text-text-primary flex items-center gap-2 min-w-0">
+											<span className="shrink-0">
+												<TokenLogo currency={a.symbol} size={6} />
+											</span>
+											<span className="truncate">
+												{a.symbol} → {shortenAddress(a.spender)}
+											</span>
 										</span>
 										<span className="text-sm font-extrabold">{display}</span>
 									</div>
@@ -115,9 +121,14 @@ function ChangeRow({ symbol, amount, decimals, direction }: { symbol: string; am
 	const color = direction === "out" ? "text-text-warning" : "text-green-600";
 
 	return (
-		<div className="flex justify-between items-center py-1">
-			<span className="text-sm font-medium">{symbol}</span>
-			<span className={`text-sm font-extrabold ${color}`}>
+		<div className="flex justify-between items-center gap-2 py-1">
+			<span className="text-sm font-medium flex items-center gap-2 min-w-0">
+				<span className="shrink-0">
+					<TokenLogo currency={symbol} size={6} />
+				</span>
+				{symbol}
+			</span>
+			<span className={`text-sm font-extrabold shrink-0 ${color}`}>
 				{prefix} {formatted}
 			</span>
 		</div>
