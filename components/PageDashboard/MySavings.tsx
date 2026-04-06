@@ -40,7 +40,16 @@ export const MySavings = () => {
 						<span className="flex items-center text-text-primary text-base font-medium">{interestFmt}</span>
 					</>
 				) : (
-					<NoDataRow className="col-span-3">{t("dashboard.no_savings_yet")}</NoDataRow>
+					<NoDataRow className="col-span-3">
+						<Trans
+							i18nKey="dashboard.no_savings_yet"
+							components={{
+								savings: (
+									<Link href="/savings" className="font-medium text-text-labelButton hover:opacity-70 no-underline" />
+								),
+							}}
+						/>
+					</NoDataRow>
 				)}
 			</div>
 
@@ -69,9 +78,16 @@ export const MySavings = () => {
 						</div>
 					</>
 				) : (
-					<div className="w-full py-[1.125rem] flex items-center justify-center">
-						<span className="text-text-muted2 text-base font-[350] leading-tight">{t("dashboard.no_savings_yet")}</span>
-					</div>
+					<NoDataRow className="col-span-3">
+						<Trans
+							i18nKey="dashboard.no_savings_yet"
+							components={{
+								savings: (
+									<Link href="/savings" className="font-medium text-text-labelButton hover:opacity-70 no-underline" />
+								),
+							}}
+						/>
+					</NoDataRow>
 				)}
 			</div>
 

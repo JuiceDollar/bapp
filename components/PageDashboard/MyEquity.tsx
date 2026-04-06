@@ -32,6 +32,17 @@ export const MyEquity = () => {
 	const investmentFmt = formatCurrency(formatUnits(balancesByAddress[ADDRESS[chainId].equity]?.balanceOf || 0n, 18), 2, 2) as string;
 	const amountFmt = formatCurrency(formatUnits(deuroNative, 18), 2, 2) as string;
 
+	const noDataRow = (
+		<NoDataRow className="col-span-2">
+			<Trans
+				i18nKey="dashboard.no_investments_yet"
+				components={{
+					equity: <Link href="/equity" className="font-medium text-text-labelButton hover:opacity-70 no-underline" />,
+				}}
+			/>
+		</NoDataRow>
+	);
+
 	return (
 		<div className="w-full h-full p-4 sm:p-8 flex flex-col items-start">
 			<LinkTitle href="/equity">{t("dashboard.my_equity")}</LinkTitle>
@@ -54,7 +65,7 @@ export const MyEquity = () => {
 						</span>
 					</>
 				) : (
-					<NoDataRow className="col-span-2">{t("dashboard.no_investments_yet")}</NoDataRow>
+					noDataRow
 				)}
 			</div>
 
@@ -81,9 +92,7 @@ export const MyEquity = () => {
 						</div>
 					</>
 				) : (
-					<div className="w-full py-[1.125rem] flex items-center justify-center">
-						<span className="text-text-muted2 text-base font-[350] leading-tight">{t("dashboard.no_investments_yet")}</span>
-					</div>
+					noDataRow
 				)}
 			</div>
 
