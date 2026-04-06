@@ -30,3 +30,6 @@ export const NATIVE_WRAPPED_SYMBOLS = ["wcbtc"];
 export const NATIVE_GAS_BUFFER = 10_000_000_000_000n; // 0.00001 cBTC reserved for gas fees
 export const DUST_JUSD = BigInt(2e16);
 export const MAX_REPAY_FOR_PRICE_ADJUST_BPS = 9500n;
+
+// Mainnet default collateral for mint (best-cloneable). TODO: use user-selected collateral later.
+export const MAINNET_WCBTC_ADDRESS = "0x3100000000000000000000000000000000000006" as `0x${string}`;

@@ -51,7 +51,7 @@ export default function InteractionStablecoinAndSavingVault({
 		address: ADDRESS[chainId].juiceDollar,
 		abi: JuiceDollarABI,
 		functionName: "allowance",
-		args: [account, ADDRESS[chainId].savingsVaultJUSD],
+		args: [account, ADDRESS[chainId].savingsVaultV2],
 	});
 	const stablecoinAllowance = stablecoinAllowanceData ? BigInt(String(stablecoinAllowanceData)) : 0n;
 
@@ -69,7 +69,7 @@ export default function InteractionStablecoinAndSavingVault({
 				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].savingsVaultJUSD, maxUint256],
+				args: [ADDRESS[chainId].savingsVaultV2, maxUint256],
 			});
 
 			const toastContent = [
@@ -79,7 +79,7 @@ export default function InteractionStablecoinAndSavingVault({
 				},
 				{
 					title: t("common.txs.spender"),
-					value: shortenAddress(ADDRESS[chainId].savingsVaultJUSD),
+					value: shortenAddress(ADDRESS[chainId].savingsVaultV2),
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -109,7 +109,7 @@ export default function InteractionStablecoinAndSavingVault({
 		try {
 			const depositWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].savingsVaultJUSD,
+				address: ADDRESS[chainId].savingsVaultV2,
 				abi: SavingsVaultJUSDABI,
 				functionName: "deposit",
 				args: [amount, address!],
@@ -150,14 +150,14 @@ export default function InteractionStablecoinAndSavingVault({
 	};
 
 	const { data: amountInShares } = useReadContract({
-		address: ADDRESS[chainId].savingsVaultJUSD,
+		address: ADDRESS[chainId].savingsVaultV2,
 		abi: SavingsVaultJUSDABI,
 		functionName: "convertToShares",
 		args: [amount],
 	});
 
 	const { data: amountInAssets } = useReadContract({
-		address: ADDRESS[chainId].savingsVaultJUSD,
+		address: ADDRESS[chainId].savingsVaultV2,
 		abi: SavingsVaultJUSDABI,
 		functionName: "convertToAssets",
 		args: [amount],
@@ -184,7 +184,7 @@ export default function InteractionStablecoinAndSavingVault({
 			setRedeeming(true);
 			const redeemWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].savingsVaultJUSD,
+				address: ADDRESS[chainId].savingsVaultV2,
 				abi: SavingsVaultJUSDABI,
 				functionName: "redeem",
 				args: [amount, address!, address!],

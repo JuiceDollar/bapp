@@ -21,10 +21,7 @@ export const SectionTitle = ({
 				>
 					<FontAwesomeIcon icon={faChevronLeft} className="w-5 h-5" />
 				</button>
-				<div
-					id={id}
-					className={`${className} mb-1 text-[1.75rem] sm:mb-5 sm:text-[1.625rem] font-black leading-[1.625rem] tracking-tight`}
-				>
+				<div id={id} className={`${className} mb-1 sm:mb-5 text-2xl sm:text-4xl font-black !leading-none tracking-tight`}>
 					{children}
 				</div>
 			</div>
@@ -32,7 +29,7 @@ export const SectionTitle = ({
 	}
 
 	return (
-		<div id={id} className={`${className} mb-1 text-[1.75rem] sm:mb-5 sm:text-[1.625rem] font-black leading-[1.625rem] tracking-tight`}>
+		<div id={id} className={`${className} mb-1 sm:mb-5 text-2xl sm:text-4xl font-black !leading-none tracking-tight`}>
 			{children}
 		</div>
 	);

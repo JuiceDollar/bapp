@@ -1247,6 +1247,21 @@
     ts-node "^10.9.1"
     typescript "^5.2.2"
 
+"@juicedollar/jusd@^4.0.0":
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/@juicedollar/jusd/-/jusd-4.0.0.tgz#02ae0e4f83c4dabbd3323fdfa3cb9a32e98e74d7"
+  integrity sha512-p+h2IdJv6rOb4lueASWlhmf9TG7uqCQpBke+8vmhdpTCn0qsocN5QNPHSfbxajdZDlFWHzbJloMI/bC+GEJVbQ==
+  dependencies:
+    "@openzeppelin/contracts" "^5.1.0"
+    hardhat-abi-exporter "^2.10.0"
+    hardhat-contract-sizer "^2.5.1"
+    prettier "^3.3.3"
+    prettier-plugin-solidity "^1.4.1"
+    prompt "^1.3.0"
+    solhint "^5.0.5"
+    ts-node "^10.9.1"
+    typescript "^5.2.2"
+
 "@lit-labs/ssr-dom-shim@^1.0.0", "@lit-labs/ssr-dom-shim@^1.1.0", "@lit-labs/ssr-dom-shim@^1.4.0":
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/@lit-labs/ssr-dom-shim/-/ssr-dom-shim-1.4.0.tgz#55eb80ab5ef6e188f7e541c1e2bea1ef582413b8"

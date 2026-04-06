@@ -5,7 +5,7 @@ import { faCheck, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useTranslation } from "next-i18next";
 import { zeroAddress } from "viem";
-import { ADDRESS, FrontendGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, FrontendGatewayV2ABI } from "@juicedollar/jusd";
 import { useChainId } from "wagmi";
 import { readContract, waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
@@ -100,7 +100,7 @@ export const ReferralCreationForm = () => {
 					const [, owner] = await readContract(WAGMI_CONFIG, {
 						chainId: chainId as typeof mainnet.id | typeof testnet.id,
 						address: ADDRESS[chainId].frontendGateway,
-						abi: FrontendGatewayABI,
+						abi: FrontendGatewayV2ABI,
 						functionName: "frontendCodes",
 						args: [frontendCode],
 					});
@@ -122,7 +122,7 @@ export const ReferralCreationForm = () => {
 			const [, owner] = await readContract(WAGMI_CONFIG, {
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
-				abi: FrontendGatewayABI,
+				abi: FrontendGatewayV2ABI,
 				functionName: "frontendCodes",
 				args: [frontendCode],
 			});
@@ -135,7 +135,7 @@ export const ReferralCreationForm = () => {
 			const registerWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
-				abi: FrontendGatewayABI,
+				abi: FrontendGatewayV2ABI,
 				functionName: "registerFrontendCode",
 				args: [frontendCode],
 			});

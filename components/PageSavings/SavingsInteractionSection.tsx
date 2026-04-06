@@ -14,7 +14,7 @@ import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import Button from "@components/Button";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { useAccount, useChainId } from "wagmi";
-import { ADDRESS, SavingsGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, SavingsGatewayV2ABI } from "@juicedollar/jusd";
 import { useSavingsInterest } from "../../hooks/useSavingsInterest";
 import { useTranslation } from "next-i18next";
 import { useFrontendCode } from "../../hooks/useFrontendCode";
@@ -146,7 +146,7 @@ export default function SavingsInteractionSection() {
 			const saveHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
-				abi: SavingsGatewayABI,
+				abi: SavingsGatewayV2ABI,
 				functionName: "save",
 				args: [BigInt(amount), frontendCode],
 			});
@@ -176,7 +176,7 @@ export default function SavingsInteractionSection() {
 			const withdrawHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
-				abi: SavingsGatewayABI,
+				abi: SavingsGatewayV2ABI,
 				functionName: "withdraw",
 				args: [account.address, adjustedAmount, frontendCode],
 			});

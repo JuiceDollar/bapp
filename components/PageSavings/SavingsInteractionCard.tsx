@@ -1,6 +1,6 @@
 import AppCard from "@components/AppCard";
 import TokenInput from "@components/Input/TokenInput";
-import { ADDRESS, JuiceDollarABI, SavingsGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, JuiceDollarABI, SavingsGatewayV2ABI } from "@juicedollar/jusd";
 import { useAccount, useBlockNumber, useChainId } from "wagmi";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { erc20Abi, maxUint256, zeroAddress } from "viem";
@@ -80,7 +80,7 @@ export default function SavingsInteractionCard() {
 			const [_userSavings, _userTicks] = await readContract(WAGMI_CONFIG, {
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDR.savingsGateway,
-				abi: SavingsGatewayABI,
+				abi: SavingsGatewayV2ABI,
 				functionName: "savings",
 				args: [account],
 			});
@@ -90,7 +90,7 @@ export default function SavingsInteractionCard() {
 			const _current = await readContract(WAGMI_CONFIG, {
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDR.savingsGateway,
-				abi: SavingsGatewayABI,
+				abi: SavingsGatewayV2ABI,
 				functionName: "currentTicks",
 			});
 			setCurrentTicks(_current);

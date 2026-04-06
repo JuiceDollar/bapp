@@ -11,7 +11,7 @@ import { useSelector } from "react-redux";
 import { Address } from "viem";
 import { useAccount, useChainId } from "wagmi";
 import Button from "@components/Button";
-import { ADDRESS, MintingHubV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
 import { mainnet, testnet } from "@config";
 
 interface Props {
@@ -43,7 +43,7 @@ export default function MyPositionsChallengesCancel({ challenge, hidden }: Props
 			const cancelWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubV2ABI,
+				abi: MintingHubGatewayV2ABI,
 				functionName: "bid",
 				args: [n, r, false],
 			});
