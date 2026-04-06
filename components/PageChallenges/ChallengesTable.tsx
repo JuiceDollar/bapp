@@ -16,10 +16,11 @@ import {
 	PriceQueryObjectArray,
 } from "@juicedollar/api";
 import { Address, formatUnits } from "viem";
-import { useTranslation } from "next-i18next";
+import { Trans, useTranslation } from "next-i18next";
 import { useExpandableTable } from "@hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
+import Link from "next/link";
 
 export default function ChallengesTable() {
 	const { t } = useTranslation();
@@ -75,7 +76,21 @@ export default function ChallengesTable() {
 			<TableBody>
 				<>
 					{sorted.length == 0 ? (
-						<TableRowEmpty>{t("challenges.no_active_challenges")}</TableRowEmpty>
+						<TableRowEmpty>
+							<p className="text-sm text-text-muted leading-snug max-w-2xl mx-auto md:mx-0 text-center md:text-left">
+								<Trans
+									i18nKey="challenges.no_open_auctions_empty"
+									components={{
+										monitoring: (
+											<Link
+												href="/monitoring"
+												className="font-medium text-text-labelButton hover:opacity-70 no-underline"
+											/>
+										),
+									}}
+								/>
+							</p>
+						</TableRowEmpty>
 					) : (
 						visibleData.map((c) => <ChallengesRow key={c.id} headers={headers} challenge={c} tab={tab} />)
 					)}

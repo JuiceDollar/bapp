@@ -1,6 +1,7 @@
 import { SecondaryLinkButton } from "@components/Button";
 import TokenLogo from "@components/TokenLogo";
-import { useTranslation } from "next-i18next";
+import { Trans, useTranslation } from "next-i18next";
+import Link from "next/link";
 import { Fragment, useMemo, useRef } from "react";
 import { HeaderCell, LinkTitle, NoDataRow } from "./SectionTable";
 import { useAccount } from "wagmi";
@@ -12,6 +13,13 @@ import { useRouter } from "next/router";
 import { getPublicViewAddress } from "../../utils/url";
 import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
 import { getNetDebt } from "../../utils/loanCalculations";
+const BorrowEmptyMessage = () => (
+	<Trans
+		i18nKey="dashboard.no_borrowings_yet"
+		components={{ lending: <Link href="/mint" className="font-medium text-text-labelButton hover:opacity-70 no-underline" /> }}
+	/>
+);
+
 interface BorrowData {
 	position: `0x${string}`;
 	symbol: string;
@@ -68,7 +76,9 @@ const DesktopTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 					</Fragment>
 				))
 			) : (
-				<NoDataRow className="mt-1.5 col-span-5">{t("dashboard.no_borrowings_yet")}</NoDataRow>
+				<NoDataRow className="mt-1.5 col-span-5">
+					<BorrowEmptyMessage />
+				</NoDataRow>
 			)}
 		</div>
 	);
@@ -136,9 +146,9 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 					))}
 				</>
 			) : (
-				<div className="w-full py-[1.125rem] mb-1.5 flex items-center justify-center">
-					<span className="text-text-muted2 text-base font-[350] leading-tight">{t("dashboard.no_borrowings_yet")}</span>
-				</div>
+				<NoDataRow className="col-span-5">
+					<BorrowEmptyMessage />
+				</NoDataRow>
 			)}
 		</div>
 	);
