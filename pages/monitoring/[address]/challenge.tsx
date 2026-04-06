@@ -22,7 +22,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/redux.store";
 import Link from "next/link";
 import { useRouter as useNavigation } from "next/navigation";
-import { ADDRESS, MintingHubV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 
@@ -171,7 +171,7 @@ export default function PositionChallenge() {
 			const challengeWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubV2ABI,
+				abi: MintingHubGatewayV2ABI,
 				functionName: "challenge",
 				args: [position.position, amount, BigInt(position.price)],
 				...(challengeValue !== undefined ? { value: challengeValue } : {}),

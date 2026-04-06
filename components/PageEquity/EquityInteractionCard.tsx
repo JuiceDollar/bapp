@@ -45,7 +45,7 @@ export default function EquityInteractionCard() {
 		{
 			symbol: SAVINGS_VAULT_SYMBOL,
 			name: SAVINGS_VAULT_SYMBOL,
-			address: ADDRESS[chainId].savingsVaultJUSD,
+			address: ADDRESS[chainId].savingsVaultV2,
 		},
 	]);
 

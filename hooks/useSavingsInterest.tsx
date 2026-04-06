@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import { useBlockNumber } from "wagmi";
-import { ADDRESS, SavingsGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, SavingsGatewayV2ABI } from "@juicedollar/jusd";
 import { formatCurrency, getPublicViewAddress, TOKEN_SYMBOL } from "@utils";
 import { formatUnits, zeroAddress } from "viem";
 import { toast } from "react-toastify";
@@ -69,7 +69,7 @@ export const useSavingsInterest = () => {
 				const [_userSavings, _userTicks] = await readContract(WAGMI_CONFIG, {
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: ADDR.savingsGateway,
-					abi: SavingsGatewayABI,
+					abi: SavingsGatewayV2ABI,
 					functionName: "savings",
 					args: [account as `0x${string}`],
 				});
@@ -78,13 +78,13 @@ export const useSavingsInterest = () => {
 				const _current = await readContract(WAGMI_CONFIG, {
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: ADDR.savingsGateway,
-					abi: SavingsGatewayABI,
+					abi: SavingsGatewayV2ABI,
 					functionName: "currentTicks",
 				});
 				const accruedInterest = await readContract(WAGMI_CONFIG, {
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: ADDR.savingsGateway,
-					abi: SavingsGatewayABI,
+					abi: SavingsGatewayV2ABI,
 					functionName: "accruedInterest",
 					args: [account as `0x${string}`],
 				});
@@ -128,7 +128,7 @@ export const useSavingsInterest = () => {
 			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDR.savingsGateway,
-				abi: SavingsGatewayABI,
+				abi: SavingsGatewayV2ABI,
 				functionName: "adjust",
 				args: [userSavingsBalance, frontendCode],
 			});
@@ -177,7 +177,7 @@ export const useSavingsInterest = () => {
 			const reinvestHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].savingsGateway,
-				abi: SavingsGatewayABI,
+				abi: SavingsGatewayV2ABI,
 				functionName: "refreshBalance",
 				args: [address],
 			});

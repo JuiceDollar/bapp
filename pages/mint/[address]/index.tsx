@@ -19,7 +19,7 @@ import { mainnet, testnet } from "@config";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/redux.store";
 import Link from "next/link";
-import { ADDRESS, MintingHubGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import { useFrontendCode } from "../../../hooks/useFrontendCode";
@@ -225,7 +225,7 @@ export default function PositionBorrow({}) {
 			cloneWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubGatewayABI,
+				abi: MintingHubGatewayV2ABI,
 				functionName: "clone",
 				args: [
 					account.address as `0x${string}`,

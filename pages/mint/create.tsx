@@ -18,7 +18,7 @@ import AddressInput from "@components/Input/AddressInput";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../app.config";
 import { mainnet, testnet } from "@config";
-import { ADDRESS, MintingHubGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
 import { useTranslation, Trans } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useFrontendCode } from "../../hooks/useFrontendCode";
@@ -306,7 +306,7 @@ export default function PositionCreate({}) {
 			const openWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubGatewayABI,
+				abi: MintingHubGatewayV2ABI,
 				functionName: "openPosition",
 				args: [
 					collTokenData.address,
