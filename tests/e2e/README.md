@@ -125,11 +125,11 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000
 
 ### Variablen-Erklärung
 
-| Variable              | Beschreibung                           | Beispiel                |
-| --------------------- | -------------------------------------- | ----------------------- |
-| `WALLET_SEED_PHRASE`  | 12-Wort Seed-Phrase deiner Test-Wallet | `test test test...`     |
-| `WALLET_PASSWORD`     | Passwort für MetaMask (min. 8 Zeichen) | `TestPassword123!`      |
-| `PLAYWRIGHT_BASE_URL` | URL der App für Tests                  | `http://localhost:3000` |
+| Variable              | Beschreibung                           | Beispiel                                                                                                  |
+| --------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `WALLET_SEED_PHRASE`  | 12-Wort Seed-Phrase deiner Test-Wallet | `test test test...`                                                                                       |
+| `WALLET_PASSWORD`     | Passwort für MetaMask (min. 8 Zeichen) | `TestPassword123!`                                                                                        |
+| `PLAYWRIGHT_BASE_URL` | Ziel-URL der App für Playwright        | `http://localhost:3000` (empfohlen mit `yarn dev`); für Deployed-Tests z. B. `NEXT_PUBLIC_APP_URL` aus CI |
 
 ---
 
@@ -137,26 +137,27 @@ PLAYWRIGHT_BASE_URL=http://localhost:3000
 
 ### Verfügbare Test-Befehle
 
-| Befehl                        | Beschreibung                                           |
-| ----------------------------- | ------------------------------------------------------ |
-| `yarn test:e2e`               | Basis-Tests ausführen (Navigation, UI) - ohne MetaMask |
-| `yarn test:e2e:visual`        | Visual Regression Tests ausführen                      |
-| `yarn test:e2e:visual:update` | Baseline-Screenshots aktualisieren                     |
-| `yarn test:e2e:wallet`        | Wallet-Tests ausführen (erfordert Synpress-Cache)      |
-| `yarn test:e2e:all`           | Alle Tests ausführen                                   |
-| `yarn test:e2e:ui`            | Tests mit Playwright UI ausführen                      |
-| `yarn test:e2e:headed`        | Tests im sichtbaren Browser ausführen                  |
-| `yarn test:e2e:debug`         | Tests im Debug-Modus ausführen                         |
-| `yarn test:e2e:report`        | Letzten Test-Report im Browser öffnen                  |
-| `yarn synpress:cache`         | Synpress-Cache für Wallet-Tests erstellen              |
+| Befehl                        | Beschreibung                                                                                                                  |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `yarn test:e2e`               | Smoke-Suite (Navigation, UI, Dashboard, Equity, weitere Routen, Mint, Savings, Coverage, Währung, Governance) - ohne MetaMask |
+| `yarn test:e2e:visual`        | Visual Regression Tests ausführen                                                                                             |
+| `yarn test:e2e:visual:update` | Baseline-Screenshots aktualisieren                                                                                            |
+| `yarn test:e2e:wallet`        | Wallet-Tests ausführen (erfordert Synpress-Cache)                                                                             |
+| `yarn test:e2e:all`           | Alle Tests ausführen                                                                                                          |
+| `yarn test:e2e:ui`            | Tests mit Playwright UI ausführen                                                                                             |
+| `yarn test:e2e:headed`        | Tests im sichtbaren Browser ausführen                                                                                         |
+| `yarn test:e2e:debug`         | Tests im Debug-Modus ausführen                                                                                                |
+| `yarn test:e2e:report`        | Letzten Test-Report im Browser öffnen                                                                                         |
+| `yarn synpress:cache`         | Synpress-Cache für Wallet-Tests erstellen                                                                                     |
 
 ### Test-Kategorien
 
-**Basis-Tests** (`yarn test:e2e`)
+**Basis-Tests** (`yarn test:e2e` / `yarn test:e2e:smoke`)
 
--   Laufen ohne MetaMask
--   Testen Navigation und UI-Elemente
+-   Laufen ohne MetaMask (entspricht der CI-Job `e2e-smoke`)
+-   Navigation, globales UI, Dashboard-Abschnitte, Equity-Seite, Inhalte für Swap/Monitoring/Challenges/My Positions/Referrals, Mint/Savings, Coverage, USD-statt-EUR, Governance
 -   Können headless ausgeführt werden
+-   Gemeinsames `gotoReady` in `tests/e2e/specs/helpers/navigation.ts` (ohne `networkidle`)
 
 **Visual Regression Tests** (`yarn test:e2e:visual`)
 
@@ -255,6 +256,11 @@ tests/
     └── specs/
         ├── navigation.spec.ts       # Navigations-Tests (ohne MetaMask)
         ├── ui.spec.ts               # UI-Element-Tests (ohne MetaMask)
+        ├── dashboard.spec.ts        # Dashboard-Abschnitte (Equity/Savings/Borrow, Tabs)
+        ├── equity.spec.ts           # Equity-Seite (Pool Shares, Kennzahlen)
+        ├── routes-content.spec.ts   # Swap, Monitoring, Challenges, My Positions, Referrals
+        ├── helpers/
+        │   └── navigation.ts        # gotoReady (domcontentloaded)
         ├── visual.spec.ts           # Visual Regression Tests
         └── wallet/                  # Wallet-Tests (mit MetaMask)
             └── connect.spec.ts       # Wallet-Verbindung mit Visual Baselines
@@ -269,6 +275,18 @@ tests/
 -   Alle Hauptseiten erreichbar (Dashboard, Mint, Savings, Equity, etc.)
 -   Home-Redirect zu Dashboard
 -   404-Handling für ungültige Routen
+
+**dashboard.spec.ts**
+
+-   Titel, Portfolio-Links (My Equity / My Savings / My Borrow), Total owed, Savings Overview, Monitoring-Tab
+
+**equity.spec.ts**
+
+-   Titel, „Native Decentralized Protocol Shares“, Kennzahlen (Supply, Market Cap)
+
+**routes-content.spec.ts**
+
+-   Swap (Headline, Send/Receive), Monitoring, Challenges (Auctions), My Positions, Referrals (Referral Center)
 
 **ui.spec.ts** (6 Tests)
 

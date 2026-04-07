@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { gotoReady } from "./helpers/navigation";
 
 /**
  * Functional tests for the Savings page
@@ -7,8 +8,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Savings Page", () => {
 	test.beforeEach(async ({ page }) => {
-		await page.goto("/savings");
-		await page.waitForLoadState("networkidle");
+		await gotoReady(page, "/savings");
+		await expect(page.getByText(/Earn yield on your JUSD/i)).toBeVisible({ timeout: 20000 });
 	});
 
 	test.describe("Page Layout", () => {
@@ -151,7 +152,7 @@ test.describe("Savings Page", () => {
 		test("should be usable on mobile viewport", async ({ page }) => {
 			await page.setViewportSize({ width: 375, height: 667 });
 			await page.reload();
-			await page.waitForLoadState("networkidle");
+			await expect(page.getByText(/Earn yield/i)).toBeVisible({ timeout: 20000 });
 
 			// Main title should still be visible
 			const title = page.getByText(/Earn yield/i);
@@ -165,7 +166,7 @@ test.describe("Savings Page", () => {
 		test("should be usable on tablet viewport", async ({ page }) => {
 			await page.setViewportSize({ width: 768, height: 1024 });
 			await page.reload();
-			await page.waitForLoadState("networkidle");
+			await expect(page.getByText(/Earn yield/i)).toBeVisible({ timeout: 20000 });
 
 			// Main title should still be visible
 			const title = page.getByText(/Earn yield/i);

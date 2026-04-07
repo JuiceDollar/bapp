@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { gotoReady } from "./helpers/navigation";
 
 /**
  * Functional tests for the Mint page
@@ -7,8 +8,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Mint Page", () => {
 	test.beforeEach(async ({ page }) => {
-		await page.goto("/mint");
-		await page.waitForLoadState("networkidle");
+		await gotoReady(page, "/mint");
+		await expect(page.getByText(/Lend.*JUSD.*Asset/i)).toBeVisible({ timeout: 20000 });
 	});
 
 	test.describe("Page Layout", () => {
@@ -108,7 +109,7 @@ test.describe("Mint Page", () => {
 		test("should be usable on mobile viewport", async ({ page }) => {
 			await page.setViewportSize({ width: 375, height: 667 });
 			await page.reload();
-			await page.waitForLoadState("networkidle");
+			await expect(page.getByText(/Lend.*JUSD/i)).toBeVisible({ timeout: 20000 });
 
 			// Main title should still be visible
 			const title = page.getByText(/Lend.*JUSD/i);
@@ -122,7 +123,7 @@ test.describe("Mint Page", () => {
 		test("should be usable on tablet viewport", async ({ page }) => {
 			await page.setViewportSize({ width: 768, height: 1024 });
 			await page.reload();
-			await page.waitForLoadState("networkidle");
+			await expect(page.getByText(/Lend.*JUSD/i)).toBeVisible({ timeout: 20000 });
 
 			// Main form should still be visible
 			const title = page.getByText(/Lend.*JUSD/i);

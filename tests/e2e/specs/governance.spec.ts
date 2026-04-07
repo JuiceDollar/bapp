@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { gotoReady } from "./helpers/navigation";
 
 /**
  * Smoke tests for the Governance page.
@@ -7,7 +8,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Governance Page", () => {
 	test.beforeEach(async ({ page }) => {
-		await page.goto("/governance");
+		await gotoReady(page, "/governance");
 		await page.waitForURL(/governance/);
 	});
 
@@ -39,9 +40,13 @@ test.describe("Governance Page", () => {
 		});
 
 		test("should display proposals table or empty state", async ({ page }) => {
-			// Either a table with proposals or an empty message is acceptable
-			const tableOrEmpty = page.locator("table, [role='table'], text=/no proposals/i, text=/empty/i");
-			await expect(tableOrEmpty.first()).toBeVisible({ timeout: 15000 });
+			// Leadrate tables render null until Redux/API data arrives — wait for the section first.
+			await expect(page.getByText(/^Base Rate$/i).first()).toBeVisible({ timeout: 20000 });
+			const proposalsEmpty = page.getByText(/no proposals yet/i);
+			const positionsEmpty = page.getByText(/passed the governance process/i);
+			const dateHeader = page.getByText("Date", { exact: true });
+			const proposerHeader = page.getByText("Proposer", { exact: true });
+			await expect(proposalsEmpty.or(positionsEmpty).or(dateHeader).or(proposerHeader).first()).toBeVisible({ timeout: 45000 });
 		});
 	});
 
