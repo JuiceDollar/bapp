@@ -54,14 +54,21 @@ export default function SavingsHistoryCard() {
 	const startTrades = getStartTimestampByTimeframe(timeframe);
 	const chainId = useChainId();
 	const chain = useExplorerChain();
-	const addressSavingsGateway = useContractUrl(ADDRESS[chainId].savingsGateway, chain);
+	const addressSavings = useContractUrl(ADDRESS[chainId].savings, chain);
 
-	const { data: current = 0n } = useReadContract({
+	const { data: v2Balance = 0n } = useReadContract({
 		address: ADDRESS[chainId].juiceDollar,
 		abi: ERC20ABI,
 		functionName: "balanceOf",
 		args: [ADDRESS[chainId].savingsGateway],
 	});
+	const { data: v3Balance = 0n } = useReadContract({
+		address: ADDRESS[chainId].juiceDollar,
+		abi: ERC20ABI,
+		functionName: "balanceOf",
+		args: [ADDRESS[chainId].savings],
+	});
+	const current = v2Balance + v3Balance;
 
 	const filteredTrades = useMemo(
 		() =>
@@ -199,8 +206,8 @@ export default function SavingsHistoryCard() {
 				<div className="flex flex-row justify-between">
 					<div className="text-sm font-medium leading-relaxed">{t("savings.contract_address")}</div>
 					<div className="text-sm font-medium leading-tight ">
-						<Link href={addressSavingsGateway} target="_blank">
-							{shortenAddress(ADDRESS[chainId].savingsGateway)} <FontAwesomeIcon icon={faArrowUpRightFromSquare} size="xs" />
+						<Link href={addressSavings} target="_blank">
+							{shortenAddress(ADDRESS[chainId].savings)} <FontAwesomeIcon icon={faArrowUpRightFromSquare} size="xs" />
 						</Link>
 					</div>
 				</div>

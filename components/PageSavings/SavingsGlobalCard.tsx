@@ -19,7 +19,7 @@ export default function SavingsGlobalCard() {
 
 	const chainId = useChainId();
 	const chain = useExplorerChain();
-	const moduleAddress = ADDRESS[chainId].savingsGateway;
+	const moduleAddress = ADDRESS[chainId].savings;
 	const url = useContractUrl(moduleAddress, chain);
 
 	return (
