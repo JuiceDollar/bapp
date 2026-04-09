@@ -17,7 +17,6 @@ import { gql, useQuery } from "@apollo/client";
 import { mainnet, testnet } from "@config";
 
 export const useSavingsInterest = () => {
-	const [amount, setAmount] = useState(0n);
 	const [isLoaded, setLoaded] = useState<boolean>(false);
 	const [v2SavingsBalance, setV2SavingsBalance] = useState(0n);
 	const [v3SavingsBalance, setV3SavingsBalance] = useState(0n);
@@ -72,7 +71,6 @@ export const useSavingsInterest = () => {
 			setUserSavingsInterest(0n);
 			setIsNonCompounding(false);
 			setV3ClaimableInterest(0n);
-			if (!isLoaded) setAmount(0n);
 			setLoaded(true);
 			return;
 		}
@@ -178,7 +176,6 @@ export const useSavingsInterest = () => {
 			setUserSavingsInterest(_v2CalcInterest + _v3CalcInterest);
 
 			if (!isLoaded) {
-				setAmount(_v2Savings + _v3Savings);
 				setLoaded(true);
 			}
 		})();

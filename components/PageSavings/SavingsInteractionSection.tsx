@@ -23,7 +23,7 @@ import { RootState } from "../../redux/redux.store";
 import { mainnet, testnet } from "@config";
 
 export default function SavingsInteractionSection() {
-	const { userSavingsBalance, v2SavingsBalance, interestToBeCollected, v2Interest, refetchInterest } = useSavingsInterest();
+	const { userSavingsBalance, v2SavingsBalance, v2Interest, refetchInterest } = useSavingsInterest();
 	const [amount, setAmount] = useState("");
 	const [buttonLabel, setButtonLabel] = useState("");
 	const [isDeposit, setIsDeposit] = useState(true);
