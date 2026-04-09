@@ -326,9 +326,15 @@ export const useSavingsInterest = () => {
 				functionName: "save",
 				args: [0n, compound],
 			});
-			await waitForTransactionReceipt(WAGMI_CONFIG, { hash, confirmations: 2 });
+			const toastContent = [
+				{ title: "Mode: ", value: compound ? "Auto-compound" : "Manual collection" },
+				{ title: "Transaction: ", hash },
+			];
+			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash, confirmations: 2 }), {
+				pending: { render: <TxToast title="Switching interest mode..." rows={toastContent} /> },
+				success: { render: <TxToast title="Interest mode updated" rows={toastContent} /> },
+			});
 			setIsNonCompounding(!compound);
-			toast.success(compound ? "Switched to compounding" : "Switched to non-compounding");
 		} catch (error) {
 			toastTxError(error);
 		} finally {

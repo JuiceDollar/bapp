@@ -23,12 +23,13 @@ import { RootState } from "../../redux/redux.store";
 import { mainnet, testnet } from "@config";
 
 export default function SavingsInteractionSection() {
-	const { userSavingsBalance, v2SavingsBalance, v2Interest, refetchInterest } = useSavingsInterest();
+	const { userSavingsBalance, v2SavingsBalance, v2Interest, isNonCompounding, refetchInterest } = useSavingsInterest();
 	const [amount, setAmount] = useState("");
 	const [buttonLabel, setButtonLabel] = useState("");
 	const [isDeposit, setIsDeposit] = useState(true);
 	const [isTxOnGoing, setIsTxOnGoing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [compound, setCompound] = useState(true);
 	const rate = useSelector((state: RootState) => state.savings.savingsInfo?.rate);
 	const { t } = useTranslation();
 	const { frontendCode } = useFrontendCode();
@@ -150,7 +151,7 @@ export default function SavingsInteractionSection() {
 				address: savingsV3Address,
 				abi: SavingsV3ABI,
 				functionName: "save",
-				args: [BigInt(amount)],
+				args: [BigInt(amount), compound],
 			});
 
 			await showToastForDeposit({ hash: saveHash });
@@ -209,6 +210,11 @@ export default function SavingsInteractionSection() {
 			setIsTxOnGoing(false);
 		}
 	};
+
+	// Sync compound preference with on-chain state
+	useEffect(() => {
+		setCompound(!isNonCompounding);
+	}, [isNonCompounding]);
 
 	// Deposit validation
 	useEffect(() => {
@@ -303,6 +309,17 @@ export default function SavingsInteractionSection() {
 						}
 					/>
 					{error && <div className="ml-1 text-text-warning text-sm">{error}</div>}
+					{isDeposit && (
+						<label className="mt-1 ml-1 inline-flex items-center gap-x-2 cursor-pointer">
+							<input
+								type="checkbox"
+								checked={compound}
+								onChange={(e) => setCompound(e.target.checked)}
+								className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+							/>
+							<span className="text-sm font-medium text-text-muted2">{t("savings.auto_compound_interest")}</span>
+						</label>
+					)}
 				</div>
 				<div className="w-full py-1.5">
 					{userAllowance < BigInt(amount) ? (
