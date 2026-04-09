@@ -29,7 +29,9 @@ export const useSavingsInterest = () => {
 	const [isClaiming, setIsClaiming] = useState<boolean>(false);
 	const [isReinvesting, setIsReinvesting] = useState<boolean>(false);
 	const [isTogglingCompound, setIsTogglingCompound] = useState<boolean>(false);
-	const leadrate = useSelector((state: RootState) => state.savings.savingsInfo?.rate ?? 0);
+	const savingsInfo = useSelector((state: RootState) => state.savings.savingsInfo);
+	const leadrate = savingsInfo?.rate ?? 0;
+	const leadrateV2 = savingsInfo?.rateV2 ?? leadrate;
 	const [refetchSignal, setRefetchSignal] = useState(0);
 
 	const { data } = useBlockNumber({ watch: true });
@@ -105,7 +107,7 @@ export const useSavingsInterest = () => {
 					args: [account as `0x${string}`],
 				});
 
-				const _locktime = _ticks >= _current && leadrate > 0n ? (_ticks - _current) / BigInt(leadrate) : 0n;
+				const _locktime = _ticks >= _current && leadrateV2 > 0n ? (_ticks - _current) / BigInt(leadrateV2) : 0n;
 				const _tickDiff = _current - _ticks;
 				_v2CalcInterest = _ticks == 0n || _locktime > 0 ? 0n : (_tickDiff * _saved) / (1_000_000n * 365n * 24n * 60n * 60n);
 			} catch {

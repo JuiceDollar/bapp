@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { erc20Abi, formatUnits, maxUint256 } from "viem";
+import { erc20Abi, formatUnits, maxUint256, zeroAddress } from "viem";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { toast } from "react-toastify";
@@ -38,6 +38,7 @@ export default function SavingsInteractionSection() {
 	const juiceDollarAddress = ADDRESS[chainId].juiceDollar;
 	const savingsV3Address = ADDRESS[chainId].savings;
 	const savingsGatewayAddress = ADDRESS[chainId].savingsGateway;
+	const v3Deployed = !!savingsV3Address && savingsV3Address !== zeroAddress;
 	const { balancesByAddress, refetchBalances } = useWalletERC20Balances([
 		{
 			address: juiceDollarAddress,
@@ -139,7 +140,7 @@ export default function SavingsInteractionSection() {
 	};
 
 	const handleSave = async () => {
-		if (!account.address) return;
+		if (!account.address || !v3Deployed) return;
 
 		try {
 			setIsTxOnGoing(true);
@@ -321,7 +322,7 @@ export default function SavingsInteractionSection() {
 							className="text-lg leading-snug !font-extrabold"
 							onClick={isDeposit ? handleSave : handleWithdraw}
 							isLoading={isTxOnGoing}
-							disabled={!!error || !amount || !BigInt(amount)}
+							disabled={!!error || !amount || !BigInt(amount) || (isDeposit && !v3Deployed)}
 						>
 							{buttonLabel}
 						</Button>
