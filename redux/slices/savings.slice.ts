@@ -10,8 +10,14 @@ import {
 	SavingsState,
 	DispatchApiSavingsLeaderboard,
 } from "./savings.types";
-import { ApiLeadrateProposed, ApiLeadrateRate, ApiSavingsUserTable, ApiSavingsUserLeaderboard } from "@juicedollar/api";
-import { ApiLeadrateInfo, ApiSavingsInfo } from "./savings.types";
+import {
+	ApiLeadrateInfo,
+	ApiLeadrateProposed,
+	ApiLeadrateRate,
+	ApiSavingsInfo,
+	ApiSavingsUserTable,
+	ApiSavingsUserLeaderboard,
+} from "@juicedollar/api";
 import { Address, zeroAddress } from "viem";
 import { logApiError } from "../../utils/errorLogger";
 

@@ -1,33 +1,16 @@
-import { ApiLeadrateProposed, ApiLeadrateRate, ApiSavingsUserTable, ApiSavingsUserLeaderboard, LeadrateProposed } from "@juicedollar/api";
+import {
+	ApiLeadrateInfo,
+	ApiLeadrateProposed,
+	ApiLeadrateRate,
+	ApiSavingsInfo,
+	ApiSavingsUserTable,
+	ApiSavingsUserLeaderboard,
+	LeadrateProposed,
+} from "@juicedollar/api";
 
-// TODO: Remove these overrides after publishing @juicedollar/api with V3 types
-export type ApiLeadrateVersionInfo = {
-	rate: number;
-	nextRate?: number;
-	nextchange?: number;
-	isProposal: boolean;
-	isPending: boolean;
-};
+export type { ApiLeadrateInfo, ApiSavingsInfo };
 
-export type ApiLeadrateInfo = {
-	v2: ApiLeadrateVersionInfo;
-	v3: ApiLeadrateVersionInfo;
-};
-
-export type ApiSavingsInfo = {
-	totalSaved: number;
-	totalWithdrawn: number;
-	totalBalance: number;
-	totalInterest: number;
-	rate: number;
-	rateV2: number;
-	rateV3: number;
-	ratioOfSupply: number;
-};
-
-export type LeadrateProposedWithSource = LeadrateProposed & {
-	source: string;
-};
+export type LeadrateProposedWithSource = LeadrateProposed;
 
 // --------------------------------------------------------------------------------
 export type SavingsState = {
