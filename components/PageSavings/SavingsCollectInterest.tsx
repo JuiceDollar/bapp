@@ -1,4 +1,4 @@
-import { formatUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
 import { formatCurrency, TOKEN_SYMBOL } from "@utils";
 import { useTranslation } from "next-i18next";
 import TokenLogo from "@components/TokenLogo";
@@ -7,6 +7,8 @@ import { useSavingsInterest } from "../../hooks/useSavingsInterest";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRotateRight } from "@fortawesome/free-solid-svg-icons";
+
+const MIN_ACTIONABLE_INTEREST = parseUnits("0.01", 18);
 
 export default function SavingsCollectInterest() {
 	const { isClaiming, interestToBeCollected, claimInterest, isReinvesting, handleReinvest, isNonCompounding } = useSavingsInterest();
@@ -33,7 +35,7 @@ export default function SavingsCollectInterest() {
 							className="!py-1.5 gap-x-1.5"
 							onClick={claimInterest}
 							isLoading={isClaiming}
-							disabled={!interestToBeCollected}
+							disabled={interestToBeCollected < MIN_ACTIONABLE_INTEREST}
 						>
 							<Image src="/icons/ph_hand-coins-black.svg" alt="arrow-right" width={20} height={20} />
 							<span className="font-medium">{t("savings.collect_interest")}</span>
@@ -41,7 +43,7 @@ export default function SavingsCollectInterest() {
 					) : (
 						<Button
 							className="h-9 !py-1.5 gap-x-1.5 justify-start !w-fit"
-							disabled={!interestToBeCollected}
+							disabled={interestToBeCollected < MIN_ACTIONABLE_INTEREST}
 							isLoading={isReinvesting}
 							onClick={handleReinvest}
 						>

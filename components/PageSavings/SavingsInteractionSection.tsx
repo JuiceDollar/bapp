@@ -310,13 +310,26 @@ export default function SavingsInteractionSection() {
 					/>
 					{error && <div className="ml-1 text-text-warning text-sm">{error}</div>}
 					{isDeposit && (
-						<label className="mt-1 ml-1 inline-flex items-center gap-x-2 cursor-pointer">
+						<label className="mt-1 ml-1 inline-flex items-center gap-x-2 cursor-pointer select-none">
 							<input
 								type="checkbox"
 								checked={compound}
 								onChange={(e) => setCompound(e.target.checked)}
-								className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+								className="sr-only peer"
 							/>
+							<div className="w-4 h-4 rounded border border-gray-400 bg-white peer-checked:bg-blue-600 peer-checked:border-blue-600 flex items-center justify-center shrink-0">
+								{compound && (
+									<svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+										<path
+											d="M2 6l3 3 5-5"
+											stroke="currentColor"
+											strokeWidth="2"
+											strokeLinecap="round"
+											strokeLinejoin="round"
+										/>
+									</svg>
+								)}
+							</div>
 							<span className="text-sm font-medium text-text-muted2">{t("savings.auto_compound_interest")}</span>
 						</label>
 					)}
