@@ -198,7 +198,6 @@ export const useSavingsInterest = () => {
 
 		try {
 			setIsClaiming(true);
-			const totalInterest = v2Interest + v3Interest + v3ClaimableInterest;
 
 			// Claim V2 interest (if any V2 balance)
 			if (v2Interest > 0n && v2SavingsBalance > 0n) {
@@ -209,11 +208,19 @@ export const useSavingsInterest = () => {
 					functionName: "adjust",
 					args: [v2SavingsBalance, frontendCode],
 				});
-				await waitForTransactionReceipt(WAGMI_CONFIG, { hash: v2Hash, confirmations: 2 });
+				const v2ToastContent = [
+					{ title: "Claim Interest: ", value: `${formatCurrency(formatUnits(v2Interest, 18), 2, 2)} ${TOKEN_SYMBOL}` },
+					{ title: "Transaction: ", hash: v2Hash },
+				];
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v2Hash, confirmations: 2 }), {
+					pending: { render: <TxToast title="Claiming V2 interest..." rows={v2ToastContent} /> },
+					success: { render: <TxToast title="V2 interest claimed" rows={v2ToastContent} /> },
+				});
 			}
 
 			// Claim V3 interest
 			if (v3Deployed && (v3Interest > 0n || v3ClaimableInterest > 0n)) {
+				const v3Amount = v3Interest + v3ClaimableInterest;
 				if (isNonCompounding) {
 					const v3Hash = await simulateAndWrite({
 						chainId: chainId as typeof mainnet.id | typeof testnet.id,
@@ -222,7 +229,14 @@ export const useSavingsInterest = () => {
 						functionName: "claimInterest",
 						args: [address],
 					});
-					await waitForTransactionReceipt(WAGMI_CONFIG, { hash: v3Hash, confirmations: 2 });
+					const v3ToastContent = [
+						{ title: "Claim Interest: ", value: `${formatCurrency(formatUnits(v3Amount, 18), 2, 2)} ${TOKEN_SYMBOL}` },
+						{ title: "Transaction: ", hash: v3Hash },
+					];
+					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v3Hash, confirmations: 2 }), {
+						pending: { render: <TxToast title="Claiming interest..." rows={v3ToastContent} /> },
+						success: { render: <TxToast title="Successfully claimed" rows={v3ToastContent} /> },
+					});
 				} else {
 					const v3Hash = await simulateAndWrite({
 						chainId: chainId as typeof mainnet.id | typeof testnet.id,
@@ -231,18 +245,16 @@ export const useSavingsInterest = () => {
 						functionName: "refreshBalance",
 						args: [address],
 					});
-					await waitForTransactionReceipt(WAGMI_CONFIG, { hash: v3Hash, confirmations: 2 });
+					const v3ToastContent = [
+						{ title: "Claim Interest: ", value: `${formatCurrency(formatUnits(v3Amount, 18), 2, 2)} ${TOKEN_SYMBOL}` },
+						{ title: "Transaction: ", hash: v3Hash },
+					];
+					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v3Hash, confirmations: 2 }), {
+						pending: { render: <TxToast title="Claiming interest..." rows={v3ToastContent} /> },
+						success: { render: <TxToast title="Successfully claimed" rows={v3ToastContent} /> },
+					});
 				}
 			}
-
-			const toastContent = [
-				{
-					title: `Claim Interest: `,
-					value: `${formatCurrency(formatUnits(totalInterest, 18), 2, 2)} ${TOKEN_SYMBOL}`,
-				},
-			];
-
-			toast.success(<TxToast title="Successfully claimed" rows={toastContent} />);
 
 			setUserSavingsInterest(0n);
 			refetchInterest();
@@ -270,7 +282,14 @@ export const useSavingsInterest = () => {
 					functionName: "refreshBalance",
 					args: [address],
 				});
-				await waitForTransactionReceipt(WAGMI_CONFIG, { hash: v2Hash, confirmations: 2 });
+				const v2ToastContent = [
+					{ title: "Reinvested amount: ", value: `${formatCurrency(formatUnits(v2Interest, 18), 2, 2)} ${TOKEN_SYMBOL}` },
+					{ title: "Transaction: ", hash: v2Hash },
+				];
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v2Hash, confirmations: 2 }), {
+					pending: { render: <TxToast title="Reinvesting V2 interest..." rows={v2ToastContent} /> },
+					success: { render: <TxToast title="V2 interest reinvested" rows={v2ToastContent} /> },
+				});
 			}
 
 			// Reinvest V3 interest
@@ -282,18 +301,15 @@ export const useSavingsInterest = () => {
 					functionName: "refreshBalance",
 					args: [address],
 				});
-				await waitForTransactionReceipt(WAGMI_CONFIG, { hash: v3Hash, confirmations: 2 });
+				const v3ToastContent = [
+					{ title: "Reinvested amount: ", value: `${formatCurrency(formatUnits(v3Interest, 18), 2, 2)} ${TOKEN_SYMBOL}` },
+					{ title: "Transaction: ", hash: v3Hash },
+				];
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v3Hash, confirmations: 2 }), {
+					pending: { render: <TxToast title="Reinvesting..." rows={v3ToastContent} /> },
+					success: { render: <TxToast title="Successfully reinvested" rows={v3ToastContent} /> },
+				});
 			}
-
-			const totalInterest = v2Interest + v3Interest;
-			const toastContent = [
-				{
-					title: `Reinvested amount: `,
-					value: `${formatCurrency(formatUnits(totalInterest, 18), 2, 2)} ${TOKEN_SYMBOL}`,
-				},
-			];
-
-			toast.success(<TxToast title="Successfully reinvested" rows={toastContent} />);
 		} catch (error) {
 			toastTxError(error);
 		} finally {
