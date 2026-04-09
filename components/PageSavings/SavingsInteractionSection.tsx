@@ -280,14 +280,6 @@ export default function SavingsInteractionSection() {
 						</SvgIconButton>
 					</div>
 				</div>
-				{v2SavingsBalance > 0n && (
-					<div className="px-3 py-2 rounded-lg bg-[#FFF3CD] text-[#856404] text-sm">
-						{t("savings.v2_migration_notice", {
-							amount: formatCurrency(formatUnits(v2SavingsBalance, 18), 2, 2),
-							symbol: TOKEN_SYMBOL,
-						})}
-					</div>
-				)}
 				<div className="w-full">
 					<NormalInputOutlined
 						showTokenLogo={false}

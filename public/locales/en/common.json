@@ -736,7 +736,6 @@
 		"start_earning_interest": "Start earning {{rate}}% on your JUSD",
 		"enter_withdraw_amount": "Enter withdraw amount",
 		"withdraw_to_my_wallet": "Withdraw to my wallet",
-		"v2_migration_notice": "You have {{amount}} {{symbol}} in V2 savings. Withdraw to migrate to V3 for improved interest handling.",
 		"transaction_history": "Transaction history",
 		"claimed_interest": "Claimed Interest",
 		"reinvested_interest": "Reinvest Interest",
