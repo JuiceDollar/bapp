@@ -347,6 +347,7 @@ export const useSavingsInterest = () => {
 	const hasSavingsData = userSavingsBalance > 0n || userSavingsInterest > 0n || change > 0n;
 
 	return {
+		isLoaded,
 		isClaiming,
 		isReinvesting,
 		isTogglingCompound,

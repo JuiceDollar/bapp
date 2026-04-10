@@ -23,13 +23,14 @@ import { RootState } from "../../redux/redux.store";
 import { mainnet, testnet } from "@config";
 
 export default function SavingsInteractionSection() {
-	const { userSavingsBalance, v2SavingsBalance, v2Interest, isNonCompounding, refetchInterest } = useSavingsInterest();
+	const { userSavingsBalance, v2SavingsBalance, v2Interest, isNonCompounding, isLoaded, refetchInterest } = useSavingsInterest();
 	const [amount, setAmount] = useState("");
 	const [buttonLabel, setButtonLabel] = useState("");
 	const [isDeposit, setIsDeposit] = useState(true);
 	const [isTxOnGoing, setIsTxOnGoing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [compound, setCompound] = useState(true);
+	const [compoundOverride, setCompoundOverride] = useState<boolean | null>(null);
+	const compound = compoundOverride !== null ? compoundOverride : !isNonCompounding;
 	const rate = useSelector((state: RootState) => state.savings.savingsInfo?.rate);
 	const { t } = useTranslation();
 	const { frontendCode } = useFrontendCode();
@@ -211,9 +212,9 @@ export default function SavingsInteractionSection() {
 		}
 	};
 
-	// Sync compound preference with on-chain state
+	// Reset override when on-chain state changes (e.g. after deposit)
 	useEffect(() => {
-		setCompound(!isNonCompounding);
+		setCompoundOverride(null);
 	}, [isNonCompounding]);
 
 	// Deposit validation
@@ -309,15 +310,15 @@ export default function SavingsInteractionSection() {
 						}
 					/>
 					{error && <div className="ml-1 text-text-warning text-sm">{error}</div>}
-					{isDeposit && (
+					{isDeposit && (!account.address || isLoaded) && (
 						<label className="mt-1 ml-1 inline-flex items-center gap-x-2 cursor-pointer select-none">
 							<input
 								type="checkbox"
 								checked={compound}
-								onChange={(e) => setCompound(e.target.checked)}
+								onChange={(e) => setCompoundOverride(e.target.checked)}
 								className="sr-only peer"
 							/>
-							<div className="w-4 h-4 rounded border border-gray-400 bg-white peer-checked:bg-blue-600 peer-checked:border-blue-600 flex items-center justify-center shrink-0">
+							<div className="w-4 h-4 rounded border border-gray-400 bg-white peer-checked:bg-[#F57F00] peer-checked:border-[#F57F00] flex items-center justify-center shrink-0">
 								{compound && (
 									<svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
 										<path
