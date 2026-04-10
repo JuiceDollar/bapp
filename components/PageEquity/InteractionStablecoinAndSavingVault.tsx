@@ -26,6 +26,7 @@ interface Props {
 	selectedToToken: TokenBalance | undefined;
 	refetchBalances: () => void;
 	reverseSelection: () => void;
+	v2VaultBalance: bigint;
 }
 
 export default function InteractionStablecoinAndSavingVault({
@@ -34,6 +35,7 @@ export default function InteractionStablecoinAndSavingVault({
 	selectedToToken,
 	refetchBalances,
 	reverseSelection,
+	v2VaultBalance,
 }: Props) {
 	const [amount, setAmount] = useState(0n);
 	const [error, setError] = useState("");
@@ -51,7 +53,7 @@ export default function InteractionStablecoinAndSavingVault({
 		address: ADDRESS[chainId].juiceDollar,
 		abi: JuiceDollarABI,
 		functionName: "allowance",
-		args: [account, ADDRESS[chainId].savingsVaultV2],
+		args: [account, ADDRESS[chainId].savingsVaultV3],
 	});
 	const stablecoinAllowance = stablecoinAllowanceData ? BigInt(String(stablecoinAllowanceData)) : 0n;
 
@@ -69,7 +71,7 @@ export default function InteractionStablecoinAndSavingVault({
 				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].savingsVaultV2, maxUint256],
+				args: [ADDRESS[chainId].savingsVaultV3, maxUint256],
 			});
 
 			const toastContent = [
@@ -79,7 +81,7 @@ export default function InteractionStablecoinAndSavingVault({
 				},
 				{
 					title: t("common.txs.spender"),
-					value: shortenAddress(ADDRESS[chainId].savingsVaultV2),
+					value: shortenAddress(ADDRESS[chainId].savingsVaultV3),
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -109,7 +111,7 @@ export default function InteractionStablecoinAndSavingVault({
 		try {
 			const depositWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].savingsVaultV2,
+				address: ADDRESS[chainId].savingsVaultV3,
 				abi: SavingsVaultJUSDABI,
 				functionName: "deposit",
 				args: [amount, address!],
@@ -150,14 +152,14 @@ export default function InteractionStablecoinAndSavingVault({
 	};
 
 	const { data: amountInShares } = useReadContract({
-		address: ADDRESS[chainId].savingsVaultV2,
+		address: ADDRESS[chainId].savingsVaultV3,
 		abi: SavingsVaultJUSDABI,
 		functionName: "convertToShares",
 		args: [amount],
 	});
 
 	const { data: amountInAssets } = useReadContract({
-		address: ADDRESS[chainId].savingsVaultV2,
+		address: ADDRESS[chainId].savingsVaultV3,
 		abi: SavingsVaultJUSDABI,
 		functionName: "convertToAssets",
 		args: [amount],
@@ -182,42 +184,71 @@ export default function InteractionStablecoinAndSavingVault({
 
 		try {
 			setRedeeming(true);
-			const redeemWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].savingsVaultV2,
-				abi: SavingsVaultJUSDABI,
-				functionName: "redeem",
-				args: [amount, address!, address!],
-			});
+			let remaining = amount;
 
-			const toastContent = [
-				{
-					title: t("common.txs.amount"),
-					value: formatBigInt(amount) + " " + SAVINGS_VAULT_SYMBOL,
-				},
-				{
-					title: t("common.txs.receive"),
-					value: formatBigInt(result) + " " + TOKEN_SYMBOL,
-				},
-				{
-					title: t("common.txs.transaction"),
-					hash: redeemWriteHash,
-				},
-			];
+			// Redeem from V2 vault first (drain V2 naturally during migration)
+			if (v2VaultBalance > 0n && remaining > 0n) {
+				const v2Amount = remaining > v2VaultBalance ? v2VaultBalance : remaining;
+				const v2Hash = await simulateAndWrite({
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					address: ADDRESS[chainId].savingsVaultV2,
+					abi: SavingsVaultJUSDABI,
+					functionName: "redeem",
+					args: [v2Amount, address!, address!],
+				});
+				const v2ToastContent = [
+					{ title: t("common.txs.amount"), value: formatBigInt(v2Amount) + " " + SAVINGS_VAULT_SYMBOL },
+					{ title: t("common.txs.transaction"), hash: v2Hash },
+				];
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v2Hash, confirmations: 1 }), {
+					pending: {
+						render: <TxToast title={t("equity.txs.redeeming", { symbol: SAVINGS_VAULT_SYMBOL })} rows={v2ToastContent} />,
+					},
+					success: {
+						render: (
+							<TxToast
+								title={t("equity.txs.successfully_redeemed", { symbol: SAVINGS_VAULT_SYMBOL })}
+								rows={v2ToastContent}
+							/>
+						),
+					},
+				});
+				remaining = remaining - v2Amount;
+			}
 
-			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: redeemWriteHash, confirmations: 1 }), {
-				pending: {
-					render: <TxToast title={t("equity.txs.redeeming", { symbol: SAVINGS_VAULT_SYMBOL })} rows={toastContent} />,
-				},
-				success: {
-					render: <TxToast title={t("equity.txs.successfully_redeemed", { symbol: SAVINGS_VAULT_SYMBOL })} rows={toastContent} />,
-				},
-			});
+			// Redeem remainder from V3 vault
+			if (remaining > 0n) {
+				const v3Hash = await simulateAndWrite({
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					address: ADDRESS[chainId].savingsVaultV3,
+					abi: SavingsVaultJUSDABI,
+					functionName: "redeem",
+					args: [remaining, address!, address!],
+				});
+				const v3ToastContent = [
+					{ title: t("common.txs.amount"), value: formatBigInt(remaining) + " " + SAVINGS_VAULT_SYMBOL },
+					{ title: t("common.txs.receive"), value: formatBigInt(result) + " " + TOKEN_SYMBOL },
+					{ title: t("common.txs.transaction"), hash: v3Hash },
+				];
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v3Hash, confirmations: 1 }), {
+					pending: {
+						render: <TxToast title={t("equity.txs.redeeming", { symbol: SAVINGS_VAULT_SYMBOL })} rows={v3ToastContent} />,
+					},
+					success: {
+						render: (
+							<TxToast
+								title={t("equity.txs.successfully_redeemed", { symbol: SAVINGS_VAULT_SYMBOL })}
+								rows={v3ToastContent}
+							/>
+						),
+					},
+				});
+			}
 
 			await poolStats.refetchPoolStats();
 			await refetchBalances();
 		} catch (error) {
-			toastTxError(error); // TODO: add error translation
+			toastTxError(error);
 		} finally {
 			setAmount(0n);
 			setRedeeming(false);
