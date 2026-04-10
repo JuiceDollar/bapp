@@ -664,6 +664,7 @@
 		"interest_to_be_collected": "Interest to be collected",
 		"reinvest": "Reinvest",
 		"collect_interest": "Collect Interest",
+		"compound_now": "Compound Now",
 		"symbol_amount": "{{symbol}} amount",
 		"total_invested": "Total invested",
 		"manage": "Manage",

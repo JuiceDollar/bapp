@@ -1,8 +1,8 @@
 import { Trans, useTranslation } from "next-i18next";
 import Link from "next/link";
 import { HeaderCell, LinkTitle, NoDataRow } from "./SectionTable";
-import { formatUnits } from "viem";
-import Button, { SecondaryButton } from "@components/Button";
+import { formatUnits, parseUnits } from "viem";
+import Button from "@components/Button";
 import TokenLogo from "@components/TokenLogo";
 import { formatCurrency, TOKEN_SYMBOL } from "@utils";
 import { useSavingsInterest } from "../../hooks/useSavingsInterest";
@@ -10,9 +10,19 @@ import Image from "next/image";
 import { faRotateRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
+const MIN_ACTIONABLE_INTEREST = parseUnits("0.01", 18);
+
 export const MySavings = () => {
-	const { userSavingsBalance, totalEarnedInterest, interestToBeCollected, isReinvesting, isClaiming, claimInterest, handleReinvest } =
-		useSavingsInterest();
+	const {
+		userSavingsBalance,
+		totalEarnedInterest,
+		interestToBeCollected,
+		isReinvesting,
+		isClaiming,
+		claimInterest,
+		handleReinvest,
+		isNonCompounding,
+	} = useSavingsInterest();
 	const { t } = useTranslation();
 
 	const hasData = userSavingsBalance > 0n || totalEarnedInterest > 0n || interestToBeCollected > 0n;
@@ -93,24 +103,27 @@ export const MySavings = () => {
 
 			{hasData && (
 				<div className="w-full flex-1 pt-10 flex flex-row items-stretch justify-center gap-2 sm:gap-4">
-					<Button
-						className="flex-1 min-w-0 h-9 px-2 text-sm sm:h-10 sm:px-4 sm:text-base"
-						disabled={interestToBeCollected === 0n}
-						isLoading={isReinvesting}
-						onClick={handleReinvest}
-					>
-						<FontAwesomeIcon icon={faRotateRight} />
-						{t("dashboard.reinvest")}
-					</Button>
-					<SecondaryButton
-						className="flex-1 min-w-0 h-9 px-2 text-sm sm:h-10 sm:px-4 sm:text-base"
-						disabled={interestToBeCollected === 0n}
-						isLoading={isClaiming}
-						onClick={claimInterest}
-					>
-						<Image src="/icons/ph_hand-coins-black.svg" alt="arrow-right" width={20} height={20} />
-						{t("dashboard.collect_interest")}
-					</SecondaryButton>
+					{isNonCompounding ? (
+						<Button
+							className="flex-1 min-w-0 h-9 px-2 text-sm sm:h-10 sm:px-4 sm:text-base"
+							disabled={interestToBeCollected < MIN_ACTIONABLE_INTEREST}
+							isLoading={isClaiming}
+							onClick={claimInterest}
+						>
+							<Image src="/icons/ph_hand-coins-black.svg" alt="arrow-right" width={20} height={20} />
+							{t("dashboard.collect_interest")}
+						</Button>
+					) : (
+						<Button
+							className="flex-1 min-w-0 h-9 px-2 text-sm sm:h-10 sm:px-4 sm:text-base"
+							disabled={interestToBeCollected < MIN_ACTIONABLE_INTEREST}
+							isLoading={isReinvesting}
+							onClick={handleReinvest}
+						>
+							<FontAwesomeIcon icon={faRotateRight} />
+							{t("dashboard.compound_now")}
+						</Button>
+					)}
 				</div>
 			)}
 		</div>
