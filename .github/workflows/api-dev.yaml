@@ -1,65 +1,57 @@
 name: JuiceDollar dApp DEV CI/CD
 
 on:
-    push:
-        branches: [develop]
-    workflow_dispatch:
-
-permissions:
-    contents: read
+  push:
+    branches: [develop]
+  workflow_dispatch:
 
 env:
-    DOCKER_TAGS: dfxswiss/juicedollar-dapp:beta
-    AZURE_RESOURCE_GROUP: rg-dfx-api-dev
-    AZURE_CONTAINER_APP_TESTNET: ca-dfx-jdtd-dev
-    AZURE_CONTAINER_APP_MAINNET: ca-dfx-jdmd-dev
-    DEPLOY_INFO: ${{ github.ref_name }}-${{ github.sha }}
+  DOCKER_TAGS: juicedollarcom/dapp:beta
 
 jobs:
-    build-and-deploy:
-        name: Build, test and deploy to DEV
-        runs-on: ubuntu-latest
-        defaults:
-            run:
-                working-directory: .
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+  build-and-deploy:
+    name: Build and deploy to DEV
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            - name: Log in to Docker Hub
-              uses: docker/login-action@v3
-              with:
-                  username: ${{ secrets.DOCKER_USERNAME }}
-                  password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-            - name: Build and push Docker image
-              uses: docker/build-push-action@v6
-              with:
-                  context: .
-                  push: true
-                  tags: ${{ env.DOCKER_TAGS }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.DOCKER_TAGS }}
+          platforms: linux/arm64
 
-            - name: Log in to Azure
-              uses: azure/login@v2
-              with:
-                  creds: ${{ secrets.DFX_DEV_CREDENTIALS }}
+      - name: Install cloudflared
+        run: |
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/download/2025.4.0/cloudflared-linux-arm64 -o /usr/local/bin/cloudflared
+          chmod +x /usr/local/bin/cloudflared
 
-            - name: Update Azure Container App (testnet)
-              uses: azure/CLI@v2
-              with:
-                  inlineScript: |
-                      az containerapp update --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CONTAINER_APP_TESTNET }} --image ${{ env.DOCKER_TAGS }} --set-env-vars DEPLOY_INFO=${{ env.DEPLOY_INFO }}
+      - name: Deploy testnet
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_DEV_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "${{ secrets.DEPLOY_DEV_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key \
+            -o ProxyCommand="cloudflared access ssh --hostname ${{ secrets.DEPLOY_DEV_HOST }}" \
+            ${{ secrets.DEPLOY_DEV_USER }}@${{ secrets.DEPLOY_DEV_HOST }} \
+            "jdt-dapp"
 
-            - name: Update Azure Container App (mainnet)
-              uses: azure/CLI@v2
-              with:
-                  inlineScript: |
-                      az containerapp update --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.AZURE_CONTAINER_APP_MAINNET }} --image ${{ env.DOCKER_TAGS }} --set-env-vars DEPLOY_INFO=${{ env.DEPLOY_INFO }}
-
-            - name: Logout from Azure
-              run: |
-                  az logout
-              if: always()
+      - name: Deploy mainnet
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o ProxyCommand="cloudflared access ssh --hostname ${{ secrets.DEPLOY_DEV_HOST }}" \
+            ${{ secrets.DEPLOY_DEV_USER }}@${{ secrets.DEPLOY_DEV_HOST }} \
+            "jdm-dapp"
