@@ -9,7 +9,7 @@ env:
     DOCKER_TAGS: juicedollarcom/dapp:latest
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
     build-and-deploy:
