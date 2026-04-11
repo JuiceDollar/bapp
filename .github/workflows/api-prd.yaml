@@ -8,6 +8,9 @@ on:
 env:
     DOCKER_TAGS: juicedollarcom/dapp:latest
 
+permissions:
+  contents: read
+
 jobs:
     build-and-deploy:
         name: Build and deploy to PRD
