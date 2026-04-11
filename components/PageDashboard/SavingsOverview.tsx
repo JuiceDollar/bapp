@@ -25,15 +25,22 @@ const SavingsOverview = () => {
 	const totalInterest = savingsInfo?.totalInterest;
 	const chainId = useChainId();
 	const chain = useExplorerChain();
-	const addressSavingsGateway = useContractUrl(ADDRESS[chainId].savingsGateway, chain);
+	const addressSavings = useContractUrl(ADDRESS[chainId].savings, chain);
 	const { t } = useTranslation();
 
-	const { data: totalSavings = 0n } = useReadContract({
+	const { data: v2Savings = 0n } = useReadContract({
 		address: ADDRESS[chainId].juiceDollar,
 		abi: JuiceDollarABI,
 		functionName: "balanceOf",
 		args: [ADDRESS[chainId].savingsGateway],
 	});
+	const { data: v3Savings = 0n } = useReadContract({
+		address: ADDRESS[chainId].juiceDollar,
+		abi: JuiceDollarABI,
+		functionName: "balanceOf",
+		args: [ADDRESS[chainId].savings],
+	});
+	const totalSavings = v2Savings + v3Savings;
 
 	return (
 		<div className="w-full bg-white self-stretch rounded-xl justify-start items-center inline-flex shadow-card">
@@ -53,9 +60,8 @@ const SavingsOverview = () => {
 					<StatsBox
 						title={t("dashboard.contract_address")}
 						value={
-							<Link href={addressSavingsGateway} target="_blank">
-								{shortenAddress(ADDRESS[chainId].savingsGateway)}{" "}
-								<FontAwesomeIcon icon={faArrowUpRightFromSquare} size="xs" />
+							<Link href={addressSavings} target="_blank">
+								{shortenAddress(ADDRESS[chainId].savings)} <FontAwesomeIcon icon={faArrowUpRightFromSquare} size="xs" />
 							</Link>
 						}
 					/>

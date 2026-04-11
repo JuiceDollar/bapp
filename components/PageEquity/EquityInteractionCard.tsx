@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { POOL_SHARE_TOKEN_SYMBOL, SAVINGS_VAULT_SYMBOL, TOKEN_SYMBOL } from "@utils";
-import { useChainId } from "wagmi";
+import { useAccount, useChainId, useReadContract } from "wagmi";
 import { ADDRESS } from "@juicedollar/jusd";
+import { erc20Abi, zeroAddress } from "viem";
 import { useTranslation } from "next-i18next";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { SelectAssetModal } from "./SelectAssetModal";
@@ -29,9 +30,11 @@ export default function EquityInteractionCard() {
 	const [tokenInteractionSide, setTokenInteractionSide] = useState<TokenInteractionSide | undefined>(undefined);
 
 	const chainId = useChainId();
+	const { address } = useAccount();
 	const { t } = useTranslation();
+	const account = address || zeroAddress;
 
-	const { balances, refetchBalances } = useWalletERC20Balances([
+	const { balances: rawBalances, refetchBalances } = useWalletERC20Balances([
 		{
 			symbol: TOKEN_SYMBOL,
 			name: TOKEN_SYMBOL,
@@ -45,9 +48,23 @@ export default function EquityInteractionCard() {
 		{
 			symbol: SAVINGS_VAULT_SYMBOL,
 			name: SAVINGS_VAULT_SYMBOL,
-			address: ADDRESS[chainId].savingsVaultV2,
+			address: ADDRESS[chainId].savingsVaultV3,
 		},
 	]);
+
+	// Read V2 vault balance so users can still redeem V2 shares
+	const { data: v2VaultBalance = 0n } = useReadContract({
+		address: ADDRESS[chainId].savingsVaultV2,
+		abi: erc20Abi,
+		functionName: "balanceOf",
+		args: [account],
+	});
+
+	// Merge V2 + V3 vault balance for display in token selector
+	const balances = useMemo(
+		() => rawBalances.map((b) => (b.symbol === SAVINGS_VAULT_SYMBOL ? { ...b, balanceOf: (b.balanceOf || 0n) + v2VaultBalance } : b)),
+		[rawBalances, v2VaultBalance]
+	);
 
 	const onTokenFromToChange = (newSelection: { from: string; to: string }) => {
 		const toTokenOptions = EquityTokenSelectorMapping[newSelection.from];
@@ -111,6 +128,7 @@ export default function EquityInteractionCard() {
 						openSelector={handleOpenTokenSelector}
 						reverseSelection={handleReverseSelection}
 						refetchBalances={refetchBalances}
+						v2VaultBalance={v2VaultBalance}
 					/>
 				) : null}
 				{(tokenFromTo.from === SAVINGS_VAULT_SYMBOL && tokenFromTo.to === POOL_SHARE_TOKEN_SYMBOL) ||

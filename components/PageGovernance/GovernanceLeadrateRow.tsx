@@ -7,8 +7,8 @@ import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
 import { useAccount, useChainId } from "wagmi";
-import { ADDRESS, SavingsGatewayV2ABI } from "@juicedollar/jusd";
-import { ApiLeadrateInfo, LeadrateProposed } from "@juicedollar/api";
+import { ADDRESS, SavingsV3ABI } from "@juicedollar/jusd";
+import { ApiLeadrateInfo, LeadrateProposedWithSource } from "../../redux/slices/savings.types";
 import Button from "@components/Button";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import GuardToMinVotingPower from "@components/Guards/GuardToMinVotingPower";
@@ -19,12 +19,14 @@ import { mainnet, testnet } from "@config";
 interface Props {
 	headers: string[];
 	info: ApiLeadrateInfo;
-	proposal: LeadrateProposed;
+	proposal: LeadrateProposedWithSource;
 	currentProposal: boolean;
 	tab: string;
 }
 
 export default function GovernanceLeadrateRow({ headers, info, proposal, currentProposal, tab }: Props) {
+	const isV3 = proposal.source === "v3";
+	const versionInfo = isV3 ? info.v3 : info.v2;
 	const [isDenying, setDenying] = useState<boolean>(false);
 	const [isApplying, setApplying] = useState<boolean>(false);
 	const [isHidden, setHidden] = useState<boolean>(false);
@@ -47,8 +49,8 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 
 			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].savingsGateway,
-				abi: SavingsGatewayV2ABI,
+				address: ADDRESS[chainId].savings,
+				abi: SavingsV3ABI,
 				functionName: "applyChange",
 				args: [],
 			});
@@ -56,7 +58,7 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 			const toastContent = [
 				{
 					title: `From: `,
-					value: `${formatCurrency(info.rate / 10000, 0, 2)}%`,
+					value: `${formatCurrency(versionInfo.rate / 10000, 0, 2)}%`,
 				},
 				{
 					title: `Applying to: `,
@@ -93,16 +95,16 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 
 			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].savingsGateway,
-				abi: SavingsGatewayV2ABI,
+				address: ADDRESS[chainId].savings,
+				abi: SavingsV3ABI,
 				functionName: "proposeChange",
-				args: [info.rate, []],
+				args: [versionInfo.rate, []],
 			});
 
 			const toastContent = [
 				{
 					title: `Current: `,
-					value: `${formatCurrency(info.rate / 10000, 0, 2)}%`,
+					value: `${formatCurrency(versionInfo.rate / 10000, 0, 2)}%`,
 				},
 				{
 					title: `Denying: `,
@@ -137,13 +139,13 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 				headers={headers}
 				tab={tab}
 				actionCol={
-					currentProposal ? (
-						info.isPending && info.isProposal ? (
-							<GuardToAllowedChainBtn label="Deny" disabled={!info.isPending || !info.isProposal}>
+					currentProposal && isV3 ? (
+						versionInfo.isPending && versionInfo.isProposal ? (
+							<GuardToAllowedChainBtn label="Deny" disabled={!versionInfo.isPending || !versionInfo.isProposal}>
 								<GuardToMinVotingPower label="Deny">
 									<Button
 										className="h-10"
-										disabled={!info.isPending || !info.isProposal || isHidden}
+										disabled={!versionInfo.isPending || !versionInfo.isProposal || isHidden}
 										isLoading={isDenying}
 										onClick={(e) => handleOnDeny(e)}
 									>
@@ -152,11 +154,11 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 								</GuardToMinVotingPower>
 							</GuardToAllowedChainBtn>
 						) : (
-							<GuardToAllowedChainBtn label="Apply" disabled={!info.isProposal}>
+							<GuardToAllowedChainBtn label="Apply" disabled={!versionInfo.isProposal}>
 								<GuardToMinVotingPower label="Apply">
 									<Button
 										className="h-10"
-										disabled={!info.isProposal || isHidden}
+										disabled={!versionInfo.isProposal || isHidden}
 										isLoading={isApplying}
 										onClick={(e) => handleOnApply(e)}
 									>
@@ -178,12 +180,12 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 					<AddressLabelSimple address={proposal.proposer} showLink />
 				</div>
 
-				<div className={`flex flex-col ${currentProposal && info.isProposal ? "font-semibold" : ""}`}>
+				<div className={`flex flex-col ${currentProposal && versionInfo.isProposal ? "font-semibold" : ""}`}>
 					{proposal.nextRate / 10_000} %
 				</div>
 
 				<div className="flex flex-col">
-					{currentProposal ? (hoursUntil > 0 ? stateStr : info.rate != proposal.nextRate ? "Ready" : "Passed") : "Expired"}
+					{currentProposal ? (hoursUntil > 0 ? stateStr : versionInfo.rate != proposal.nextRate ? "Ready" : "Passed") : "Expired"}
 				</div>
 			</TableRow>
 		</>

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import { useBlockNumber } from "wagmi";
-import { ADDRESS, SavingsGatewayV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, SavingsGatewayV2ABI, SavingsV3ABI } from "@juicedollar/jusd";
 import { formatCurrency, getPublicViewAddress, TOKEN_SYMBOL } from "@utils";
 import { formatUnits, zeroAddress } from "viem";
 import { toast } from "react-toastify";
@@ -17,14 +17,20 @@ import { gql, useQuery } from "@apollo/client";
 import { mainnet, testnet } from "@config";
 
 export const useSavingsInterest = () => {
-	const [amount, setAmount] = useState(0n);
 	const [isLoaded, setLoaded] = useState<boolean>(false);
-	const [userSavingsBalance, setUserSavingsBalance] = useState(0n);
+	const [v2SavingsBalance, setV2SavingsBalance] = useState(0n);
+	const [v3SavingsBalance, setV3SavingsBalance] = useState(0n);
 	const [userSavingsInterest, setUserSavingsInterest] = useState(0n);
-	const [interestToBeCollected, setInterestToBeCollected] = useState(0n);
+	const [v2Interest, setV2Interest] = useState(0n);
+	const [v3Interest, setV3Interest] = useState(0n);
+	const [isNonCompounding, setIsNonCompounding] = useState(false);
+	const [v3ClaimableInterest, setV3ClaimableInterest] = useState(0n);
 	const [isClaiming, setIsClaiming] = useState<boolean>(false);
 	const [isReinvesting, setIsReinvesting] = useState<boolean>(false);
-	const leadrate = useSelector((state: RootState) => state.savings.savingsInfo?.rate ?? 0);
+	const [isTogglingCompound, setIsTogglingCompound] = useState<boolean>(false);
+	const savingsInfo = useSelector((state: RootState) => state.savings.savingsInfo);
+	const leadrate = savingsInfo?.rate ?? 0;
+	const leadrateV2 = savingsInfo?.rateV2 ?? leadrate;
 	const [refetchSignal, setRefetchSignal] = useState(0);
 
 	const { data } = useBlockNumber({ watch: true });
@@ -36,6 +42,8 @@ export const useSavingsInterest = () => {
 	const ADDR = ADDRESS[chainId];
 
 	const { frontendCode } = useFrontendCode();
+
+	const v3Deployed = !!ADDR?.savings && ADDR.savings !== zeroAddress;
 
 	const { data: leaderboardData, refetch: refetchLeaderboard } = useQuery(
 		gql`
@@ -56,24 +64,32 @@ export const useSavingsInterest = () => {
 		if (account === zeroAddress || isClaiming) return;
 
 		if (!ADDR?.savingsGateway) {
-			setUserSavingsBalance(0n);
-			setInterestToBeCollected(0n);
+			setV2SavingsBalance(0n);
+			setV3SavingsBalance(0n);
+			setV2Interest(0n);
+			setV3Interest(0n);
 			setUserSavingsInterest(0n);
-			if (!isLoaded) setAmount(0n);
+			setIsNonCompounding(false);
+			setV3ClaimableInterest(0n);
 			setLoaded(true);
 			return;
 		}
 
 		(async () => {
+			let _v2Savings = 0n;
+			let _v2CalcInterest = 0n;
+			let _v2Accrued = 0n;
+
+			// V2 reads (independent — failure does not block V3)
 			try {
-				const [_userSavings, _userTicks] = await readContract(WAGMI_CONFIG, {
+				const [_saved, _ticks] = await readContract(WAGMI_CONFIG, {
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: ADDR.savingsGateway,
 					abi: SavingsGatewayV2ABI,
 					functionName: "savings",
 					args: [account as `0x${string}`],
 				});
-				setUserSavingsBalance(_userSavings);
+				_v2Savings = _saved;
 
 				const _current = await readContract(WAGMI_CONFIG, {
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
@@ -81,34 +97,89 @@ export const useSavingsInterest = () => {
 					abi: SavingsGatewayV2ABI,
 					functionName: "currentTicks",
 				});
-				const accruedInterest = await readContract(WAGMI_CONFIG, {
+				_v2Accrued = await readContract(WAGMI_CONFIG, {
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: ADDR.savingsGateway,
 					abi: SavingsGatewayV2ABI,
 					functionName: "accruedInterest",
 					args: [account as `0x${string}`],
 				});
-				setInterestToBeCollected(accruedInterest);
 
-				const _locktime = _userTicks >= _current && leadrate > 0n ? (_userTicks - _current) / BigInt(leadrate) : 0n;
-				const _tickDiff = _current - _userTicks;
-				const _interest =
-					_userTicks == 0n || _locktime > 0 ? 0n : (_tickDiff * _userSavings) / (1_000_000n * 365n * 24n * 60n * 60n);
-				setUserSavingsInterest(_interest);
-
-				if (!isLoaded) {
-					setAmount(_userSavings);
-					setLoaded(true);
-				}
+				const _locktime = _ticks >= _current && leadrateV2 > 0n ? (_ticks - _current) / BigInt(leadrateV2) : 0n;
+				const _tickDiff = _current - _ticks;
+				_v2CalcInterest = _ticks == 0n || _locktime > 0 ? 0n : (_tickDiff * _saved) / (1_000_000n * 365n * 24n * 60n * 60n);
 			} catch {
-				setUserSavingsBalance(0n);
-				setInterestToBeCollected(0n);
-				setUserSavingsInterest(0n);
-				if (!isLoaded) setAmount(0n);
+				// V2 contract unavailable
+			}
+
+			setV2SavingsBalance(_v2Savings);
+			setV2Interest(_v2Accrued);
+
+			// V3 reads (independent — failure does not block V2)
+			let _v3Savings = 0n;
+			let _v3Accrued = 0n;
+			let _v3NonCompounding = false;
+			let _v3Claimable = 0n;
+			let _v3CalcInterest = 0n;
+
+			if (v3Deployed) {
+				try {
+					const [_saved, _ticks] = await readContract(WAGMI_CONFIG, {
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: ADDR.savings,
+						abi: SavingsV3ABI,
+						functionName: "savings",
+						args: [account as `0x${string}`],
+					});
+					_v3Savings = _saved;
+
+					const _current = await readContract(WAGMI_CONFIG, {
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: ADDR.savings,
+						abi: SavingsV3ABI,
+						functionName: "currentTicks",
+					});
+					_v3Accrued = await readContract(WAGMI_CONFIG, {
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: ADDR.savings,
+						abi: SavingsV3ABI,
+						functionName: "accruedInterest",
+						args: [account as `0x${string}`],
+					});
+					_v3NonCompounding = await readContract(WAGMI_CONFIG, {
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: ADDR.savings,
+						abi: SavingsV3ABI,
+						functionName: "nonCompounding",
+						args: [account as `0x${string}`],
+					});
+					_v3Claimable = await readContract(WAGMI_CONFIG, {
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: ADDR.savings,
+						abi: SavingsV3ABI,
+						functionName: "claimableInterest",
+						args: [account as `0x${string}`],
+					});
+
+					const _locktime = _ticks >= _current && leadrate > 0n ? (_ticks - _current) / BigInt(leadrate) : 0n;
+					const _tickDiff = _current - _ticks;
+					_v3CalcInterest = _ticks == 0n || _locktime > 0 ? 0n : (_tickDiff * _saved) / (1_000_000n * 365n * 24n * 60n * 60n);
+				} catch {
+					// V3 contract unavailable
+				}
+			}
+
+			setV3SavingsBalance(_v3Savings);
+			setV3Interest(_v3Accrued);
+			setIsNonCompounding(_v3NonCompounding);
+			setV3ClaimableInterest(_v3Claimable);
+			setUserSavingsInterest(_v2CalcInterest + _v3CalcInterest);
+
+			if (!isLoaded) {
 				setLoaded(true);
 			}
 		})();
-	}, [data, account, ADDR, isLoaded, leadrate, isClaiming, refetchSignal, chainId]);
+	}, [data, account, ADDR, isLoaded, leadrate, isClaiming, refetchSignal, chainId, v3Deployed]);
 
 	useEffect(() => {
 		setLoaded(false);
@@ -125,43 +196,68 @@ export const useSavingsInterest = () => {
 		try {
 			setIsClaiming(true);
 
-			const writeHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDR.savingsGateway,
-				abi: SavingsGatewayV2ABI,
-				functionName: "adjust",
-				args: [userSavingsBalance, frontendCode],
-			});
+			// Claim V2 interest (if any V2 balance)
+			if (v2Interest > 0n && v2SavingsBalance > 0n) {
+				const v2Hash = await simulateAndWrite({
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					address: ADDR.savingsGateway,
+					abi: SavingsGatewayV2ABI,
+					functionName: "adjust",
+					args: [v2SavingsBalance, frontendCode],
+				});
+				const v2ToastContent = [
+					{ title: "Claim Interest: ", value: `${formatCurrency(formatUnits(v2Interest, 18), 2, 2)} ${TOKEN_SYMBOL}` },
+					{ title: "Transaction: ", hash: v2Hash },
+				];
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v2Hash, confirmations: 2 }), {
+					pending: { render: <TxToast title="Claiming V2 interest..." rows={v2ToastContent} /> },
+					success: { render: <TxToast title="V2 interest claimed" rows={v2ToastContent} /> },
+				});
+			}
 
-			const toastContent = [
-				{
-					title: `Saved amount: `,
-					value: `${formatCurrency(formatUnits(amount, 18), 2, 2)} ${TOKEN_SYMBOL}`,
-				},
-				{
-					title: `Claim Interest: `,
-					value: `${formatCurrency(formatUnits(interestToBeCollected, 18), 2, 2)} ${TOKEN_SYMBOL}`,
-				},
-				{
-					title: "Transaction: ",
-					hash: writeHash,
-				},
-			];
-
-			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: writeHash, confirmations: 2 }), {
-				pending: {
-					render: <TxToast title={`Claiming Interest...`} rows={toastContent} />,
-				},
-				success: {
-					render: <TxToast title="Successfully claimed" rows={toastContent} />,
-				},
-			});
+			// Claim V3 interest
+			if (v3Deployed && (v3Interest > 0n || v3ClaimableInterest > 0n)) {
+				const v3Amount = v3Interest + v3ClaimableInterest;
+				if (isNonCompounding) {
+					const v3Hash = await simulateAndWrite({
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: ADDR.savings,
+						abi: SavingsV3ABI,
+						functionName: "claimInterest",
+						args: [address],
+					});
+					const v3ToastContent = [
+						{ title: "Claim Interest: ", value: `${formatCurrency(formatUnits(v3Amount, 18), 2, 2)} ${TOKEN_SYMBOL}` },
+						{ title: "Transaction: ", hash: v3Hash },
+					];
+					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v3Hash, confirmations: 2 }), {
+						pending: { render: <TxToast title="Claiming interest..." rows={v3ToastContent} /> },
+						success: { render: <TxToast title="Successfully claimed" rows={v3ToastContent} /> },
+					});
+				} else {
+					const v3Hash = await simulateAndWrite({
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: ADDR.savings,
+						abi: SavingsV3ABI,
+						functionName: "refreshBalance",
+						args: [address],
+					});
+					const v3ToastContent = [
+						{ title: "Claim Interest: ", value: `${formatCurrency(formatUnits(v3Amount, 18), 2, 2)} ${TOKEN_SYMBOL}` },
+						{ title: "Transaction: ", hash: v3Hash },
+					];
+					await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v3Hash, confirmations: 2 }), {
+						pending: { render: <TxToast title="Claiming interest..." rows={v3ToastContent} /> },
+						success: { render: <TxToast title="Successfully claimed" rows={v3ToastContent} /> },
+					});
+				}
+			}
 
 			setUserSavingsInterest(0n);
 			refetchInterest();
 			refetchLeaderboard();
 		} catch (error) {
-			toastTxError(error); // TODO: add error translation
+			toastTxError(error);
 		} finally {
 			if (setLoaded != undefined) setLoaded(false);
 			setIsClaiming(false);
@@ -174,33 +270,43 @@ export const useSavingsInterest = () => {
 		try {
 			setIsReinvesting(true);
 
-			const reinvestHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].savingsGateway,
-				abi: SavingsGatewayV2ABI,
-				functionName: "refreshBalance",
-				args: [address],
-			});
+			// Reinvest V2 interest
+			if (v2Interest > 0n) {
+				const v2Hash = await simulateAndWrite({
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					address: ADDR.savingsGateway,
+					abi: SavingsGatewayV2ABI,
+					functionName: "refreshBalance",
+					args: [address],
+				});
+				const v2ToastContent = [
+					{ title: "Reinvested amount: ", value: `${formatCurrency(formatUnits(v2Interest, 18), 2, 2)} ${TOKEN_SYMBOL}` },
+					{ title: "Transaction: ", hash: v2Hash },
+				];
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v2Hash, confirmations: 2 }), {
+					pending: { render: <TxToast title="Reinvesting V2 interest..." rows={v2ToastContent} /> },
+					success: { render: <TxToast title="V2 interest reinvested" rows={v2ToastContent} /> },
+				});
+			}
 
-			const toastContent = [
-				{
-					title: `Reinvested amount: `,
-					value: `${formatCurrency(formatUnits(interestToBeCollected, 18), 2, 2)} ${TOKEN_SYMBOL}`,
-				},
-				{
-					title: "Transaction: ",
-					hash: reinvestHash,
-				},
-			];
-
-			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: reinvestHash, confirmations: 2 }), {
-				pending: {
-					render: <TxToast title={`Reinvesting...`} rows={toastContent} />,
-				},
-				success: {
-					render: <TxToast title="Successfully reinvested" rows={toastContent} />,
-				},
-			});
+			// Reinvest V3 interest
+			if (v3Deployed && v3Interest > 0n) {
+				const v3Hash = await simulateAndWrite({
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					address: ADDR.savings,
+					abi: SavingsV3ABI,
+					functionName: "refreshBalance",
+					args: [address],
+				});
+				const v3ToastContent = [
+					{ title: "Reinvested amount: ", value: `${formatCurrency(formatUnits(v3Interest, 18), 2, 2)} ${TOKEN_SYMBOL}` },
+					{ title: "Transaction: ", hash: v3Hash },
+				];
+				await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash: v3Hash, confirmations: 2 }), {
+					pending: { render: <TxToast title="Reinvesting..." rows={v3ToastContent} /> },
+					success: { render: <TxToast title="Successfully reinvested" rows={v3ToastContent} /> },
+				});
+			}
 		} catch (error) {
 			toastTxError(error);
 		} finally {
@@ -208,17 +314,56 @@ export const useSavingsInterest = () => {
 		}
 	};
 
+	const setCompounding = async (compound: boolean) => {
+		if (!address || !v3Deployed) return;
+
+		try {
+			setIsTogglingCompound(true);
+			const hash = await simulateAndWrite({
+				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				address: ADDR.savings,
+				abi: SavingsV3ABI,
+				functionName: "save",
+				args: [0n, compound],
+			});
+			const toastContent = [
+				{ title: "Mode: ", value: compound ? "Auto-compound" : "Manual collection" },
+				{ title: "Transaction: ", hash },
+			];
+			await toast.promise(waitForTransactionReceipt(WAGMI_CONFIG, { hash, confirmations: 2 }), {
+				pending: { render: <TxToast title="Switching interest mode..." rows={toastContent} /> },
+				success: { render: <TxToast title="Interest mode updated" rows={toastContent} /> },
+			});
+			setIsNonCompounding(!compound);
+		} catch (error) {
+			toastTxError(error);
+		} finally {
+			setIsTogglingCompound(false);
+		}
+	};
+
+	const userSavingsBalance = v2SavingsBalance + v3SavingsBalance;
+	const interestToBeCollected = v2Interest + v3Interest + v3ClaimableInterest;
 	const hasSavingsData = userSavingsBalance > 0n || userSavingsInterest > 0n || change > 0n;
 
 	return {
+		isLoaded,
 		isClaiming,
 		isReinvesting,
+		isTogglingCompound,
 		hasSavingsData,
 		interestToBeCollected,
 		totalEarnedInterest: change,
 		userSavingsBalance,
+		v2SavingsBalance,
+		v3SavingsBalance,
+		v2Interest,
+		v3Interest,
+		isNonCompounding,
+		v3ClaimableInterest,
 		claimInterest,
 		refetchInterest,
 		handleReinvest,
+		setCompounding,
 	};
 };

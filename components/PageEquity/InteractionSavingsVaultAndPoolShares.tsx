@@ -167,7 +167,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 	};
 
 	const { data: vaultSharesInStablecoin } = useReadContract({
-		address: ADDRESS[chainId].savingsVaultV2,
+		address: ADDRESS[chainId].savingsVaultV3,
 		abi: SavingsVaultJUSDABI,
 		functionName: "convertToAssets",
 		args: [amount],
@@ -188,7 +188,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 	});
 
 	const { data: stablecoinInVaultSharesResult } = useReadContract({
-		address: ADDRESS[chainId].savingsVaultV2,
+		address: ADDRESS[chainId].savingsVaultV3,
 		abi: SavingsVaultJUSDABI,
 		functionName: "convertToShares",
 		args: [equityInStablecoin || 0n],
