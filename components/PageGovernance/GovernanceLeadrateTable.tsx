@@ -6,7 +6,7 @@ import { TableShowMoreRow } from "@components/Table/TableShowMoreRow";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/redux.store";
 import { useState } from "react";
-import { LeadrateProposed } from "@juicedollar/api";
+import { LeadrateProposedWithSource } from "../../redux/slices/savings.types";
 import GovernanceLeadrateRow from "./GovernanceLeadrateRow";
 import { useTranslation } from "next-i18next";
 import { useExpandableTable } from "@hooks";
@@ -23,7 +23,7 @@ export default function GovernanceLeadrateTable() {
 	const proposals = useSelector((state: RootState) => state.savings.leadrateProposed);
 	const rates = useSelector((state: RootState) => state.savings.leadrateRate);
 	const currentProposal = proposals && proposals.list.length > 0 ? proposals.list[0] : undefined;
-	const sorted: LeadrateProposed[] = proposals?.list || [];
+	const sorted = (proposals?.list || []) as LeadrateProposedWithSource[];
 	const { visibleData, isExpanded, toggleExpanded, showExpandButton } = useExpandableTable(sorted);
 
 	if (!info || !proposals || !rates) return null;

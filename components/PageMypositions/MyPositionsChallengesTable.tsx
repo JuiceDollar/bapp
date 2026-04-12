@@ -22,6 +22,7 @@ import { useTranslation } from "next-i18next";
 import { useExpandableTable } from "@hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { getPublicViewAddress } from "../../utils/url";
 
 export default function MyPositionsChallengesTable() {
 	const { t } = useTranslation();
@@ -40,7 +41,7 @@ export default function MyPositionsChallengesTable() {
 	const auction = useSelector((state: RootState) => state.challenges.challengesPrices?.map || {});
 
 	const router = useRouter();
-	const overwrite = router.query.address as Address;
+	const overwrite = getPublicViewAddress(router);
 
 	const { address } = useAccount();
 	const account = overwrite || address || zeroAddress;

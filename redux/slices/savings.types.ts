@@ -5,7 +5,12 @@ import {
 	ApiSavingsInfo,
 	ApiSavingsUserTable,
 	ApiSavingsUserLeaderboard,
+	LeadrateProposed,
 } from "@juicedollar/api";
+
+export type { ApiLeadrateInfo, ApiSavingsInfo };
+
+export type LeadrateProposedWithSource = LeadrateProposed;
 
 // --------------------------------------------------------------------------------
 export type SavingsState = {

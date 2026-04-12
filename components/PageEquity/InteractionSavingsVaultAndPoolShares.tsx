@@ -12,7 +12,7 @@ import { TxToast, toastTxError } from "@components/TxToast";
 import { toast } from "react-toastify";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../app.config";
-import { ADDRESS, JuiceDollarABI, EquityABI, FrontendGatewayABI, SavingsVaultJUSDABI } from "@juicedollar/jusd";
+import { ADDRESS, JuiceDollarABI, EquityABI, FrontendGatewayV2ABI, SavingsVaultJUSDABI } from "@juicedollar/jusd";
 import { useFrontendCode } from "../../hooks/useFrontendCode";
 import { useTranslation } from "next-i18next";
 import { TokenInputSelectOutlined } from "@components/Input/TokenInputSelectOutlined";
@@ -127,7 +127,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 			const investWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
-				abi: FrontendGatewayABI,
+				abi: FrontendGatewayV2ABI,
 				functionName: "invest",
 				args: [amount, result, frontendCode],
 			});
@@ -167,7 +167,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 	};
 
 	const { data: vaultSharesInStablecoin } = useReadContract({
-		address: ADDRESS[chainId].savingsVaultJUSD,
+		address: ADDRESS[chainId].savingsVaultV3,
 		abi: SavingsVaultJUSDABI,
 		functionName: "convertToAssets",
 		args: [amount],
@@ -188,7 +188,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 	});
 
 	const { data: stablecoinInVaultSharesResult } = useReadContract({
-		address: ADDRESS[chainId].savingsVaultJUSD,
+		address: ADDRESS[chainId].savingsVaultV3,
 		abi: SavingsVaultJUSDABI,
 		functionName: "convertToShares",
 		args: [equityInStablecoin || 0n],
@@ -261,7 +261,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 			const redeemWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
 				address: ADDRESS[chainId].frontendGateway,
-				abi: FrontendGatewayABI,
+				abi: FrontendGatewayV2ABI,
 				functionName: "redeem",
 				args: [account, amount, stablecoinInVaultSharesResult, frontendCode],
 			});

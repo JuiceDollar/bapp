@@ -1,6 +1,7 @@
 import { SecondaryLinkButton } from "@components/Button";
 import TokenLogo from "@components/TokenLogo";
-import { useTranslation } from "next-i18next";
+import { Trans, useTranslation } from "next-i18next";
+import Link from "next/link";
 import { Fragment, useMemo, useRef } from "react";
 import { HeaderCell, LinkTitle, NoDataRow } from "./SectionTable";
 import { useAccount } from "wagmi";
@@ -12,6 +13,13 @@ import { useRouter } from "next/router";
 import { getPublicViewAddress } from "../../utils/url";
 import { calculateCollateralizationPercentage } from "../../utils/collateralizationPercentage";
 import { getNetDebt } from "../../utils/loanCalculations";
+const BorrowEmptyMessage = () => (
+	<Trans
+		i18nKey="dashboard.no_borrowings_yet"
+		components={{ lending: <Link href="/mint" className="font-medium text-text-labelButton hover:opacity-70 no-underline" /> }}
+	/>
+);
+
 interface BorrowData {
 	position: `0x${string}`;
 	symbol: string;
@@ -68,7 +76,9 @@ const DesktopTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 					</Fragment>
 				))
 			) : (
-				<NoDataRow className="mt-1.5 col-span-5">{t("dashboard.no_borrowings_yet")}</NoDataRow>
+				<NoDataRow className="mt-1.5 col-span-5">
+					<BorrowEmptyMessage />
+				</NoDataRow>
 			)}
 		</div>
 	);
@@ -85,13 +95,13 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 				<>
 					{borrowData.map((item) => (
 						<div className="w-full flex flex-col gap-1 border-b border-borders-dividerLight" key={item.position}>
-							<div className="mb-2 w-full flex flex-col justify-start items-start gap-1">
+							<div className="w-full flex flex-row justify-between items-center">
 								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">{t("dashboard.collateral")}</div>
-								<div className="flex flex-row items-center gap-2">
+								<div className="flex flex-row items-center gap-1.5">
 									<div className="flex items-center justify-center">
-										<TokenLogo currency={item.symbol} size={8} />
+										<TokenLogo currency={item.symbol} size={5} />
 									</div>
-									<div className="font-medium text-base leading-tight">
+									<div className="font-medium text-sm leading-tight">
 										{item.collateralAmount} {item.symbol}
 									</div>
 								</div>
@@ -101,7 +111,7 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
 									{t("dashboard.liquidation_price")}
 								</div>
-								<div className="font-medium text-base leading-tight">
+								<div className="font-medium text-sm leading-tight">
 									{item.liquidationPrice} {TOKEN_SYMBOL}
 								</div>
 							</div>
@@ -110,12 +120,12 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
 									{t("dashboard.collateralization")}
 								</div>
-								<div className="font-medium text-base leading-tight">{item.collateralization} %</div>
+								<div className="font-medium text-sm leading-tight">{item.collateralization} %</div>
 							</div>
 
 							<div className="w-full flex flex-row justify-between items-center">
 								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">{t("dashboard.loan_due_in")}</div>
-								<div className="font-medium text-base leading-tight">
+								<div className="font-medium text-sm leading-tight">
 									{item.loanDueIn} {t("common.days")}
 								</div>
 							</div>
@@ -124,7 +134,7 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 								<div className="text-text-muted2 text-xs font-medium leading-[1.125rem]">
 									{t("dashboard.amount_borrowed")}
 								</div>
-								<div className="font-extrabold text-base leading-tight">
+								<div className="font-extrabold text-sm leading-tight">
 									{item.amountBorrowed} {TOKEN_SYMBOL}
 								</div>
 							</div>
@@ -136,7 +146,9 @@ const MobileTable = ({ borrowData }: { borrowData: BorrowData[] }) => {
 					))}
 				</>
 			) : (
-				<NoDataRow className="col-span-5">{t("dashboard.no_borrowings_yet")}</NoDataRow>
+				<NoDataRow className="col-span-5">
+					<BorrowEmptyMessage />
+				</NoDataRow>
 			)}
 		</div>
 	);

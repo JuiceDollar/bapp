@@ -17,7 +17,7 @@ import { RootState } from "../../redux/redux.store";
 import { gql, useQuery } from "@apollo/client";
 import { formatUnits } from "viem";
 import { useChainId } from "wagmi";
-import { ADDRESS, SavingsGatewayABI } from "@juicedollar/jusd";
+import { ADDRESS, SavingsGatewayV2ABI, SavingsV3ABI } from "@juicedollar/jusd";
 import { readContract } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
 import { mainnet, testnet } from "@config";
@@ -103,14 +103,28 @@ export default function YourReferralsTable() {
 			try {
 				const promises = referredAddresses.map(async (address) => {
 					try {
-						const accruedInterest = await readContract(WAGMI_CONFIG, {
+						const v2Interest = await readContract(WAGMI_CONFIG, {
 							chainId: chainId as typeof mainnet.id | typeof testnet.id,
 							address: ADDRESS[chainId].savingsGateway,
-							abi: SavingsGatewayABI,
+							abi: SavingsGatewayV2ABI,
 							functionName: "accruedInterest",
 							args: [address as `0x${string}`],
 						});
-						return { address, interest: accruedInterest };
+						let v3Interest = 0n;
+						if (ADDRESS[chainId].savings && ADDRESS[chainId].savings !== "0x0000000000000000000000000000000000000000") {
+							try {
+								v3Interest = await readContract(WAGMI_CONFIG, {
+									chainId: chainId as typeof mainnet.id | typeof testnet.id,
+									address: ADDRESS[chainId].savings,
+									abi: SavingsV3ABI,
+									functionName: "accruedInterest",
+									args: [address as `0x${string}`],
+								});
+							} catch {
+								// V3 not available
+							}
+						}
+						return { address, interest: v2Interest + v3Interest };
 					} catch (error) {
 						console.error(`Failed to fetch accrued interest for ${address}:`, error);
 						return { address, interest: 0n };

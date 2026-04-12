@@ -42,9 +42,12 @@ const Rank = ({ rank }: { rank: number }) => {
 function SavingsLeaderboardRow({ headers, item, tab, rank }: Props) {
 	return (
 		<>
-			<TableRow headers={headers} tab={tab}>
+			<TableRow headers={headers} tab={tab} hideFirstOnMobile>
 				<Rank rank={rank} />
-				<div className="flex flex-col text-left">
+				<div className="flex items-center gap-2 text-left">
+					<span className="md:hidden shrink-0">
+						<Rank rank={rank} />
+					</span>
 					<AddressLabelSimple address={item.account} showLink />
 				</div>
 				<div className={`flex flex-col`}>

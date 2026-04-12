@@ -18,12 +18,19 @@ export default function RatesSummary() {
 	const savingsInfo = useSelector((state: RootState) => state.savings.savingsInfo);
 	const chainId = useChainId();
 
-	const { data: totalSavingsRaw = 0n } = useReadContract({
+	const { data: v2SavingsRaw = 0n } = useReadContract({
 		address: ADDRESS[chainId].juiceDollar,
 		abi: erc20Abi,
 		functionName: "balanceOf",
 		args: [ADDRESS[chainId].savingsGateway],
 	});
+	const { data: v3SavingsRaw = 0n } = useReadContract({
+		address: ADDRESS[chainId].juiceDollar,
+		abi: erc20Abi,
+		functionName: "balanceOf",
+		args: [ADDRESS[chainId].savings],
+	});
+	const totalSavingsRaw = v2SavingsRaw + v3SavingsRaw;
 
 	const exposures = eco.exposureData?.exposures ?? [];
 	const totalOpenPositions = exposures.reduce((sum, e) => sum + e.positions.open, 0);

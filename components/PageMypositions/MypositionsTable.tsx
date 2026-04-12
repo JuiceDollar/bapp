@@ -15,6 +15,7 @@ import { useTranslation } from "next-i18next";
 import { useExpandableTable } from "@hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { getPublicViewAddress } from "../../utils/url";
 
 export default function MypositionsTable() {
 	const { t } = useTranslation();
@@ -38,7 +39,7 @@ export default function MypositionsTable() {
 	const prices = useSelector((state: RootState) => state.prices.coingecko || {});
 
 	const router = useRouter();
-	const overwrite = router.query.address as Address;
+	const overwrite = getPublicViewAddress(router);
 
 	const { address } = useAccount();
 	const account = overwrite || address || zeroAddress;

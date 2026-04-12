@@ -52,29 +52,29 @@ export default function MyPositionsBidsRow({ headers, bid, tab }: Props) {
 			}
 			tab={tab}
 			showFirstHeader
+			mobileFirstColumnSplit
 		>
 			{/* Collateral */}
-			<div className="flex flex-col max-md:mb-5">
-				{/* desktop view */}
+			<div className="flex flex-col">
+				{/* desktop */}
 				<div className="max-md:hidden flex flex-row items-center">
 					<span className="mr-3 cursor-pointer" onClick={openExplorer}>
-						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} />
+						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} size={8} />
 					</span>
-					<span className={`col-span-2 text-md font-extrabold`}>{`${formatCurrency(
+					<span className="text-md font-extrabold">{`${formatCurrency(
 						formatUnits(bid.filledSize, position.collateralDecimals),
 						...filledSizeFractionDigits
 					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</span>
 				</div>
-
-				{/* mobile view */}
-				<div className="md:hidden flex flex-row items-center">
-					<div className="mr-3 cursor-pointer" onClick={openExplorer}>
-						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} />
-					</div>
-					<div className={`col-span-2 text-md  font-semibold`}>{`${formatCurrency(
+				{/* mobile — inline with label via mobileFirstColumnSplit */}
+				<div className="md:hidden flex flex-row items-center justify-end gap-1.5">
+					<span className="shrink-0 cursor-pointer" onClick={openExplorer}>
+						<TokenLogo currency={normalizeTokenSymbol(position.collateralSymbol)} size={5} />
+					</span>
+					<span className="text-md font-semibold">{`${formatCurrency(
 						formatUnits(bid.filledSize, position.collateralDecimals),
 						...filledSizeFractionDigits
-					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</div>
+					)} ${normalizeTokenSymbol(position.collateralSymbol)}`}</span>
 				</div>
 			</div>
 

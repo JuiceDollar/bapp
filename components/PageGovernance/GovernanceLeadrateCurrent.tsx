@@ -16,7 +16,7 @@ import { useAccount, useChainId } from "wagmi";
 import { WAGMI_CONFIG } from "../../app.config";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
-import { ADDRESS, SavingsABI } from "@juicedollar/jusd";
+import { ADDRESS, SavingsV3ABI } from "@juicedollar/jusd";
 import { toastTxError, TxToast } from "@components/TxToast";
 import { toast } from "react-toastify";
 import { useTranslation } from "next-i18next";
@@ -30,17 +30,18 @@ export default function GovernanceLeadrateCurrent({}: Props) {
 	const account = useAccount();
 	const chainId = useChainId();
 	const info = useSelector((state: RootState) => state.savings.leadrateInfo);
-	const [newRate, setNewRate] = useState<number>(info?.rate || 0);
+	const v3 = info?.v3;
+	const [newRate, setNewRate] = useState<number>(v3?.rate || 0);
 	const [isHidden, setHidden] = useState<boolean>(false);
 	const [isDisabled, setDisabled] = useState<boolean>(true);
 	const { t } = useTranslation();
 
 	useEffect(() => {
-		if (newRate != info?.rate) setDisabled(false);
+		if (newRate != v3?.rate) setDisabled(false);
 		else setDisabled(true);
-	}, [newRate, info?.rate]);
+	}, [newRate, v3?.rate]);
 
-	if (!info) return null;
+	if (!info || !v3) return null;
 
 	const changeNewRate = (value: string) => {
 		if (!value || value?.length == 0) return;
@@ -58,8 +59,8 @@ export default function GovernanceLeadrateCurrent({}: Props) {
 
 			const writeHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].savingsGateway,
-				abi: SavingsABI,
+				address: ADDRESS[chainId].savings,
+				abi: SavingsV3ABI,
 				functionName: "proposeChange",
 				args: [newRate, []],
 			});
@@ -67,7 +68,7 @@ export default function GovernanceLeadrateCurrent({}: Props) {
 			const toastContent = [
 				{
 					title: t("governance.txs.from"),
-					value: `${formatCurrency(info.rate / 10000, 0, 2)}%`,
+					value: `${formatCurrency(v3.rate / 10000, 0, 2)}%`,
 				},
 				{
 					title: t("governance.txs.proposing_to"),

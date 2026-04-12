@@ -7,5 +7,4 @@ export * from "./helpers";
 export * from "./referrals";
 export * from "./url";
 export * from "./tokenDisplay";
-export * from "./mainnet-addresses";
 export * from "./api-client";

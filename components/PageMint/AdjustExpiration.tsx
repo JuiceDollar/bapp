@@ -5,7 +5,7 @@ import { useTranslation } from "next-i18next";
 import { useEffect, useMemo, useState } from "react";
 import { toastTxError } from "@components/TxToast";
 import { waitForTransactionReceipt } from "wagmi/actions";
-import { ADDRESS, PositionRollerABI, PositionV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, PositionRollerV2ABI, PositionV2ABI } from "@juicedollar/jusd";
 import { useRouter } from "next/router";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
@@ -108,20 +108,20 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 						symbol: position.collateralSymbol,
 						address: position.collateral,
 						name: position.collateralSymbol,
-						allowance: [ADDRESS[chainId].roller],
+						allowance: [ADDRESS[chainId].rollerV2],
 					},
 					{
 						symbol: position.stablecoinSymbol,
 						address: position.stablecoinAddress,
 						name: position.stablecoinSymbol,
-						allowance: [ADDRESS[chainId].roller],
+						allowance: [ADDRESS[chainId].rollerV2],
 					},
 			  ]
 			: []
 	);
 
-	const collateralAllowance = position ? balancesByAddress[position.collateral]?.allowance?.[ADDRESS[chainId].roller] : undefined;
-	const jusdAllowance = position ? balancesByAddress[position.stablecoinAddress]?.allowance?.[ADDRESS[chainId].roller] : undefined;
+	const collateralAllowance = position ? balancesByAddress[position.collateral]?.allowance?.[ADDRESS[chainId].rollerV2] : undefined;
+	const jusdAllowance = position ? balancesByAddress[position.stablecoinAddress]?.allowance?.[ADDRESS[chainId].rollerV2] : undefined;
 	const jusdBalance = position ? balancesByAddress[position.stablecoinAddress]?.balanceOf : 0n;
 
 	const { data: contractData } = useReadContracts({
@@ -313,8 +313,8 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 			if (isNativeWrappedPosition) {
 				txHash = await simulateAndWrite({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
-					address: ADDRESS[chainId].roller,
-					abi: PositionRollerABI,
+					address: ADDRESS[chainId].rollerV2,
+					abi: PositionRollerV2ABI,
 					functionName: "rollNative",
 					args: [
 						source,
@@ -330,8 +330,8 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 			} else {
 				txHash = await simulateAndWrite({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
-					address: ADDRESS[chainId].roller,
-					abi: PositionRollerABI,
+					address: ADDRESS[chainId].rollerV2,
+					abi: PositionRollerV2ABI,
 					functionName: "roll",
 					args: [
 						source,
@@ -369,7 +369,7 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 				address: position.collateral,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].roller, maxUint256],
+				args: [ADDRESS[chainId].rollerV2, maxUint256],
 			});
 
 			const toastContent = [{ title: t("common.txs.transaction"), hash: approvingHash }];
@@ -410,7 +410,7 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 				address: position.stablecoinAddress,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].roller, maxUint256],
+				args: [ADDRESS[chainId].rollerV2, maxUint256],
 			});
 
 			const toastContent = [{ title: t("common.txs.transaction"), hash: approvingHash }];
