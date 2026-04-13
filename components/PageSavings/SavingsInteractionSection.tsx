@@ -26,7 +26,6 @@ const DUST_THRESHOLD = parseUnits("0.01", 18);
 
 export default function SavingsInteractionSection() {
 	const {
-		userSavingsBalance,
 		v2SavingsBalance,
 		v3SavingsBalance,
 		v2Interest,
