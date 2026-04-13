@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { erc20Abi, formatUnits, maxUint256, zeroAddress } from "viem";
+import { erc20Abi, formatUnits, maxUint256, parseUnits, zeroAddress } from "viem";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { toast } from "react-toastify";
@@ -14,7 +14,7 @@ import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
 import Button from "@components/Button";
 import { useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { useAccount, useChainId } from "wagmi";
-import { ADDRESS, SavingsGatewayV2ABI, SavingsV3ABI } from "@juicedollar/jusd";
+import { ADDRESS, SavingsGatewayV2ABI, SavingsV3ABI, SavingsVaultJUSDABI } from "@juicedollar/jusd";
 import { useSavingsInterest } from "../../hooks/useSavingsInterest";
 import { useTranslation } from "next-i18next";
 import { useFrontendCode } from "../../hooks/useFrontendCode";
@@ -22,8 +22,21 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../redux/redux.store";
 import { mainnet, testnet } from "@config";
 
+const DUST_THRESHOLD = parseUnits("0.01", 18);
+
 export default function SavingsInteractionSection() {
-	const { userSavingsBalance, v2SavingsBalance, v2Interest, isNonCompounding, isLoaded, refetchInterest } = useSavingsInterest();
+	const {
+		v2SavingsBalance,
+		v3SavingsBalance,
+		v2Interest,
+		v2VaultShares,
+		v2VaultAssets,
+		v3VaultShares,
+		v3VaultAssets,
+		isNonCompounding,
+		isLoaded,
+		refetchInterest,
+	} = useSavingsInterest();
 	const [amount, setAmount] = useState("");
 	const [buttonLabel, setButtonLabel] = useState("");
 	const [isDeposit, setIsDeposit] = useState(true);
@@ -40,19 +53,29 @@ export default function SavingsInteractionSection() {
 	const juiceDollarAddress = ADDRESS[chainId].juiceDollar;
 	const savingsV3Address = ADDRESS[chainId].savings;
 	const savingsGatewayAddress = ADDRESS[chainId].savingsGateway;
+	const savingsVaultV3Address = ADDRESS[chainId].savingsVaultV3;
+	const savingsVaultV2Address = ADDRESS[chainId].savingsVaultV2;
 	const v3Deployed = !!savingsV3Address && savingsV3Address !== zeroAddress;
+	const v3VaultDeployed = !!savingsVaultV3Address && savingsVaultV3Address !== zeroAddress;
+	// Approve target depends on compound mode: vault (compound) or Savings directly (non-compound)
+	const depositTarget = compound ? savingsVaultV3Address : savingsV3Address;
+	const withdrawableBalance =
+		(v2SavingsBalance >= DUST_THRESHOLD ? v2SavingsBalance : 0n) +
+		(v2VaultAssets >= DUST_THRESHOLD ? v2VaultAssets : 0n) +
+		(v3SavingsBalance >= DUST_THRESHOLD ? v3SavingsBalance : 0n) +
+		(v3VaultAssets >= DUST_THRESHOLD ? v3VaultAssets : 0n);
 	const { balancesByAddress, refetchBalances } = useWalletERC20Balances([
 		{
 			address: juiceDollarAddress,
 			symbol: TOKEN_SYMBOL,
 			name: TOKEN_SYMBOL,
-			allowance: [savingsV3Address],
+			allowance: [savingsVaultV3Address, savingsV3Address],
 		},
 	]);
 
 	const deuroWalletDetails = balancesByAddress?.[juiceDollarAddress];
 	const userBalance = deuroWalletDetails?.balanceOf || 0n;
-	const userAllowance = deuroWalletDetails?.allowance?.[savingsV3Address] || 0n;
+	const userAllowance = deuroWalletDetails?.allowance?.[depositTarget] || 0n;
 
 	const handleApprove = async () => {
 		try {
@@ -63,7 +86,7 @@ export default function SavingsInteractionSection() {
 				address: juiceDollarAddress,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [savingsV3Address, maxUint256],
+				args: [depositTarget, maxUint256],
 			});
 
 			const toastContent = [
@@ -73,7 +96,7 @@ export default function SavingsInteractionSection() {
 				},
 				{
 					title: t("common.txs.spender"),
-					value: shortenAddress(savingsV3Address),
+					value: shortenAddress(depositTarget),
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -97,11 +120,11 @@ export default function SavingsInteractionSection() {
 		}
 	};
 
-	const showToastForWithdraw = async ({ hash }: { hash: `0x${string}` }) => {
+	const showToastForWithdraw = async ({ hash, withdrawAmount }: { hash: `0x${string}`; withdrawAmount: bigint }) => {
 		const toastContent = [
 			{
 				title: `${t("savings.txs.withdraw")}`,
-				value: `${formatCurrency(formatUnits(BigInt(amount), 18), 2, 2)} ${TOKEN_SYMBOL}`,
+				value: `${formatCurrency(formatUnits(withdrawAmount, 18), 2, 2)} ${TOKEN_SYMBOL}`,
 			},
 			{
 				title: `${t("common.txs.transaction")}`,
@@ -142,18 +165,33 @@ export default function SavingsInteractionSection() {
 	};
 
 	const handleSave = async () => {
-		if (!account.address || !v3Deployed) return;
+		if (!account.address) return;
+		if (compound && !v3VaultDeployed) return;
+		if (!compound && !v3Deployed) return;
 
 		try {
 			setIsTxOnGoing(true);
 
-			const saveHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: savingsV3Address,
-				abi: SavingsV3ABI,
-				functionName: "save",
-				args: [BigInt(amount), compound],
-			});
+			let saveHash: `0x${string}`;
+			if (compound) {
+				// Route through vault (auto-compounds via share price)
+				saveHash = await simulateAndWrite({
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					address: savingsVaultV3Address,
+					abi: SavingsVaultJUSDABI,
+					functionName: "deposit",
+					args: [BigInt(amount), account.address],
+				});
+			} else {
+				// Deposit directly to Savings (non-compounding)
+				saveHash = await simulateAndWrite({
+					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					address: savingsV3Address,
+					abi: SavingsV3ABI,
+					functionName: "save",
+					args: [BigInt(amount), false],
+				});
+			}
 
 			await showToastForDeposit({ hash: saveHash });
 			await refetchInterest();
@@ -173,11 +211,11 @@ export default function SavingsInteractionSection() {
 			setIsTxOnGoing(true);
 			let remaining = BigInt(amount);
 
-			// Withdraw from V2 first (drains V2 naturally during migration)
-			if (v2SavingsBalance > 0n && remaining > 0n) {
+			// 1. Drain V2 direct savings (legacy migration)
+			if (v2SavingsBalance >= DUST_THRESHOLD && remaining > 0n) {
+				const v2Drain = remaining > v2SavingsBalance ? v2SavingsBalance : remaining;
 				const v2Amount = remaining > v2SavingsBalance ? v2SavingsBalance + v2Interest : remaining + v2Interest;
-				const v2Adjusted = remaining >= v2SavingsBalance ? 2n * v2Amount : v2Amount; // 2X to ensure full withdrawal
-
+				const v2Adjusted = remaining >= v2SavingsBalance ? 2n * v2Amount : v2Amount;
 				const v2Hash = await simulateAndWrite({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: savingsGatewayAddress,
@@ -185,13 +223,39 @@ export default function SavingsInteractionSection() {
 					functionName: "withdraw",
 					args: [account.address, v2Adjusted, frontendCode],
 				});
-				await showToastForWithdraw({ hash: v2Hash });
+				await showToastForWithdraw({ hash: v2Hash, withdrawAmount: v2Drain });
 				remaining = remaining > v2SavingsBalance ? remaining - v2SavingsBalance : 0n;
 			}
 
-			// Withdraw remainder from V3 (2x to ensure full drain after refresh adds interest)
-			if (remaining > 0n) {
-				const v3Amount = BigInt(amount) >= userSavingsBalance ? 2n * remaining : remaining;
+			// 2. Drain V2 vault shares (legacy migration)
+			if (v2VaultAssets >= DUST_THRESHOLD && remaining > 0n) {
+				if (remaining > v2VaultAssets) {
+					const v2Hash = await simulateAndWrite({
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: savingsVaultV2Address,
+						abi: SavingsVaultJUSDABI,
+						functionName: "redeem",
+						args: [v2VaultShares, account.address, account.address],
+					});
+					await showToastForWithdraw({ hash: v2Hash, withdrawAmount: v2VaultAssets });
+					remaining = remaining - v2VaultAssets;
+				} else {
+					const v2Hash = await simulateAndWrite({
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: savingsVaultV2Address,
+						abi: SavingsVaultJUSDABI,
+						functionName: "withdraw",
+						args: [remaining, account.address, account.address],
+					});
+					await showToastForWithdraw({ hash: v2Hash, withdrawAmount: remaining });
+					remaining = 0n;
+				}
+			}
+
+			// 3. Drain V3 direct savings (non-compounding first — tax safe)
+			if (v3SavingsBalance >= DUST_THRESHOLD && remaining > 0n) {
+				const v3Drain = remaining > v3SavingsBalance ? v3SavingsBalance : remaining;
+				const v3Amount = remaining >= v3SavingsBalance ? 2n * v3SavingsBalance : remaining;
 				const v3Hash = await simulateAndWrite({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
 					address: savingsV3Address,
@@ -199,7 +263,32 @@ export default function SavingsInteractionSection() {
 					functionName: "withdraw",
 					args: [account.address, v3Amount],
 				});
-				await showToastForWithdraw({ hash: v3Hash });
+				await showToastForWithdraw({ hash: v3Hash, withdrawAmount: v3Drain });
+				remaining = remaining > v3SavingsBalance ? remaining - v3SavingsBalance : 0n;
+			}
+
+			// 4. Drain V3 vault shares (use redeem for full drain to avoid rounding)
+			if (v3VaultAssets >= DUST_THRESHOLD && remaining > 0n) {
+				const isFullDrain = BigInt(amount) >= withdrawableBalance;
+				if (isFullDrain) {
+					const v3Hash = await simulateAndWrite({
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: savingsVaultV3Address,
+						abi: SavingsVaultJUSDABI,
+						functionName: "redeem",
+						args: [v3VaultShares, account.address, account.address],
+					});
+					await showToastForWithdraw({ hash: v3Hash, withdrawAmount: remaining });
+				} else {
+					const v3Hash = await simulateAndWrite({
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: savingsVaultV3Address,
+						abi: SavingsVaultJUSDABI,
+						functionName: "withdraw",
+						args: [remaining, account.address, account.address],
+					});
+					await showToastForWithdraw({ hash: v3Hash, withdrawAmount: remaining });
+				}
 			}
 
 			await refetchInterest();
@@ -246,14 +335,38 @@ export default function SavingsInteractionSection() {
 			return;
 		}
 
-		if (BigInt(amount) > userSavingsBalance) {
+		if (BigInt(amount) > withdrawableBalance) {
 			setError(t("savings.error.greater_than_savings"));
 			setButtonLabel(t("savings.enter_withdraw_amount"));
+			return;
+		}
+
+		// Count how many withdrawal sources will be needed (skip dust)
+		let rem = BigInt(amount);
+		let txCount = 0;
+		if (v2SavingsBalance >= DUST_THRESHOLD && rem > 0n) {
+			txCount++;
+			rem -= rem > v2SavingsBalance ? v2SavingsBalance : rem;
+		}
+		if (v2VaultAssets >= DUST_THRESHOLD && rem > 0n) {
+			txCount++;
+			rem -= rem > v2VaultAssets ? v2VaultAssets : rem;
+		}
+		if (v3SavingsBalance >= DUST_THRESHOLD && rem > 0n) {
+			txCount++;
+			rem -= rem > v3SavingsBalance ? v3SavingsBalance : rem;
+		}
+		if (v3VaultAssets >= DUST_THRESHOLD && rem > 0n) {
+			txCount++;
+		}
+
+		setError(null);
+		if (txCount > 1) {
+			setButtonLabel(`${t("savings.withdraw_to_my_wallet")} (${txCount} transactions)`);
 		} else {
-			setError(null);
 			setButtonLabel(t("savings.withdraw_to_my_wallet"));
 		}
-	}, [amount, isDeposit, userSavingsBalance, t]);
+	}, [amount, isDeposit, withdrawableBalance, v2SavingsBalance, v2VaultAssets, v3SavingsBalance, v3VaultAssets, t]);
 
 	return (
 		<>
@@ -273,7 +386,7 @@ export default function SavingsInteractionSection() {
 						<TokenLogo currency={TOKEN_SYMBOL} />
 						<div className="flex flex-col">
 							<span className="text-base font-extrabold leading-tight">
-								<span className="">{formatCurrency(formatUnits(userSavingsBalance, 18), 2, 2)}</span> {TOKEN_SYMBOL}
+								<span className="">{formatCurrency(formatUnits(withdrawableBalance, 18), 2, 2)}</span> {TOKEN_SYMBOL}
 							</span>
 							<span className="text-xs font-medium text-text-muted2 leading-[1rem]"></span>
 						</div>
@@ -302,9 +415,9 @@ export default function SavingsInteractionSection() {
 								</span>
 								<button
 									className="text-text-labelButton font-extrabold"
-									onClick={() => setAmount(isDeposit ? userBalance.toString() : userSavingsBalance.toString())}
+									onClick={() => setAmount(isDeposit ? userBalance.toString() : withdrawableBalance.toString())}
 								>
-									{formatCurrency(formatUnits(isDeposit ? userBalance : userSavingsBalance, 18), 2, 2)} {TOKEN_SYMBOL}
+									{formatCurrency(formatUnits(isDeposit ? userBalance : withdrawableBalance, 18), 2, 2)} {TOKEN_SYMBOL}
 								</button>
 							</div>
 						}
@@ -337,7 +450,12 @@ export default function SavingsInteractionSection() {
 				</div>
 				<div className="w-full py-1.5">
 					{userAllowance < BigInt(amount) ? (
-						<Button className="text-lg leading-snug !font-extrabold" onClick={handleApprove} isLoading={isTxOnGoing}>
+						<Button
+							className="text-lg leading-snug !font-extrabold"
+							onClick={handleApprove}
+							isLoading={isTxOnGoing}
+							disabled={!amount || !BigInt(amount) || (compound && !v3VaultDeployed) || (!compound && !v3Deployed)}
+						>
 							{t("common.approve")}
 						</Button>
 					) : (
@@ -345,7 +463,13 @@ export default function SavingsInteractionSection() {
 							className="text-lg leading-snug !font-extrabold"
 							onClick={isDeposit ? handleSave : handleWithdraw}
 							isLoading={isTxOnGoing}
-							disabled={!!error || !amount || !BigInt(amount) || (isDeposit && !v3Deployed)}
+							disabled={
+								!!error ||
+								!amount ||
+								!BigInt(amount) ||
+								(isDeposit && compound && !v3VaultDeployed) ||
+								(isDeposit && !compound && !v3Deployed)
+							}
 						>
 							{buttonLabel}
 						</Button>

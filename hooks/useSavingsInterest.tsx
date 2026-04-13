@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/router";
 import { useBlockNumber } from "wagmi";
-import { ADDRESS, SavingsGatewayV2ABI, SavingsV3ABI } from "@juicedollar/jusd";
+import { ADDRESS, SavingsGatewayV2ABI, SavingsV3ABI, SavingsVaultJUSDABI } from "@juicedollar/jusd";
 import { formatCurrency, getPublicViewAddress, TOKEN_SYMBOL } from "@utils";
-import { formatUnits, zeroAddress } from "viem";
+import { erc20Abi, formatUnits, zeroAddress } from "viem";
 import { toast } from "react-toastify";
 import { RootState } from "../redux/redux.store";
 import { useFrontendCode } from "./useFrontendCode";
@@ -25,6 +25,10 @@ export const useSavingsInterest = () => {
 	const [v3Interest, setV3Interest] = useState(0n);
 	const [isNonCompounding, setIsNonCompounding] = useState(false);
 	const [v3ClaimableInterest, setV3ClaimableInterest] = useState(0n);
+	const [v2VaultShares, setV2VaultShares] = useState(0n);
+	const [v3VaultShares, setV3VaultShares] = useState(0n);
+	const [v2VaultAssets, setV2VaultAssets] = useState(0n);
+	const [v3VaultAssets, setV3VaultAssets] = useState(0n);
 	const [isClaiming, setIsClaiming] = useState<boolean>(false);
 	const [isReinvesting, setIsReinvesting] = useState<boolean>(false);
 	const [isTogglingCompound, setIsTogglingCompound] = useState<boolean>(false);
@@ -44,6 +48,8 @@ export const useSavingsInterest = () => {
 	const { frontendCode } = useFrontendCode();
 
 	const v3Deployed = !!ADDR?.savings && ADDR.savings !== zeroAddress;
+	const v3VaultDeployed = !!ADDR?.savingsVaultV3 && ADDR.savingsVaultV3 !== zeroAddress;
+	const v2VaultDeployed = !!ADDR?.savingsVaultV2 && ADDR.savingsVaultV2 !== zeroAddress;
 
 	const { data: leaderboardData, refetch: refetchLeaderboard } = useQuery(
 		gql`
@@ -71,6 +77,10 @@ export const useSavingsInterest = () => {
 			setUserSavingsInterest(0n);
 			setIsNonCompounding(false);
 			setV3ClaimableInterest(0n);
+			setV2VaultShares(0n);
+			setV2VaultAssets(0n);
+			setV3VaultShares(0n);
+			setV3VaultAssets(0n);
 			setLoaded(true);
 			return;
 		}
@@ -175,11 +185,68 @@ export const useSavingsInterest = () => {
 			setV3ClaimableInterest(_v3Claimable);
 			setUserSavingsInterest(_v2CalcInterest + _v3CalcInterest);
 
+			// Vault reads (V2 + V3)
+			let _v2VaultShares = 0n;
+			let _v2VaultAssets = 0n;
+			let _v3VaultShares = 0n;
+			let _v3VaultAssets = 0n;
+
+			if (v2VaultDeployed) {
+				try {
+					_v2VaultShares = await readContract(WAGMI_CONFIG, {
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: ADDR.savingsVaultV2,
+						abi: erc20Abi,
+						functionName: "balanceOf",
+						args: [account as `0x${string}`],
+					});
+					if (_v2VaultShares > 0n) {
+						_v2VaultAssets = await readContract(WAGMI_CONFIG, {
+							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							address: ADDR.savingsVaultV2,
+							abi: SavingsVaultJUSDABI,
+							functionName: "convertToAssets",
+							args: [_v2VaultShares],
+						});
+					}
+				} catch {
+					// V2 vault unavailable
+				}
+			}
+
+			if (v3VaultDeployed) {
+				try {
+					_v3VaultShares = await readContract(WAGMI_CONFIG, {
+						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						address: ADDR.savingsVaultV3,
+						abi: erc20Abi,
+						functionName: "balanceOf",
+						args: [account as `0x${string}`],
+					});
+					if (_v3VaultShares > 0n) {
+						_v3VaultAssets = await readContract(WAGMI_CONFIG, {
+							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							address: ADDR.savingsVaultV3,
+							abi: SavingsVaultJUSDABI,
+							functionName: "convertToAssets",
+							args: [_v3VaultShares],
+						});
+					}
+				} catch {
+					// V3 vault unavailable
+				}
+			}
+
+			setV2VaultShares(_v2VaultShares);
+			setV2VaultAssets(_v2VaultAssets);
+			setV3VaultShares(_v3VaultShares);
+			setV3VaultAssets(_v3VaultAssets);
+
 			if (!isLoaded) {
 				setLoaded(true);
 			}
 		})();
-	}, [data, account, ADDR, isLoaded, leadrate, isClaiming, refetchSignal, chainId, v3Deployed]);
+	}, [data, account, ADDR, isLoaded, leadrate, isClaiming, refetchSignal, chainId, v3Deployed, v2VaultDeployed, v3VaultDeployed]);
 
 	useEffect(() => {
 		setLoaded(false);
@@ -342,8 +409,9 @@ export const useSavingsInterest = () => {
 		}
 	};
 
-	const userSavingsBalance = v2SavingsBalance + v3SavingsBalance;
+	const userSavingsBalance = v2SavingsBalance + v3SavingsBalance + v2VaultAssets + v3VaultAssets;
 	const interestToBeCollected = v2Interest + v3Interest + v3ClaimableInterest;
+	const hasDirectSavings = v2SavingsBalance > 0n || v3SavingsBalance > 0n;
 	const hasSavingsData = userSavingsBalance > 0n || userSavingsInterest > 0n || change > 0n;
 
 	return {
@@ -352,11 +420,16 @@ export const useSavingsInterest = () => {
 		isReinvesting,
 		isTogglingCompound,
 		hasSavingsData,
+		hasDirectSavings,
 		interestToBeCollected,
 		totalEarnedInterest: change,
 		userSavingsBalance,
 		v2SavingsBalance,
 		v3SavingsBalance,
+		v2VaultShares,
+		v3VaultShares,
+		v2VaultAssets,
+		v3VaultAssets,
 		v2Interest,
 		v3Interest,
 		isNonCompounding,

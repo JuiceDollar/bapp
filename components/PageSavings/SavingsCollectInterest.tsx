@@ -11,8 +11,12 @@ import { faArrowRotateRight } from "@fortawesome/free-solid-svg-icons";
 const MIN_ACTIONABLE_INTEREST = parseUnits("0.01", 18);
 
 export default function SavingsCollectInterest() {
-	const { isClaiming, interestToBeCollected, claimInterest, isReinvesting, handleReinvest, isNonCompounding } = useSavingsInterest();
+	const { isClaiming, interestToBeCollected, claimInterest, isReinvesting, handleReinvest, isNonCompounding, hasDirectSavings } =
+		useSavingsInterest();
 	const { t } = useTranslation();
+
+	// Hide section when user has no direct savings (vault-only users have no claimable interest)
+	if (!hasDirectSavings && interestToBeCollected < MIN_ACTIONABLE_INTEREST) return null;
 
 	return (
 		<div className="flex flex-col gap-y-3">
