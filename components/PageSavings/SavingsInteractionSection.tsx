@@ -450,7 +450,12 @@ export default function SavingsInteractionSection() {
 				</div>
 				<div className="w-full py-1.5">
 					{userAllowance < BigInt(amount) ? (
-						<Button className="text-lg leading-snug !font-extrabold" onClick={handleApprove} isLoading={isTxOnGoing}>
+						<Button
+							className="text-lg leading-snug !font-extrabold"
+							onClick={handleApprove}
+							isLoading={isTxOnGoing}
+							disabled={!amount || !BigInt(amount) || (compound && !v3VaultDeployed) || (!compound && !v3Deployed)}
+						>
 							{t("common.approve")}
 						</Button>
 					) : (
