@@ -10,13 +10,11 @@ permissions:
     contents: read
 
 env:
-    NEXT_PUBLIC_LANDINGPAGE_URL: https://juicedollar.com
     NEXT_PUBLIC_APP_URL: https://dev.app.testnet.juicedollar.com
     NEXT_PUBLIC_API_URL_TESTNET: https://dev.api.testnet.juicedollar.com/
     NEXT_PUBLIC_API_URL_MAINNET: https://dev.api.juicedollar.com/
     NEXT_PUBLIC_PONDER_URL_TESTNET: https://dev.ponder.testnet.juicedollar.com
     NEXT_PUBLIC_PONDER_URL_MAINNET: https://dev.ponder.juicedollar.com
-    NEXT_PUBLIC_WAGMI_ID: test-project-id
     NEXT_PUBLIC_CHAIN_NAME: testnet
     NEXT_PUBLIC_RPC_URL_MAINNET: https://rpc.testnet.juiceswap.com/
     NEXT_PUBLIC_RPC_URL_TESTNET: https://rpc.testnet.juiceswap.com/
