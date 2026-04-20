@@ -8,10 +8,10 @@ import { formatBigInt, TOKEN_SYMBOL } from "@utils";
 import { toastTxError, TxToast } from "@components/TxToast";
 import { RootState } from "../../redux/redux.store";
 import { useSelector } from "react-redux";
-import { Address } from "viem";
+import { Address, zeroAddress } from "viem";
 import { useAccount, useChainId } from "wagmi";
 import Button from "@components/Button";
-import { ADDRESS, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, MintingHubGatewayV2ABI, MintingHubV3ABI } from "@juicedollar/jusd";
 import { mainnet, testnet } from "@config";
 
 interface Props {
@@ -39,11 +39,16 @@ export default function MyPositionsChallengesCancel({ challenge, hidden }: Props
 
 		try {
 			setCancelling(true);
+			const cancelTarget =
+				p.version === 3 && ADDRESS[chainId].mintingHub !== zeroAddress
+					? ADDRESS[chainId].mintingHub
+					: ADDRESS[chainId].mintingHubGateway;
+			const cancelAbi = p.version === 3 ? MintingHubV3ABI : MintingHubGatewayV2ABI;
 
 			const cancelWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubGatewayV2ABI,
+				address: cancelTarget,
+				abi: cancelAbi,
 				functionName: "bid",
 				args: [n, r, false],
 			});

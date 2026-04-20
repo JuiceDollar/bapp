@@ -5,7 +5,7 @@ import { useTranslation } from "next-i18next";
 import { useEffect, useMemo, useState } from "react";
 import { toastTxError } from "@components/TxToast";
 import { waitForTransactionReceipt } from "wagmi/actions";
-import { ADDRESS, PositionRollerV2ABI, PositionV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, PositionRollerV2ABI, PositionRollerV3ABI, PositionV2ABI } from "@juicedollar/jusd";
 import { useRouter } from "next/router";
 import { simulateAndWrite } from "../../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../../app.config";
@@ -99,7 +99,9 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 	const chainId = useChainId();
 	const router = useRouter();
 
-	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase());
+	const rollerAddress = position?.version === 3 ? ADDRESS[chainId].rollerV3 : ADDRESS[chainId].rollerV2;
+	const rollerAbi = position?.version === 3 ? PositionRollerV3ABI : PositionRollerV2ABI;
+	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase()) && position.version === 3;
 
 	const { balancesByAddress, refetchBalances } = useWalletERC20Balances(
 		position
@@ -108,20 +110,20 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 						symbol: position.collateralSymbol,
 						address: position.collateral,
 						name: position.collateralSymbol,
-						allowance: [ADDRESS[chainId].rollerV2],
+						allowance: [rollerAddress],
 					},
 					{
 						symbol: position.stablecoinSymbol,
 						address: position.stablecoinAddress,
 						name: position.stablecoinSymbol,
-						allowance: [ADDRESS[chainId].rollerV2],
+						allowance: [rollerAddress],
 					},
 			  ]
 			: []
 	);
 
-	const collateralAllowance = position ? balancesByAddress[position.collateral]?.allowance?.[ADDRESS[chainId].rollerV2] : undefined;
-	const jusdAllowance = position ? balancesByAddress[position.stablecoinAddress]?.allowance?.[ADDRESS[chainId].rollerV2] : undefined;
+	const collateralAllowance = position ? balancesByAddress[position.collateral]?.allowance?.[rollerAddress] : undefined;
+	const jusdAllowance = position ? balancesByAddress[position.stablecoinAddress]?.allowance?.[rollerAddress] : undefined;
 	const jusdBalance = position ? balancesByAddress[position.stablecoinAddress]?.balanceOf : 0n;
 
 	const { data: contractData } = useReadContracts({
@@ -160,6 +162,7 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 		const now = Date.now() / 1000;
 
 		const eligible = openPositions
+			.filter((p) => p.version === position.version)
 			.filter((p) => p.collateral.toLowerCase() === position.collateral.toLowerCase())
 			.filter((p) => p.cooldown < now)
 			.filter((p) => p.expiration > now)
@@ -313,8 +316,8 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 			if (isNativeWrappedPosition) {
 				txHash = await simulateAndWrite({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
-					address: ADDRESS[chainId].rollerV2,
-					abi: PositionRollerV2ABI,
+					address: rollerAddress,
+					abi: rollerAbi,
 					functionName: "rollNative",
 					args: [
 						source,
@@ -330,8 +333,8 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 			} else {
 				txHash = await simulateAndWrite({
 					chainId: chainId as typeof mainnet.id | typeof testnet.id,
-					address: ADDRESS[chainId].rollerV2,
-					abi: PositionRollerV2ABI,
+					address: rollerAddress,
+					abi: rollerAbi,
 					functionName: "roll",
 					args: [
 						source,
@@ -369,7 +372,7 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 				address: position.collateral,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].rollerV2, maxUint256],
+				args: [rollerAddress, maxUint256],
 			});
 
 			const toastContent = [{ title: t("common.txs.transaction"), hash: approvingHash }];
@@ -410,7 +413,7 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 				address: position.stablecoinAddress,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].rollerV2, maxUint256],
+				args: [rollerAddress, maxUint256],
 			});
 
 			const toastContent = [{ title: t("common.txs.transaction"), hash: approvingHash }];

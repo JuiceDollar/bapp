@@ -1,14 +1,8 @@
-import { useMemo, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { useChainId } from "wagmi";
-import { RootState, AppDispatch } from "../redux/redux.store";
+import { useMemo } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/redux.store";
 import { Address } from "viem";
 import { PositionQuery } from "@juicedollar/api";
-import { getApiClient } from "@utils";
-import { slice } from "../redux/slices/positions.slice";
-
-type ReferencePositionsMapping = { [collateral: string]: PositionQuery };
-type ApiReferencePositions = { num: number; collaterals: string[]; map: ReferencePositionsMapping };
 
 type ReferencePositionResult = {
 	address: Address | null;
@@ -17,46 +11,46 @@ type ReferencePositionResult = {
 	isLoading: boolean;
 };
 
+const MIN_REFERENCE_PRINCIPAL = 1000n * 10n ** 18n;
+
 export const useReferencePosition = (currentPosition?: PositionQuery, currentPrice?: bigint): ReferencePositionResult => {
-	const chainId = useChainId();
-	const dispatch = useDispatch<AppDispatch>();
-	const referencePositions = useSelector((state: RootState) => state.positions.referencePositions);
-
-	useEffect(() => {
-		if (chainId === undefined || referencePositions !== undefined) return;
-
-		const fetchReferencePositions = async () => {
-			try {
-				const api = getApiClient(chainId);
-				const response = await api.get<ApiReferencePositions>("/positions/reference");
-				dispatch(slice.actions.setReferencePositions(response.data.map));
-			} catch (error) {
-				console.error("Error fetching reference positions:", error);
-				dispatch(slice.actions.setReferencePositions(null));
-			}
-		};
-
-		fetchReferencePositions();
-	}, [chainId, referencePositions, dispatch]);
+	const positionsLoaded = useSelector((state: RootState) => state.positions.loaded);
+	const positions = useSelector((state: RootState) => state.positions.list?.list || []);
 
 	return useMemo(() => {
-		const isLoading = referencePositions === undefined;
+		const isLoading = !positionsLoaded;
 
 		if (!currentPosition || currentPrice === undefined) {
 			return { address: null, price: 0n, referencePosition: null, isLoading };
 		}
 
-		const ref = referencePositions?.[currentPosition.collateral.toLowerCase()];
+		const now = Math.floor(Date.now() / 1000);
+		const currentPositionAddress = currentPosition.position.toLowerCase();
+		const currentCollateral = currentPosition.collateral.toLowerCase();
+		const currentHub = currentPosition.mintingHubAddress.toLowerCase();
 
-		if (ref && BigInt(ref.price) >= currentPrice) {
-			return {
-				address: ref.position as Address,
-				price: BigInt(ref.price),
-				referencePosition: ref,
-				isLoading,
-			};
+		const candidates = positions
+			.filter((position) => position.position.toLowerCase() !== currentPositionAddress)
+			.filter((position) => position.collateral.toLowerCase() === currentCollateral)
+			.filter((position) => position.mintingHubAddress.toLowerCase() === currentHub)
+			.filter((position) => !position.closed && !position.denied)
+			.filter((position) => !position.isChallenged)
+			.filter((position) => BigInt(position.principal) >= MIN_REFERENCE_PRINCIPAL)
+			.filter((position) => Number(position.cooldown) + Number(position.challengePeriod) <= now)
+			.filter((position) => Number(position.expiration) > now + Number(position.challengePeriod))
+			.filter((position) => BigInt(position.price) >= currentPrice)
+			.sort((a, b) => {
+				const priceDiff = BigInt(b.price) - BigInt(a.price);
+				if (priceDiff !== 0n) return priceDiff > 0n ? 1 : -1;
+				if (a.expiration !== b.expiration) return b.expiration - a.expiration;
+				return a.position.localeCompare(b.position);
+			});
+
+		const ref = candidates[0];
+		if (ref) {
+			return { address: ref.position as Address, price: BigInt(ref.price), referencePosition: ref, isLoading };
 		}
 
 		return { address: null, price: 0n, referencePosition: null, isLoading };
-	}, [currentPosition, currentPrice, referencePositions]);
+	}, [currentPosition, currentPrice, positions, positionsLoaded]);
 };
