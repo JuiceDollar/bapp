@@ -16,8 +16,8 @@ env:
     NEXT_PUBLIC_PONDER_URL_TESTNET: https://dev.ponder.testnet.juicedollar.com
     NEXT_PUBLIC_PONDER_URL_MAINNET: https://dev.ponder.juicedollar.com
     NEXT_PUBLIC_CHAIN_NAME: testnet
-    NEXT_PUBLIC_RPC_URL_MAINNET: https://rpc.testnet.juiceswap.com/
-    NEXT_PUBLIC_RPC_URL_TESTNET: https://rpc.testnet.juiceswap.com/
+    NEXT_PUBLIC_RPC_URL_MAINNET: https://rpc.citreascan.com/
+    NEXT_PUBLIC_RPC_URL_TESTNET: https://rpc.testnet.citreascan.com/
 
 jobs:
     test:
