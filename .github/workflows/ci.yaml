@@ -10,7 +10,6 @@ permissions:
     contents: read
 
 env:
-    NEXT_PUBLIC_LANDINGPAGE_URL: https://juicedollar.com
     NEXT_PUBLIC_APP_URL: https://dev.app.testnet.juicedollar.com
     NEXT_PUBLIC_API_URL_TESTNET: https://dev.api.testnet.juicedollar.com/
     NEXT_PUBLIC_API_URL_MAINNET: https://dev.api.juicedollar.com/
