@@ -21,7 +21,7 @@ import { useSelector } from "react-redux";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { useRouter as useNavigation } from "next/navigation";
-import { ADDRESS, JuiceDollarABI, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, JuiceDollarABI, MintingHubGatewayV2ABI, MintingHubV3ABI } from "@juicedollar/jusd";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import { mainnet, testnet } from "@config";
@@ -51,6 +51,9 @@ export default function MonitoringForceSell() {
 		if (!chainId) return;
 		const ADDR = ADDRESS[chainId];
 		if (position === undefined) return;
+		const isV3Position = position.version === 3 && ADDR.mintingHub !== zeroAddress;
+		const hubAddress = isV3Position ? ADDR.mintingHub : ADDR.mintingHubGateway;
+		const hubAbi = isV3Position ? MintingHubV3ABI : MintingHubGatewayV2ABI;
 
 		const fetchAsync = async function () {
 			if (acc !== undefined) {
@@ -66,8 +69,8 @@ export default function MonitoringForceSell() {
 
 			const _price = await readContract(WAGMI_CONFIG, {
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDR.mintingHubGateway,
-				abi: MintingHubGatewayV2ABI,
+				address: hubAddress,
+				abi: hubAbi,
 				functionName: "expiredPurchasePrice",
 				args: [position.position],
 			});
@@ -92,6 +95,9 @@ export default function MonitoringForceSell() {
 	}, [isNavigating, navigate, position]);
 
 	if (!position) return null;
+	const isV3Position = position.version === 3 && ADDRESS[chainId].mintingHub !== zeroAddress;
+	const hubAddress = isV3Position ? ADDRESS[chainId].mintingHub : ADDRESS[chainId].mintingHubGateway;
+	const hubAbi = isV3Position ? MintingHubV3ABI : MintingHubGatewayV2ABI;
 
 	const start: number = position.expiration * 1000; // timestamp when expired
 	const duration: number = position.challengePeriod * 1000;
@@ -123,8 +129,8 @@ export default function MonitoringForceSell() {
 
 			const bidWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubGatewayV2ABI,
+				address: hubAddress,
+				abi: hubAbi,
 				functionName: "buyExpiredCollateral",
 				args: [position.position, amount],
 			});

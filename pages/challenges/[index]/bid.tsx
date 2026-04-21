@@ -30,7 +30,7 @@ import { useSelector } from "react-redux";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { useRouter as useNavigation } from "next/navigation";
-import { ADDRESS, JuiceDollarABI, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, JuiceDollarABI, MintingHubGatewayV2ABI, MintingHubV3ABI } from "@juicedollar/jusd";
 import { ChallengesId } from "@juicedollar/api";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
@@ -69,6 +69,8 @@ export default function ChallengePlaceBid() {
 		const ADDR = ADDRESS[chainId];
 		if (position === undefined) return;
 		if (challenge === undefined) return;
+		const hubAddress = position.version === 3 && ADDR.mintingHub !== zeroAddress ? ADDR.mintingHub : ADDR.mintingHubGateway;
+		const hubAbi = position.version === 3 ? MintingHubV3ABI : MintingHubGatewayV2ABI;
 
 		const fetchAsync = async function () {
 			if (acc !== undefined) {
@@ -86,15 +88,15 @@ export default function ChallengePlaceBid() {
 					address: ADDR.juiceDollar,
 					abi: erc20Abi,
 					functionName: "allowance",
-					args: [acc, ADDR.mintingHubGateway],
+					args: [acc, hubAddress],
 				});
 				setUserAllowance(_allowance);
 			}
 
 			const _price = await readContract(WAGMI_CONFIG, {
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDR.mintingHubGateway,
-				abi: MintingHubGatewayV2ABI,
+				address: hubAddress,
+				abi: hubAbi,
 				functionName: "price",
 				args: [parseInt(challenge.number.toString())],
 			});
@@ -122,6 +124,11 @@ export default function ChallengePlaceBid() {
 
 	if (!challenge) return null;
 	if (!position) return null;
+	const hubAddress =
+		position.version === 3 && ADDRESS[chainId].mintingHub !== zeroAddress
+			? ADDRESS[chainId].mintingHub
+			: ADDRESS[chainId].mintingHubGateway;
+	const hubAbi = position.version === 3 ? MintingHubV3ABI : MintingHubGatewayV2ABI;
 
 	const remainingSize = BigInt(parseInt(challenge.size.toString()) - parseInt(challenge.filledSize.toString()));
 
@@ -163,7 +170,7 @@ export default function ChallengePlaceBid() {
 				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].mintingHubGateway, maxUint256],
+				args: [hubAddress, maxUint256],
 			});
 
 			const toastContent = [
@@ -173,7 +180,7 @@ export default function ChallengePlaceBid() {
 				},
 				{
 					title: t("common.txs.spender"),
-					value: shortenAddress(ADDRESS[chainId].mintingHubGateway),
+					value: shortenAddress(hubAddress),
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -203,8 +210,8 @@ export default function ChallengePlaceBid() {
 
 			const bidWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubGatewayV2ABI,
+				address: hubAddress,
+				abi: hubAbi,
 				functionName: "bid",
 				args: [parseInt(challenge.number.toString()), amount, false],
 			});

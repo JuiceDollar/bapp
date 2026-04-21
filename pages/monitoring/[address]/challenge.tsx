@@ -22,7 +22,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/redux.store";
 import Link from "next/link";
 import { useRouter as useNavigation } from "next/navigation";
-import { ADDRESS, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, MintingHubGatewayV2ABI, MintingHubV3ABI } from "@juicedollar/jusd";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 
@@ -57,6 +57,10 @@ export default function PositionChallenge() {
 		const acc: Address | undefined = account.address;
 		if (acc === undefined) return;
 		if (!position || !position.collateral) return;
+		const challengeTarget =
+			position.version === 3 && ADDRESS[chainId].mintingHub !== zeroAddress
+				? ADDRESS[chainId].mintingHub
+				: ADDRESS[chainId].mintingHubGateway;
 
 		const fetchAsync = async function () {
 			const _balanceColl = await readContract(WAGMI_CONFIG, {
@@ -73,7 +77,7 @@ export default function PositionChallenge() {
 				address: position.collateral,
 				abi: erc20Abi,
 				functionName: "allowance",
-				args: [acc, ADDRESS[chainId].mintingHubGateway],
+				args: [acc, challengeTarget],
 			});
 			setUserAllowance(_allowanceColl);
 		};
@@ -89,6 +93,11 @@ export default function PositionChallenge() {
 
 	// ---------------------------------------------------------------------------
 	if (!position) return null;
+	const challengeTarget =
+		position.version === 3 && ADDRESS[chainId].mintingHub !== zeroAddress
+			? ADDRESS[chainId].mintingHub
+			: ADDRESS[chainId].mintingHubGateway;
+	const challengeAbi = position.version === 3 ? MintingHubV3ABI : MintingHubGatewayV2ABI;
 
 	const _collBal: bigint = BigInt(position.collateralBalance);
 	const belowMinBalance: boolean = _collBal < BigInt(position.minimumCollateral);
@@ -121,7 +130,7 @@ export default function PositionChallenge() {
 				address: position.collateral as Address,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].mintingHubGateway, maxUint256],
+				args: [challengeTarget, maxUint256],
 			});
 
 			const toastContent = [
@@ -131,7 +140,7 @@ export default function PositionChallenge() {
 				},
 				{
 					title: t("common.txs.spender"),
-					value: shortenAddress(ADDRESS[chainId].mintingHubGateway),
+					value: shortenAddress(challengeTarget),
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -170,8 +179,8 @@ export default function PositionChallenge() {
 			const challengeValue = isNativeWrappedPosition ? amount : undefined;
 			const challengeWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubGatewayV2ABI,
+				address: challengeTarget,
+				abi: challengeAbi,
 				functionName: "challenge",
 				args: [position.position, amount, BigInt(position.price)],
 				...(challengeValue !== undefined ? { value: challengeValue } : {}),
