@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
-import { formatUnits, maxUint256, erc20Abi, Hash, zeroHash } from "viem";
+import { formatUnits, maxUint256, erc20Abi, Hash, zeroAddress, zeroHash } from "viem";
 import TokenInput from "@components/Input/TokenInput";
 import { useState } from "react";
 import Button from "@components/Button";
@@ -19,7 +19,7 @@ import { mainnet, testnet } from "@config";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/redux.store";
 import Link from "next/link";
-import { ADDRESS, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, MintingHubGatewayV2ABI, MintingHubV3ABI } from "@juicedollar/jusd";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import { useFrontendCode } from "../../../hooks/useFrontendCode";
@@ -68,6 +68,10 @@ export default function PositionBorrow({}) {
 		const acc: Address | undefined = account.address;
 		if (acc === undefined) return;
 		if (!position || !position.collateral) return;
+		const cloneTarget =
+			position.version === 3 && ADDRESS[chainId].mintingHub !== zeroAddress
+				? ADDRESS[chainId].mintingHub
+				: ADDRESS[chainId].mintingHubGateway;
 
 		const fetchAsync = async function () {
 			const _balance = await readContract(WAGMI_CONFIG, {
@@ -84,7 +88,7 @@ export default function PositionBorrow({}) {
 				address: position.collateral,
 				abi: erc20Abi,
 				functionName: "allowance",
-				args: [acc, ADDRESS[chainId].mintingHubGateway],
+				args: [acc, cloneTarget],
 			});
 			setUserAllowance(_allowance);
 		};
@@ -95,10 +99,15 @@ export default function PositionBorrow({}) {
 	// ---------------------------------------------------------------------------
 	// dont continue if position not loaded correctly
 	if (!position) return null;
+	const cloneTarget =
+		position.version === 3 && ADDRESS[chainId].mintingHub !== zeroAddress
+			? ADDRESS[chainId].mintingHub
+			: ADDRESS[chainId].mintingHubGateway;
+	const cloneAbi = position.version === 3 ? MintingHubV3ABI : MintingHubGatewayV2ABI;
 
 	const price: number = parseFloat(formatUnits(BigInt(position.price), 36 - position.collateralDecimals));
 	const collateralPriceUsd: number = prices[position.collateral.toLowerCase() as Address]?.price?.usd || 1;
-	const interest: number = position.annualInterestPPM / 10 ** 6 + position.fixedAnnualRatePPM / 10 ** 6;
+	const interest: number = position.annualInterestPPM / 10 ** 6;
 	const reserve: number = position.reserveContribution / 10 ** 6;
 	const effectiveLTV: number = (price * (1 - reserve)) / collateralPriceUsd;
 	const effectiveInterest: number = interest / (1 - reserve);
@@ -183,7 +192,7 @@ export default function PositionBorrow({}) {
 				address: position.collateral as Address,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].mintingHubGateway, maxUint256],
+				args: [cloneTarget, maxUint256],
 			});
 
 			const toastContent = [
@@ -193,7 +202,7 @@ export default function PositionBorrow({}) {
 				},
 				{
 					title: t("common.txs.spender"),
-					value: shortenAddress(ADDRESS[chainId].mintingHubGateway),
+					value: shortenAddress(cloneTarget),
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -217,6 +226,8 @@ export default function PositionBorrow({}) {
 	};
 
 	const handleClone = async () => {
+		if (!account.address) return;
+
 		try {
 			setCloning(true);
 			const expirationTime = toTimestamp(expirationDate);
@@ -224,18 +235,21 @@ export default function PositionBorrow({}) {
 
 			cloneWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubGatewayV2ABI,
+				address: cloneTarget,
+				abi: cloneAbi,
 				functionName: "clone",
-				args: [
-					account.address as `0x${string}`,
-					position.position as `0x${string}`,
-					requiredColl,
-					amount,
-					expirationTime,
-					BigInt(position.price),
-					frontendCode,
-				],
+				args:
+					position.version === 3
+						? [account.address as `0x${string}`, position.position as `0x${string}`, requiredColl, amount, expirationTime, 0n]
+						: [
+								account.address as `0x${string}`,
+								position.position as `0x${string}`,
+								requiredColl,
+								amount,
+								expirationTime,
+								BigInt(position.price),
+								frontendCode,
+						  ],
 			});
 
 			const toastContent = [

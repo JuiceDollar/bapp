@@ -1,7 +1,7 @@
 "use client";
 import Head from "next/head";
-import { useEffect } from "react";
-import { Address, isAddress, maxUint256 } from "viem";
+import { useEffect, useRef } from "react";
+import { Address, isAddress, maxUint256, zeroAddress } from "viem";
 import TokenInput from "@components/Input/TokenInput";
 import { useTokenData, useUserBalance } from "@hooks";
 import { useState } from "react";
@@ -18,7 +18,7 @@ import AddressInput from "@components/Input/AddressInput";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../app.config";
 import { mainnet, testnet } from "@config";
-import { ADDRESS, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, MintingHubGatewayV2ABI, MintingHubV3ABI } from "@juicedollar/jusd";
 import { useTranslation, Trans } from "next-i18next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useFrontendCode } from "../../hooks/useFrontendCode";
@@ -52,12 +52,29 @@ export default function PositionCreate({}) {
 	const account = useAccount();
 
 	const chainId = useChainId();
-	const collTokenData = useTokenData(collateralAddress);
+	const ADDR = ADDRESS[chainId];
+	const v3Deployed = !!ADDR?.mintingHub && ADDR.mintingHub !== zeroAddress;
+	const mintingHubAddress = v3Deployed ? ADDR.mintingHub : ADDR.mintingHubGateway;
+	const minimumInitDays = v3Deployed ? 14n : 3n;
+	const minimumCollateralValue = v3Deployed ? 100n : 5000n;
+	const collTokenData = useTokenData(collateralAddress, mintingHubAddress);
 	const userBalance = useUserBalance();
 
-	const { allowance: deuroAllowance, refetch: refetchDeuroAllowance } = useTokenData(ADDRESS[chainId].juiceDollar);
+	const { allowance: deuroAllowance, refetch: refetchDeuroAllowance } = useTokenData(ADDR.juiceDollar, mintingHubAddress);
 
 	const { t } = useTranslation();
+
+	// Apply the chain-appropriate init-period default once on mount (V3 requires >= 14 days; V2 requires >= 3).
+	// Subsequent user edits are validated via onChangeInitPeriod and surface as initError — we never silently overwrite typed values.
+	const initPeriodDefaultAppliedRef = useRef(false);
+	useEffect(() => {
+		if (initPeriodDefaultAppliedRef.current) return;
+		if (!chainId) return;
+		if (initPeriod < minimumInitDays) {
+			setInitPeriod(minimumInitDays);
+		}
+		initPeriodDefaultAppliedRef.current = true;
+	}, [chainId, initPeriod, minimumInitDays]);
 
 	useEffect(() => {
 		const acc: Address | undefined = account.address;
@@ -71,13 +88,13 @@ export default function PositionCreate({}) {
 				address: collateralAddress as Address,
 				abi: erc20Abi,
 				functionName: "allowance",
-				args: [acc, ADDRESS[chainId].mintingHubGateway],
+				args: [acc, mintingHubAddress],
 			});
 			setUserAllowance(_allowance);
 		};
 
 		fetchAsync();
-	}, [data, account.address, collateralAddress, isConfirming, chainId]);
+	}, [data, account.address, collateralAddress, isConfirming, chainId, mintingHubAddress]);
 
 	useEffect(() => {
 		if (isAddress(collateralAddress)) {
@@ -155,8 +172,8 @@ export default function PositionCreate({}) {
 	const onChangeInitPeriod = (value: string) => {
 		const valueBigInt = BigInt(value);
 		setInitPeriod(valueBigInt);
-		if (valueBigInt < 3n) {
-			setInitError(t("mint.error.initialization_period_too_short", { days: 3 }));
+		if (valueBigInt < minimumInitDays) {
+			setInitError(t("mint.error.initialization_period_too_short", { days: minimumInitDays.toString() }));
 		} else {
 			setInitError("");
 		}
@@ -169,9 +186,13 @@ export default function PositionCreate({}) {
 	};
 
 	function checkCollateralAmount(coll: bigint, price: bigint) {
-		if (coll * price < 10n ** 36n) {
-			setLiqPriceError(t("mint.error.liquidation_value_too_low", { amount: 5000, symbol: TOKEN_SYMBOL }));
-			setMinCollAmountError(t("mint.error.collateral_value_too_low", { amount: 5000, symbol: TOKEN_SYMBOL }));
+		if (coll * price < minimumCollateralValue * 10n ** 36n) {
+			setLiqPriceError(
+				t("mint.error.liquidation_value_too_low", { amount: minimumCollateralValue.toString(), symbol: TOKEN_SYMBOL })
+			);
+			setMinCollAmountError(
+				t("mint.error.collateral_value_too_low", { amount: minimumCollateralValue.toString(), symbol: TOKEN_SYMBOL })
+			);
 		} else {
 			setLiqPriceError("");
 			setMinCollAmountError("");
@@ -223,7 +244,7 @@ export default function PositionCreate({}) {
 				address: collTokenData.address,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].mintingHubGateway, maxUint256],
+				args: [mintingHubAddress, maxUint256],
 			});
 
 			const toastContent = [
@@ -233,7 +254,7 @@ export default function PositionCreate({}) {
 				},
 				{
 					title: t("common.txs.spender"),
-					value: shortenAddress(ADDRESS[chainId].mintingHubGateway),
+					value: shortenAddress(mintingHubAddress),
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -262,10 +283,10 @@ export default function PositionCreate({}) {
 
 			const approveWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].juiceDollar,
+				address: ADDR.juiceDollar,
 				abi: erc20Abi,
 				functionName: "approve",
-				args: [ADDRESS[chainId].mintingHubGateway, maxUint256],
+				args: [mintingHubAddress, maxUint256],
 			});
 
 			const toastContent = [
@@ -275,7 +296,7 @@ export default function PositionCreate({}) {
 				},
 				{
 					title: t("common.txs.spender"),
-					value: shortenAddress(ADDRESS[chainId].mintingHubGateway),
+					value: shortenAddress(mintingHubAddress),
 				},
 				{
 					title: t("common.txs.transaction"),
@@ -303,24 +324,38 @@ export default function PositionCreate({}) {
 	const handleOpenPosition = async () => {
 		try {
 			setIsConfirming("open");
+			const openPositionArgs = v3Deployed
+				? [
+						collTokenData.address,
+						minCollAmount,
+						initialCollAmount,
+						limitAmount,
+						parseInt(initPeriod.toString()) * 24 * 60 * 60,
+						parseInt(maturity.toString()) * 86400 * 30,
+						parseInt(auctionDuration.toString()) * 60 * 60,
+						Number(interest),
+						liqPrice,
+						Number(buffer),
+				  ]
+				: [
+						collTokenData.address,
+						minCollAmount,
+						initialCollAmount,
+						limitAmount,
+						parseInt(initPeriod.toString()) * 24 * 60 * 60,
+						parseInt(maturity.toString()) * 86400 * 30,
+						parseInt(auctionDuration.toString()) * 60 * 60,
+						Number(interest),
+						liqPrice,
+						Number(buffer),
+						frontendCode,
+				  ];
 			const openWriteHash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: ADDRESS[chainId].mintingHubGateway,
-				abi: MintingHubGatewayV2ABI,
+				address: mintingHubAddress,
+				abi: v3Deployed ? MintingHubV3ABI : MintingHubGatewayV2ABI,
 				functionName: "openPosition",
-				args: [
-					collTokenData.address,
-					minCollAmount,
-					initialCollAmount,
-					limitAmount,
-					parseInt(initPeriod.toString()) * 24 * 60 * 60,
-					parseInt(maturity.toString()) * 86400 * 30,
-					parseInt(auctionDuration.toString()) * 60 * 60,
-					Number(interest),
-					liqPrice,
-					Number(buffer),
-					frontendCode,
-				],
+				args: openPositionArgs,
 			});
 
 			const toastContent = [
@@ -490,7 +525,7 @@ export default function PositionCreate({}) {
 							error={liqPriceError}
 							digit={36n - collTokenData.decimals}
 							hideMaxLabel={minCollAmount == 0n}
-							max={minCollAmount == 0n ? 0n : (5000n * 10n ** 36n + minCollAmount - 1n) / minCollAmount}
+							max={minCollAmount == 0n ? 0n : (minimumCollateralValue * 10n ** 36n + minCollAmount - 1n) / minCollAmount}
 							value={liqPrice.toString()}
 							onChange={onChangeLiqPrice}
 							placeholder={t("common.price")}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { Address, formatUnits, zeroAddress } from "viem";
 import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
@@ -9,7 +9,7 @@ import { DateInputOutlined } from "@components/Input/DateInputOutlined";
 import { SliderInputOutlined } from "@components/Input/SliderInputOutlined";
 import { DetailsExpandablePanel } from "@components/PageMint/DetailsExpandablePanel";
 import { NormalInputOutlined } from "@components/Input/NormalInputOutlined";
-import { PositionQuery, ApiPositionsListing } from "@juicedollar/api";
+import { PositionQuery } from "@juicedollar/api";
 import { BorrowingDEUROModal } from "@components/PageMint/BorrowingDEUROModal";
 import { SelectCollateralModal } from "./SelectCollateralModal";
 import { InputTitle } from "@components/Input/InputTitle";
@@ -24,20 +24,19 @@ import {
 	normalizeTokenSymbol,
 	formatPositionValue,
 	MAINNET_WCBTC_ADDRESS,
+	getApiClient,
 } from "@utils";
 import { TokenBalance, useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { RootState, store } from "../../redux/redux.store";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { useTranslation } from "next-i18next";
-import { ADDRESS, MintingHubGatewayV2ABI } from "@juicedollar/jusd";
+import { ADDRESS, MintingHubGatewayV2ABI, MintingHubV3ABI } from "@juicedollar/jusd";
 import { useAccount, useChainId } from "wagmi";
 import { WAGMI_CONFIG, WAGMI_CHAIN } from "../../app.config";
-import { getApiClient } from "@utils";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../../utils/contractHelpers";
-import { TxToast } from "@components/TxToast";
+import { TxToast, toastTxError } from "@components/TxToast";
 import { toast } from "react-toastify";
-import { toastTxError } from "@components/TxToast";
 import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import {
 	LoanDetails,
@@ -53,10 +52,24 @@ type BorrowFormProps = {
 	clonePosition?: PositionQuery | null;
 };
 
+type BestCloneableResponse = { position: PositionQuery | null };
+
+const getMaxCollateralFromMintLimit = (availableForClones: bigint, liqPrice: bigint) => {
+	if (!availableForClones || liqPrice === 0n) return 0n;
+	return (availableForClones * BigInt(1e18)) / liqPrice;
+};
+
+const getMaxCollateralAmount = (balance: bigint, availableForClones: bigint, liqPrice: bigint) => {
+	const maxFromLimit = getMaxCollateralFromMintLimit(availableForClones, liqPrice);
+	return maxFromLimit > 0n && balance > maxFromLimit ? maxFromLimit : balance;
+};
+
 export default function PositionCreate({ clonePosition = null }: BorrowFormProps) {
 	const cloneAppliedRef = useRef(false);
 	const [selectedCollateral, setSelectedCollateral] = useState<TokenBalance | null | undefined>(null);
 	const [selectedPosition, setSelectedPosition] = useState<PositionQuery | null | undefined>(null);
+	const [bestParentPosition, setBestParentPosition] = useState<PositionQuery | null>(null);
+	const [bestParentLoaded, setBestParentLoaded] = useState(false);
 	const [expirationDate, setExpirationDate] = useState<Date | undefined | null>(undefined);
 	const [collateralAmount, setCollateralAmount] = useState("0");
 	const [liquidationPrice, setLiquidationPrice] = useState("0");
@@ -68,150 +81,142 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 	const [isCloneLoading, setIsCloneLoading] = useState(false);
 	const [collateralError, setCollateralError] = useState("");
 	const [isMaxedOut, setIsMaxedOut] = useState(false);
-	const [defaultPosition, setDefaultPosition] = useState<PositionQuery | null>(null);
-	const [bestParentPosition, setBestParentPosition] = useState<PositionQuery | null>(null);
-	const [noCloneableParent, setNoCloneableParent] = useState(false);
 
 	const chainId = useChainId();
 	const { address } = useAccount();
+	const { frontendCode } = useFrontendCode();
+	const { t } = useTranslation();
 
-	const getMaxCollateralFromMintLimit = (availableForClones: bigint, liqPrice: bigint) => {
-		if (!availableForClones || liqPrice === 0n) return 0n;
-		return (availableForClones * BigInt(1e18)) / liqPrice;
-	};
+	const positions = useSelector((state: RootState) => state.positions.list?.list || []);
 
-	const getMaxCollateralAmount = (balance: bigint, availableForClones: bigint, liqPrice: bigint) => {
-		const maxFromLimit = getMaxCollateralFromMintLimit(availableForClones, liqPrice);
-		return maxFromLimit > 0n && balance > maxFromLimit ? maxFromLimit : balance;
-	};
+	// Fetch the single best cloneable parent for native-wrapped collateral — V3-preferred, V2 fallback.
+	// The API-side filter already excludes closed/denied/challenged/in-cooldown/expired positions, so the
+	// returned candidate is safe to use directly.
+	// Skipped when clonePosition is provided (user came from a specific-parent page).
+	useEffect(() => {
+		if (clonePosition) return;
+		if (!chainId) return;
 
-	const positionForTokenList = defaultPosition ?? clonePosition ?? null;
+		let cancelled = false;
+		(async () => {
+			try {
+				const apiClient = getApiClient(chainId);
+				const response = await apiClient.get<BestCloneableResponse>(
+					`/positions/best-cloneable?collateral=${MAINNET_WCBTC_ADDRESS}`
+				);
+				if (cancelled) return;
+				setBestParentPosition(response.data?.position ?? null);
+			} catch (error) {
+				if (cancelled) return;
+				console.error("Failed to fetch best-cloneable parent:", error);
+				setBestParentPosition(null);
+			} finally {
+				if (!cancelled) setBestParentLoaded(true);
+			}
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [chainId, clonePosition]);
+
+	const noCloneableParent = !clonePosition && bestParentLoaded && bestParentPosition == null;
+
+	const positionForTokenList = selectedPosition ?? clonePosition ?? bestParentPosition;
 	const collateralTokenList = useMemo(() => {
 		if (!positionForTokenList) return [];
+
+		const allowanceTargets = [ADDRESS[chainId].mintingHub, ADDRESS[chainId].mintingHubGateway].filter(
+			(target): target is Address => !!target && target !== zeroAddress
+		);
 
 		return [
 			{
 				symbol: WAGMI_CHAIN.nativeCurrency.symbol,
-				address: "0x0000000000000000000000000000000000000000" as Address,
+				address: zeroAddress,
 				name: WAGMI_CHAIN.nativeCurrency.name,
-				allowance: [ADDRESS[chainId].mintingHubGateway],
+				allowance: allowanceTargets,
 				decimals: positionForTokenList.collateralDecimals,
 			},
 		];
 	}, [positionForTokenList, chainId]);
 
 	const { balances, balancesByAddress, refetchBalances } = useWalletERC20Balances(collateralTokenList);
-	const collateralSelectorOptions = selectedCollateral ? [selectedCollateral] : [];
-	const { frontendCode } = useFrontendCode();
-	const { t } = useTranslation();
 
-	useEffect(() => {
-		const loadDefaultPosition = async () => {
-			try {
-				setBestParentPosition(null);
-				setNoCloneableParent(false);
-				const apiClient = getApiClient(chainId);
+	const createNativeToken = useCallback(
+		(position: PositionQuery): TokenBalance => ({
+			symbol: WAGMI_CHAIN.nativeCurrency.symbol,
+			name: WAGMI_CHAIN.nativeCurrency.name,
+			address: zeroAddress,
+			decimals: position.collateralDecimals,
+			balanceOf: balancesByAddress[zeroAddress]?.balanceOf || 0n,
+			allowance: {},
+		}),
+		[balancesByAddress]
+	);
 
-				// Mainnet: always fetch genesis (contract enforces original's expiration), then try best-cloneable for optimal clone parent.
-				if (chainId === mainnet.id) {
-					const [listRes, bestCloneableRes] = await Promise.all([
-						apiClient.get<ApiPositionsListing>(`/positions/list`),
-						apiClient
-							.get<{ position: PositionQuery | null }>(`/positions/best-cloneable?collateral=${MAINNET_WCBTC_ADDRESS}`)
-							.catch((e: unknown) => {
-								console.warn("best-cloneable endpoint failed, falling back to genesis:", e);
-								return null;
-							}),
-					]);
+	const syncSelectedTokenAndPosition = useCallback(
+		(token: TokenBalance, position: PositionQuery) => {
+			setSelectedCollateral(token);
 
-					const allPositions = listRes.data?.list || [];
-					const genesisPos = allPositions.find(
-						(p: PositionQuery) => p.position.toLowerCase() === ADDRESS[chainId].genesisPosition.toLowerCase()
-					);
+			const liqPrice = BigInt(position.price);
+			setSelectedPosition(position);
 
-					if (!genesisPos) return;
+			const tokenBalance = balancesByAddress[token.address]?.balanceOf || 0n;
+			const maxAmount = getMaxCollateralAmount(tokenBalance, BigInt(position.availableForClones), liqPrice);
+			const defaultAmount = maxAmount > BigInt(position.minimumCollateral) ? maxAmount.toString() : position.minimumCollateral;
 
-					const bestParent = bestCloneableRes?.data?.position ?? null;
-					const noCloneable = bestCloneableRes !== null && bestParent == null;
-					const cloneTarget = bestParent ?? genesisPos;
+			setCollateralAmount(defaultAmount);
+			setExpirationDate(toDate(position.expiration));
+			setLiquidationPrice(liqPrice.toString());
 
-					setDefaultPosition(genesisPos);
-					setNoCloneableParent(noCloneable);
-					setBestParentPosition(cloneTarget);
+			const details = getLoanDetailsByCollateralAndStartingLiqPrice(
+				position,
+				BigInt(defaultAmount),
+				liqPrice,
+				toDate(position.expiration)
+			);
+			setLoanDetails(details);
+			setBorrowedAmount(details.amountToSendToWallet.toString());
+		},
+		[balancesByAddress]
+	);
 
-					if (!clonePosition) {
-						const nativeToken: TokenBalance = {
-							symbol: WAGMI_CHAIN.nativeCurrency.symbol,
-							name: WAGMI_CHAIN.nativeCurrency.name,
-							address: "0x0000000000000000000000000000000000000000" as Address,
-							decimals: genesisPos.collateralDecimals,
-							balanceOf: 0n,
-							allowance: {},
-						};
-						handleOnSelectedToken(nativeToken, cloneTarget, genesisPos);
-					}
-					return;
-				}
-
-				// Testnet: use default endpoint
-				const response = await apiClient.get<PositionQuery>("/positions/default");
-				const position = response.data as PositionQuery;
-
-				if (!position) return;
-
-				if (!NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase())) {
-					console.warn("Default position collateral is not a wrapped-native asset:", position.collateralSymbol);
-				}
-
-				setDefaultPosition(position);
-
-				if (!clonePosition) {
-					const nativeToken: TokenBalance = {
-						symbol: WAGMI_CHAIN.nativeCurrency.symbol,
-						name: WAGMI_CHAIN.nativeCurrency.name,
-						address: "0x0000000000000000000000000000000000000000" as Address,
-						decimals: position.collateralDecimals,
-						balanceOf: 0n,
-						allowance: {},
-					};
-					handleOnSelectedToken(nativeToken, position);
-				}
-			} catch (error) {
-				console.error("Error loading default position:", error);
-			}
-		};
-
-		loadDefaultPosition();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [chainId, clonePosition]);
-
+	// Apply clonePosition (URL-driven clone-this-parent flow) once.
 	useEffect(() => {
 		if (!clonePosition || cloneAppliedRef.current) return;
 
-		const pos = clonePosition;
-		const token: TokenBalance = {
-			symbol: WAGMI_CHAIN.nativeCurrency.symbol,
-			name: WAGMI_CHAIN.nativeCurrency.name,
-			address: "0x0000000000000000000000000000000000000000" as Address,
-			decimals: pos.collateralDecimals,
-			balanceOf: 0n,
-			allowance: {},
-		};
-		handleOnSelectedToken(token, pos);
+		const token = createNativeToken(clonePosition);
+		setSelectedCollateral(token);
+		setSelectedPosition(clonePosition);
+		setCollateralAmount(clonePosition.collateralBalance.toString());
+		setExpirationDate(toDate(clonePosition.expiration));
+		setLiquidationPrice(clonePosition.price);
 
-		const collBalance = BigInt(pos.collateralBalance);
-		const liqPrice = BigInt(pos.price);
-		setCollateralAmount(pos.collateralBalance.toString());
-		setExpirationDate(toDate(pos.expiration));
-		setLiquidationPrice(liqPrice.toString());
-
-		const details = getLoanDetailsByCollateralAndStartingLiqPrice(pos, collBalance, liqPrice, toDate(pos.expiration));
+		const details = getLoanDetailsByCollateralAndStartingLiqPrice(
+			clonePosition,
+			BigInt(clonePosition.collateralBalance),
+			BigInt(clonePosition.price),
+			toDate(clonePosition.expiration)
+		);
 		setLoanDetails(details);
 		setBorrowedAmount(details.amountToSendToWallet.toString());
 
 		cloneAppliedRef.current = true;
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [clonePosition]);
+	}, [clonePosition, createNativeToken]);
+
+	// Auto-apply the best cloneable parent when no clonePosition was passed.
+	useEffect(() => {
+		if (clonePosition || selectedCollateral || !bestParentPosition) return;
+		syncSelectedTokenAndPosition(createNativeToken(bestParentPosition), bestParentPosition);
+	}, [clonePosition, selectedCollateral, bestParentPosition, createNativeToken, syncSelectedTokenAndPosition]);
+
+	// Genesis expiration cap — contract enforces _expiration <= Position(original).expiration().
+	const genesisPosition = useMemo(() => {
+		if (!selectedPosition) return null;
+		if (selectedPosition.position.toLowerCase() === selectedPosition.original.toLowerCase()) return selectedPosition;
+		return positions.find((p) => p.position.toLowerCase() === selectedPosition.original.toLowerCase()) ?? null;
+	}, [selectedPosition, positions]);
 
 	useEffect(() => {
 		if (!selectedPosition || !selectedCollateral) return;
@@ -219,8 +224,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 		setIsMaxedOut(false);
 		setCollateralError("");
 
-		const balanceInWallet = balancesByAddress[selectedCollateral?.address];
-
+		const balanceInWallet = balancesByAddress[selectedCollateral.address];
 		const maxFromLimit = getMaxCollateralFromMintLimit(
 			BigInt(selectedPosition.availableForClones),
 			BigInt(liquidationPrice || selectedPosition.price)
@@ -231,29 +235,27 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 		} else if (collateralAmount === "" || !address) {
 			return;
 		} else if (BigInt(collateralAmount) < BigInt(selectedPosition.minimumCollateral)) {
-			const minColl = formatBigInt(BigInt(selectedPosition?.minimumCollateral || 0n), selectedPosition?.collateralDecimals || 0, 4);
-			const notTheMinimum = `${t("mint.error.must_be_at_least_the_minimum_amount")} (${minColl} ${normalizeTokenSymbol(
-				selectedPosition?.collateralSymbol || ""
-			)})`;
-			setCollateralError(notTheMinimum);
+			const minColl = formatBigInt(BigInt(selectedPosition.minimumCollateral), selectedPosition.collateralDecimals, 4);
+			setCollateralError(
+				`${t("mint.error.must_be_at_least_the_minimum_amount")} (${minColl} ${normalizeTokenSymbol(
+					selectedPosition.collateralSymbol
+				)})`
+			);
 		} else if (BigInt(collateralAmount) > BigInt(balanceInWallet?.balanceOf || 0n)) {
-			const notEnoughBalance = t("common.error.insufficient_balance", {
-				symbol: normalizeTokenSymbol(selectedPosition?.collateralSymbol || ""),
-			});
-			setCollateralError(notEnoughBalance);
+			setCollateralError(t("common.error.insufficient_balance", { symbol: normalizeTokenSymbol(selectedPosition.collateralSymbol) }));
 		} else if (maxFromLimit > 0n && BigInt(collateralAmount) > maxFromLimit) {
-			const maxColl = formatBigInt(maxFromLimit, selectedPosition?.collateralDecimals || 0, 4);
+			const maxColl = formatBigInt(maxFromLimit, selectedPosition.collateralDecimals, 4);
 			const availableToMint = formatBigInt(BigInt(selectedPosition.availableForClones), 18);
-			const limitExceeded = t("mint.error.global_minting_limit_exceeded", {
-				maxCollateral: maxColl,
-				collateralSymbol: normalizeTokenSymbol(selectedPosition?.collateralSymbol || ""),
-				maxMint: availableToMint,
-				mintSymbol: TOKEN_SYMBOL,
-			});
-			setCollateralError(limitExceeded);
+			setCollateralError(
+				t("mint.error.global_minting_limit_exceeded", {
+					maxCollateral: maxColl,
+					collateralSymbol: normalizeTokenSymbol(selectedPosition.collateralSymbol),
+					maxMint: availableToMint,
+					mintSymbol: TOKEN_SYMBOL,
+				})
+			);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [collateralAmount, address, selectedPosition, liquidationPrice, selectedCollateral]);
+	}, [collateralAmount, address, selectedPosition, liquidationPrice, selectedCollateral, balancesByAddress, t]);
 
 	const prices = useSelector((state: RootState) => state.prices.coingecko || {});
 	const collateralPriceUsd = prices[selectedPosition?.collateral.toLowerCase() as Address]?.price?.usd || 0;
@@ -262,94 +264,61 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 		: 0;
 	const maxLiquidationPrice = selectedPosition ? BigInt(selectedPosition.price) : 0n;
 	const isLiquidationPriceTooHigh = selectedPosition ? BigInt(liquidationPrice) > maxLiquidationPrice : false;
-	// For the native coin (e.g. ETH, cBTC), we check its balance directly; others use the ERC20 balance
 	const isNative = selectedCollateral?.symbol === WAGMI_CHAIN.nativeCurrency.symbol;
 	const collateralUserBalance = isNative
-		? balances.find((b) => b.symbol === WAGMI_CHAIN.nativeCurrency.symbol)
-		: balances.find((b) => b.address == selectedCollateral?.address);
-
+		? balances.find((balance) => balance.symbol === WAGMI_CHAIN.nativeCurrency.symbol)
+		: balances.find((balance) => balance.address === selectedCollateral?.address);
 	const userBalance = collateralUserBalance?.balanceOf || 0n;
-	const selectedBalance = Boolean(selectedCollateral) ? balancesByAddress[selectedCollateral?.address as Address] : null;
-	// 1 JUSD = 1 USD, so liquidation price is already in USD
+	const selectedBalance = selectedCollateral ? balancesByAddress[selectedCollateral.address] : null;
 	const usdLiquidationPrice = formatCurrency(
-		parseFloat(formatUnits(BigInt(liquidationPrice), 36 - (selectedPosition?.collateralDecimals || 0))),
+		parseFloat(formatUnits(BigInt(liquidationPrice || "0"), 36 - (selectedPosition?.collateralDecimals || 0))),
 		2,
 		2
 	)?.toString();
 
 	const maxYouGet = useMemo(() => {
 		if (!selectedPosition || !collateralAmount || collateralAmount === "0" || !liquidationPrice || liquidationPrice === "0") return 0n;
-		const maxDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
+		const details = getLoanDetailsByCollateralAndStartingLiqPrice(
 			selectedPosition,
 			BigInt(collateralAmount),
 			BigInt(liquidationPrice),
 			expirationDate || undefined
 		);
-		return maxDetails.amountToSendToWallet > 0n ? maxDetails.amountToSendToWallet : 0n;
+		return details.amountToSendToWallet > 0n ? details.amountToSendToWallet : 0n;
 	}, [selectedPosition, collateralAmount, liquidationPrice, expirationDate]);
 
 	const isBorrowedAmountTooHigh = !!selectedPosition && BigInt(borrowedAmount || "0") > maxYouGet;
-
-	const handleOnSelectedToken = (token: TokenBalance, positionOverride?: PositionQuery, genesisPosition?: PositionQuery) => {
-		const position = positionOverride ?? bestParentPosition ?? defaultPosition;
-		if (!token || !position) return;
-		setSelectedCollateral(token);
-
-		const liqPrice = BigInt(position.price);
-
-		setSelectedPosition(position);
-
-		// Calculate max collateral respecting minting limit
-		// For ETH, we use the special zero address balance, for others use normal address
-		const tokenBalance = balancesByAddress[token.address]?.balanceOf || 0n;
-		const maxAmount = getMaxCollateralAmount(tokenBalance, BigInt(position.availableForClones), liqPrice);
-		const defaultAmount = maxAmount > BigInt(position.minimumCollateral) ? maxAmount.toString() : position.minimumCollateral;
-
-		// Use genesis (defaultPosition) expiration as max, since contract limits to original's expiration
-		const maxExp = genesisPosition?.expiration || defaultPosition?.expiration || position.expiration;
-		setCollateralAmount(defaultAmount);
-		setExpirationDate(toDate(maxExp));
-		setLiquidationPrice(liqPrice.toString());
-
-		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(position, BigInt(defaultAmount), liqPrice, toDate(maxExp));
-
-		setLoanDetails(loanDetails);
-		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
-	};
 
 	const onAmountCollateralChange = (value: string) => {
 		setCollateralAmount(value);
 		if (!selectedPosition) return;
 
-		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
+		const details = getLoanDetailsByCollateralAndStartingLiqPrice(
 			selectedPosition,
 			BigInt(value),
 			BigInt(liquidationPrice),
 			expirationDate || undefined
 		);
-		setLoanDetails(loanDetails);
-		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
+		setLoanDetails(details);
+		setBorrowedAmount(details.amountToSendToWallet.toString());
 	};
 
 	const onLiquidationPriceChange = (value: string) => {
 		setLiquidationPrice(value);
+		if (!selectedPosition || !collateralAmount || collateralAmount === "0") return;
 
-		if (!selectedPosition) return;
-		if (!collateralAmount || collateralAmount === "" || collateralAmount === "0") return;
-
-		const loanDetails = getLoanDetailsByCollateralAndStartingLiqPrice(
+		const details = getLoanDetailsByCollateralAndStartingLiqPrice(
 			selectedPosition,
 			BigInt(collateralAmount),
 			BigInt(value),
 			expirationDate || undefined
 		);
-		setLoanDetails(loanDetails);
-		setBorrowedAmount(loanDetails.amountToSendToWallet.toString());
+		setLoanDetails(details);
+		setBorrowedAmount(details.amountToSendToWallet.toString());
 	};
 
 	const onYouGetChange = (value: string) => {
 		setBorrowedAmount(value);
-
 		if (!selectedPosition) return;
 
 		const details = getLoanDetailsByCollateralAndYouGetAmount(
@@ -359,6 +328,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 			expirationDate || undefined
 		);
 		setLoanDetails(details);
+		setLiquidationPrice(details.startingLiquidationPrice.toString());
 	};
 
 	const onExpirationDateChange = (date: Date | undefined | null) => {
@@ -375,7 +345,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 	};
 
 	const handleMaxExpirationDate = () => {
-		const maxExp = defaultPosition?.expiration || selectedPosition?.expiration;
+		const maxExp = genesisPosition?.expiration ?? selectedPosition?.expiration;
 		if (maxExp) {
 			onExpirationDateChange(toDate(maxExp));
 		}
@@ -383,42 +353,54 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 
 	const handleMintWithCoin = async () => {
 		try {
-			if (!selectedPosition || !loanDetails || !expirationDate) return;
+			if (!selectedPosition || !loanDetails || !expirationDate || !address) return;
 
-			// Validate inputs
 			if (BigInt(collateralAmount) <= 0n) {
 				toast.error("Collateral amount must be greater than 0");
 				return;
 			}
 
 			if (userBalance < BigInt(collateralAmount)) {
-				toast.error("Insufficient ETH balance");
+				toast.error(`Insufficient ${WAGMI_CHAIN.nativeCurrency.symbol} balance`);
 				return;
 			}
 
 			setIsCloneLoading(true);
 			setIsCloneSuccess(false);
 
-			const gatewayAddress = ADDRESS[chainId]?.mintingHubGateway;
-			if (!gatewayAddress || gatewayAddress === zeroAddress) {
-				toast.error("MintingHubGateway not configured for this network");
+			const cloneTarget =
+				selectedPosition.version === 3 && ADDRESS[chainId]?.mintingHub !== zeroAddress
+					? ADDRESS[chainId].mintingHub
+					: ADDRESS[chainId]?.mintingHubGateway;
+			if (!cloneTarget || cloneTarget === zeroAddress) {
+				toast.error("Minting hub not configured for this network");
 				return;
 			}
 
 			const hash = await simulateAndWrite({
 				chainId: chainId as typeof mainnet.id | typeof testnet.id,
-				address: gatewayAddress,
-				abi: MintingHubGatewayV2ABI,
+				address: cloneTarget,
+				abi: selectedPosition.version === 3 ? MintingHubV3ABI : MintingHubGatewayV2ABI,
 				functionName: "clone",
-				args: [
-					address as Address,
-					selectedPosition.position as Address,
-					BigInt(collateralAmount),
-					loanDetails.loanAmount,
-					toTimestamp(expirationDate),
-					BigInt(liquidationPrice),
-					frontendCode,
-				],
+				args:
+					selectedPosition.version === 3
+						? [
+								address as Address,
+								selectedPosition.position as Address,
+								BigInt(collateralAmount),
+								loanDetails.loanAmount,
+								toTimestamp(expirationDate),
+								BigInt(liquidationPrice),
+						  ]
+						: [
+								address as Address,
+								selectedPosition.position as Address,
+								BigInt(collateralAmount),
+								loanDetails.loanAmount,
+								toTimestamp(expirationDate),
+								BigInt(liquidationPrice),
+								frontendCode,
+						  ],
 				value: BigInt(collateralAmount),
 				onBeforeWrite: () => setIsOpenBorrowingDEUROModal(true),
 			});
@@ -500,7 +482,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 													{selectedBalance.symbol}
 												</div>
 												<MaxButton
-													disabled={BigInt(selectedBalance.balanceOf || 0n) === BigInt(0)}
+													disabled={BigInt(selectedBalance.balanceOf || 0n) === 0n}
 													onClick={() => {
 														const maxAmount = getMaxCollateralAmount(
 															selectedBalance.balanceOf || 0n,
@@ -520,8 +502,8 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 							title={t("mint.token_select_modal_title")}
 							isOpen={isOpenTokenSelector}
 							setIsOpen={setIsOpenTokenSelector}
-							options={collateralSelectorOptions}
-							onTokenSelect={handleOnSelectedToken}
+							options={balances}
+							onTokenSelect={() => setIsOpenTokenSelector(false)}
 						/>
 						{noCloneableParent && (
 							<div className="self-stretch mt-1 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md">
@@ -564,8 +546,8 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 						<DateInputOutlined
 							value={expirationDate}
 							maxDate={
-								defaultPosition?.expiration
-									? toDate(defaultPosition.expiration)
+								genesisPosition?.expiration
+									? toDate(genesisPosition.expiration)
 									: selectedPosition?.expiration
 									? toDate(selectedPosition.expiration)
 									: expirationDate
@@ -617,7 +599,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 									? { ...loanDetails, liquidationPrice: BigInt(liquidationPrice) }
 									: loanDetails
 							}
-							startingLiquidationPrice={BigInt(liquidationPrice)}
+							startingLiquidationPrice={BigInt(liquidationPrice || "0")}
 							collateralDecimals={selectedPosition?.collateralDecimals || 0}
 							collateralPriceUsd={collateralPriceUsd}
 							extraRows={
@@ -639,7 +621,6 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 								{t("common.receive") + " 0.00 " + TOKEN_SYMBOL}
 							</Button>
 						) : (
-							// Native coin (cBTC) flow via CoinLendingGateway
 							<Button
 								className="!p-4 text-lg font-extrabold leading-none"
 								onClick={handleMintWithCoin}
@@ -651,14 +632,14 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 									!!collateralError ||
 									isMaxedOut ||
 									noCloneableParent ||
-									userBalance < BigInt(collateralAmount)
+									userBalance < BigInt(collateralAmount || "0")
 								}
 							>
 								{isLiquidationPriceTooHigh
 									? t("mint.your_liquidation_price_is_too_high")
 									: t("common.receive") +
 									  " " +
-									  formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2, 2) +
+									  formatCurrency(formatUnits(BigInt(borrowedAmount || "0"), 18), 2, 2) +
 									  " " +
 									  TOKEN_SYMBOL}
 							</Button>
@@ -667,15 +648,15 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 					<BorrowingDEUROModal
 						isOpen={isOpenBorrowingDEUROModal}
 						setIsOpen={setIsOpenBorrowingDEUROModal}
-						youGet={formatCurrency(formatUnits(BigInt(borrowedAmount), 18), 2, 2)}
+						youGet={formatCurrency(formatUnits(BigInt(borrowedAmount || "0"), 18), 2, 2)}
 						liquidationPrice={formatCurrency(
-							formatUnits(BigInt(liquidationPrice), 36 - (selectedPosition?.collateralDecimals || 0)),
+							formatUnits(BigInt(liquidationPrice || "0"), 36 - (selectedPosition?.collateralDecimals || 0)),
 							2,
 							2
 						)}
 						expiration={expirationDate}
 						formmatedCollateral={`${formatUnits(
-							BigInt(collateralAmount),
+							BigInt(collateralAmount || "0"),
 							selectedPosition?.collateralDecimals || 0
 						)} ${normalizeTokenSymbol(selectedPosition?.collateralSymbol || "")}`}
 						collateralPriceUsd={collateralUsdValue?.toString() || "0"}

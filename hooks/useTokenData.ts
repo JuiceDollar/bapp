@@ -1,16 +1,16 @@
-import { erc20Abi, getAddress, isAddress, zeroAddress } from "viem";
+import { Address, erc20Abi, getAddress, isAddress, zeroAddress } from "viem";
 import { useAccount, useChainId, useReadContracts } from "wagmi";
 import { decodeBigIntCall } from "../utils/format";
 import { ADDRESS } from "@juicedollar/jusd";
 
-export const useTokenData = (addr: string) => {
+export const useTokenData = (addr: string, spender?: Address) => {
 	if (!isAddress(addr)) addr = zeroAddress;
 	const tokenAddress = getAddress(addr);
 	const { address } = useAccount();
 	const chainId = useChainId();
 
 	const account = address || zeroAddress;
-	const mintingHub = ADDRESS[chainId].mintingHubGateway;
+	const mintingHub = spender || ADDRESS[chainId].mintingHubGateway;
 	const { data, refetch } = useReadContracts({
 		contracts: [
 			{
