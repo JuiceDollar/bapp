@@ -1,6 +1,6 @@
 "use client";
 import Head from "next/head";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Address, isAddress, maxUint256, zeroAddress } from "viem";
 import TokenInput from "@components/Input/TokenInput";
 import { useTokenData, useUserBalance } from "@hooks";
@@ -64,12 +64,17 @@ export default function PositionCreate({}) {
 
 	const { t } = useTranslation();
 
+	// Apply the chain-appropriate init-period default once on mount (V3 requires >= 14 days; V2 requires >= 3).
+	// Subsequent user edits are validated via onChangeInitPeriod and surface as initError — we never silently overwrite typed values.
+	const initPeriodDefaultAppliedRef = useRef(false);
 	useEffect(() => {
+		if (initPeriodDefaultAppliedRef.current) return;
+		if (!chainId) return;
 		if (initPeriod < minimumInitDays) {
 			setInitPeriod(minimumInitDays);
-			setInitError("");
 		}
-	}, [initPeriod, minimumInitDays]);
+		initPeriodDefaultAppliedRef.current = true;
+	}, [chainId, initPeriod, minimumInitDays]);
 
 	useEffect(() => {
 		const acc: Address | undefined = account.address;

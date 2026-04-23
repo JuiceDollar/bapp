@@ -23,6 +23,8 @@ import {
 	NATIVE_WRAPPED_SYMBOLS,
 	normalizeTokenSymbol,
 	formatPositionValue,
+	MAINNET_WCBTC_ADDRESS,
+	getApiClient,
 } from "@utils";
 import { TokenBalance, useWalletERC20Balances } from "../../hooks/useWalletBalances";
 import { RootState, store } from "../../redux/redux.store";
@@ -50,6 +52,8 @@ type BorrowFormProps = {
 	clonePosition?: PositionQuery | null;
 };
 
+type BestCloneableResponse = { position: PositionQuery | null };
+
 const getMaxCollateralFromMintLimit = (availableForClones: bigint, liqPrice: bigint) => {
 	if (!availableForClones || liqPrice === 0n) return 0n;
 	return (availableForClones * BigInt(1e18)) / liqPrice;
@@ -60,34 +64,12 @@ const getMaxCollateralAmount = (balance: bigint, availableForClones: bigint, liq
 	return maxFromLimit > 0n && balance > maxFromLimit ? maxFromLimit : balance;
 };
 
-const compareParentPositions = (a: PositionQuery, b: PositionQuery) => {
-	if (a.version !== b.version) return b.version - a.version;
-
-	const availableA = BigInt(a.availableForClones);
-	const availableB = BigInt(b.availableForClones);
-	if (availableA !== availableB) return availableA < availableB ? 1 : -1;
-
-	if (a.expiration !== b.expiration) return b.expiration - a.expiration;
-
-	const priceA = BigInt(a.price);
-	const priceB = BigInt(b.price);
-	if (priceA !== priceB) return priceA < priceB ? 1 : -1;
-
-	return a.position.localeCompare(b.position);
-};
-
-const tokenMatchesPosition = (token: Pick<TokenBalance, "address" | "symbol">, position: PositionQuery) => {
-	if (token.address === zeroAddress) {
-		return NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase());
-	}
-
-	return position.collateral.toLowerCase() === token.address.toLowerCase();
-};
-
 export default function PositionCreate({ clonePosition = null }: BorrowFormProps) {
 	const cloneAppliedRef = useRef(false);
 	const [selectedCollateral, setSelectedCollateral] = useState<TokenBalance | null | undefined>(null);
 	const [selectedPosition, setSelectedPosition] = useState<PositionQuery | null | undefined>(null);
+	const [bestParentPosition, setBestParentPosition] = useState<PositionQuery | null>(null);
+	const [bestParentLoaded, setBestParentLoaded] = useState(false);
 	const [expirationDate, setExpirationDate] = useState<Date | undefined | null>(undefined);
 	const [collateralAmount, setCollateralAmount] = useState("0");
 	const [liquidationPrice, setLiquidationPrice] = useState("0");
@@ -105,31 +87,42 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 	const { frontendCode } = useFrontendCode();
 	const { t } = useTranslation();
 
-	const positionsLoaded = useSelector((state: RootState) => state.positions.loaded);
 	const positions = useSelector((state: RootState) => state.positions.list?.list || []);
-	const challenges = useSelector((state: RootState) => state.challenges.list?.list || []);
-	const challengedPositions = useMemo(() => challenges.filter((c) => c.status === "Active").map((c) => c.position), [challenges]);
 
-	const eligiblePositions = useMemo(() => {
-		const now = Math.floor(Date.now() / 1000);
-		return positions
-			.filter((position) => BigInt(position.availableForClones) > 0n)
-			.filter((position) => !position.closed && !position.denied)
-			.filter((position) => position.cooldown < now)
-			.filter((position) => position.expiration > now)
-			.filter((position) => !challengedPositions.includes(position.position));
-	}, [positions, challengedPositions]);
+	// Fetch the single best cloneable parent for native-wrapped collateral — V3-preferred, V2 fallback.
+	// The API-side filter already excludes closed/denied/challenged/in-cooldown/expired positions, so the
+	// returned candidate is safe to use directly.
+	// Skipped when clonePosition is provided (user came from a specific-parent page).
+	useEffect(() => {
+		if (clonePosition) return;
+		if (!chainId) return;
 
-	const fallbackPosition = useMemo(() => {
-		if (clonePosition) return clonePosition;
-		return (
-			[...eligiblePositions]
-				.filter((position) => NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase()))
-				.sort(compareParentPositions)[0] ?? null
-		);
-	}, [clonePosition, eligiblePositions]);
+		let cancelled = false;
+		(async () => {
+			try {
+				const apiClient = getApiClient(chainId);
+				const response = await apiClient.get<BestCloneableResponse>(
+					`/positions/best-cloneable?collateral=${MAINNET_WCBTC_ADDRESS}`
+				);
+				if (cancelled) return;
+				setBestParentPosition(response.data?.position ?? null);
+			} catch (error) {
+				if (cancelled) return;
+				console.error("Failed to fetch best-cloneable parent:", error);
+				setBestParentPosition(null);
+			} finally {
+				if (!cancelled) setBestParentLoaded(true);
+			}
+		})();
 
-	const positionForTokenList = selectedPosition ?? fallbackPosition;
+		return () => {
+			cancelled = true;
+		};
+	}, [chainId, clonePosition]);
+
+	const noCloneableParent = !clonePosition && bestParentLoaded && bestParentPosition == null;
+
+	const positionForTokenList = selectedPosition ?? clonePosition ?? bestParentPosition;
 	const collateralTokenList = useMemo(() => {
 		if (!positionForTokenList) return [];
 
@@ -162,33 +155,6 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 		[balancesByAddress]
 	);
 
-	const getParentCandidatesForToken = useCallback(
-		(token: Pick<TokenBalance, "address" | "symbol"> | null | undefined) => {
-			if (!token) return [];
-
-			const matchingPositions = eligiblePositions.filter((position) => tokenMatchesPosition(token, position));
-			const sortedPositions = [...matchingPositions].sort(compareParentPositions);
-
-			if (
-				clonePosition &&
-				tokenMatchesPosition(token, clonePosition) &&
-				!sortedPositions.some((position) => position.position.toLowerCase() === clonePosition.position.toLowerCase())
-			) {
-				return [clonePosition, ...sortedPositions];
-			}
-
-			return sortedPositions;
-		},
-		[clonePosition, eligiblePositions]
-	);
-
-	const selectedParentPositions = useMemo(
-		() => getParentCandidatesForToken(selectedCollateral ?? collateralTokenList[0] ?? null),
-		[getParentCandidatesForToken, selectedCollateral, collateralTokenList]
-	);
-
-	const noCloneableParent = positionsLoaded && !clonePosition && selectedParentPositions.length === 0;
-
 	const syncSelectedTokenAndPosition = useCallback(
 		(token: TokenBalance, position: PositionQuery) => {
 			setSelectedCollateral(token);
@@ -216,31 +182,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 		[balancesByAddress]
 	);
 
-	const handleOnSelectedToken = useCallback(
-		(token: TokenBalance) => {
-			if (!token) return;
-
-			const defaultPosition = getParentCandidatesForToken(token)[0];
-			setSelectedCollateral(token);
-
-			if (!defaultPosition) {
-				setSelectedPosition(null);
-				return;
-			}
-
-			syncSelectedTokenAndPosition(token, defaultPosition);
-		},
-		[getParentCandidatesForToken, syncSelectedTokenAndPosition]
-	);
-
-	const handleOnSelectedParentPosition = useCallback(
-		(position: PositionQuery) => {
-			if (!selectedCollateral) return;
-			syncSelectedTokenAndPosition(selectedCollateral, position);
-		},
-		[selectedCollateral, syncSelectedTokenAndPosition]
-	);
-
+	// Apply clonePosition (URL-driven clone-this-parent flow) once.
 	useEffect(() => {
 		if (!clonePosition || cloneAppliedRef.current) return;
 
@@ -263,28 +205,18 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 		cloneAppliedRef.current = true;
 	}, [clonePosition, createNativeToken]);
 
+	// Auto-apply the best cloneable parent when no clonePosition was passed.
 	useEffect(() => {
-		if (clonePosition || selectedCollateral || !fallbackPosition) return;
-		syncSelectedTokenAndPosition(createNativeToken(fallbackPosition), fallbackPosition);
-	}, [clonePosition, selectedCollateral, fallbackPosition, createNativeToken, syncSelectedTokenAndPosition]);
+		if (clonePosition || selectedCollateral || !bestParentPosition) return;
+		syncSelectedTokenAndPosition(createNativeToken(bestParentPosition), bestParentPosition);
+	}, [clonePosition, selectedCollateral, bestParentPosition, createNativeToken, syncSelectedTokenAndPosition]);
 
-	useEffect(() => {
-		if (!selectedCollateral) return;
-		if (selectedParentPositions.length === 0) {
-			if (!clonePosition) setSelectedPosition(null);
-			return;
-		}
-
-		const matchingSelectedPosition = selectedPosition
-			? selectedParentPositions.find((position) => position.position.toLowerCase() === selectedPosition.position.toLowerCase())
-			: undefined;
-
-		if (!matchingSelectedPosition) {
-			syncSelectedTokenAndPosition(selectedCollateral, selectedParentPositions[0]);
-		} else if (matchingSelectedPosition !== selectedPosition) {
-			setSelectedPosition(matchingSelectedPosition);
-		}
-	}, [clonePosition, selectedCollateral, selectedParentPositions, selectedPosition, syncSelectedTokenAndPosition]);
+	// Genesis expiration cap — contract enforces _expiration <= Position(original).expiration().
+	const genesisPosition = useMemo(() => {
+		if (!selectedPosition) return null;
+		if (selectedPosition.position.toLowerCase() === selectedPosition.original.toLowerCase()) return selectedPosition;
+		return positions.find((p) => p.position.toLowerCase() === selectedPosition.original.toLowerCase()) ?? null;
+	}, [selectedPosition, positions]);
 
 	useEffect(() => {
 		if (!selectedPosition || !selectedCollateral) return;
@@ -413,8 +345,9 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 	};
 
 	const handleMaxExpirationDate = () => {
-		if (selectedPosition?.expiration) {
-			onExpirationDateChange(toDate(selectedPosition.expiration));
+		const maxExp = genesisPosition?.expiration ?? selectedPosition?.expiration;
+		if (maxExp) {
+			onExpirationDateChange(toDate(maxExp));
 		}
 	};
 
@@ -570,7 +503,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 							isOpen={isOpenTokenSelector}
 							setIsOpen={setIsOpenTokenSelector}
 							options={balances}
-							onTokenSelect={handleOnSelectedToken}
+							onTokenSelect={() => setIsOpenTokenSelector(false)}
 						/>
 						{noCloneableParent && (
 							<div className="self-stretch mt-1 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md">
@@ -594,48 +527,6 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 								</div>
 							</div>
 						)}
-						{selectedParentPositions.length > 1 && selectedPosition && (
-							<div className="self-stretch flex-col justify-start items-start gap-2 flex mt-2">
-								<div className="text-input-label text-xs font-medium leading-none">{t("mint.parent_position")}</div>
-								<div className="self-stretch grid gap-2">
-									{selectedParentPositions.map((position) => {
-										const isSelected = selectedPosition.position.toLowerCase() === position.position.toLowerCase();
-										const availableForClones = formatCurrency(
-											formatUnits(BigInt(position.availableForClones), 18),
-											2,
-											2
-										);
-
-										return (
-											<button
-												type="button"
-												key={position.position}
-												onClick={() => handleOnSelectedParentPosition(position)}
-												className={`self-stretch rounded-xl border p-3 text-left transition-colors ${
-													isSelected
-														? "border-input-borderFocus bg-card-content-secondary"
-														: "border-borders-dividerLight hover:border-input-borderHover"
-												}`}
-											>
-												<div className="flex items-center justify-between gap-3">
-													<div className="text-sm font-semibold leading-none">
-														{`v${position.version}`} · {shortenAddress(position.position)}
-													</div>
-												</div>
-												<div className="mt-2 flex items-center justify-between gap-3 text-xs text-text-muted3">
-													<div>
-														{t("mint.available")}: {availableForClones} {TOKEN_SYMBOL}
-													</div>
-													<div>
-														{t("mint.maturity")}: {toDate(position.expiration).toLocaleDateString()}
-													</div>
-												</div>
-											</button>
-										);
-									})}
-								</div>
-							</div>
-						)}
 					</div>
 					<div className="self-stretch flex-col justify-start items-center gap-1 flex">
 						<InputTitle icon={faCircleQuestion}>{t("mint.select_liquidation_price")}</InputTitle>
@@ -654,7 +545,13 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 						<InputTitle>{t("mint.set_expiration_date")}</InputTitle>
 						<DateInputOutlined
 							value={expirationDate}
-							maxDate={selectedPosition?.expiration ? toDate(selectedPosition.expiration) : expirationDate}
+							maxDate={
+								genesisPosition?.expiration
+									? toDate(genesisPosition.expiration)
+									: selectedPosition?.expiration
+									? toDate(selectedPosition.expiration)
+									: expirationDate
+							}
 							placeholderText="YYYY-MM-DD"
 							onChange={onExpirationDateChange}
 							rightAdornment={expirationDate ? <MaxButton onClick={handleMaxExpirationDate} /> : null}
