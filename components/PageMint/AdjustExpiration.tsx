@@ -101,7 +101,7 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 
 	const rollerAddress = position?.version === 3 ? ADDRESS[chainId].rollerV3 : ADDRESS[chainId].rollerV2;
 	const rollerAbi = position?.version === 3 ? PositionRollerV3ABI : PositionRollerV2ABI;
-	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase()) && position.version === 3;
+	const isNativeWrappedPosition = NATIVE_WRAPPED_SYMBOLS.includes(position.collateralSymbol.toLowerCase());
 
 	const { balancesByAddress, refetchBalances } = useWalletERC20Balances(
 		position
