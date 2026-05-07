@@ -1,10 +1,27 @@
+export type DeploymentEnv = "prd" | "dev";
+
+const rawDeploymentEnv = process.env.NEXT_PUBLIC_DEPLOYMENT_ENV;
+if (rawDeploymentEnv !== "prd" && rawDeploymentEnv !== "dev") {
+	throw new Error(`NEXT_PUBLIC_DEPLOYMENT_ENV must be "prd" or "dev" (got: "${rawDeploymentEnv}")`);
+}
+export const DEPLOYMENT_ENV: DeploymentEnv = rawDeploymentEnv;
+
 export const SOCIAL = {
 	Github_organization: "https://github.com/JuiceDollar/bapp",
 	Github_contract: "https://github.com/JuiceDollar/smartContracts",
 	Github_dapp: "https://github.com/JuiceDollar/bapp",
 	Github_dapp_new_issue: "https://github.com/JuiceDollar/bapp/issues",
 	Telegram: "https://t.me/JuiceSwap",
-	TelegramApiBot: "https://t.me/JuiceSwap",
+	TelegramBot: {
+		mainnet: {
+			prd: "https://t.me/juicedollar_jdm_prd_bot",
+			dev: "https://t.me/juicedollar_jdm_dev_bot",
+		},
+		testnet: {
+			prd: "https://t.me/juicedollar_jdt_prd_bot",
+			dev: "https://t.me/juicedollar_jdt_dev_bot",
+		},
+	},
 	Twitter: "https://x.com/JuiceSwap_com",
 	Docs: "https://docs.juicedollar.com",
 };

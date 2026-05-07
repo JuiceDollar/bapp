@@ -1,5 +1,6 @@
-import { DEFAULT_FRONTEND_CODE, shortenHash, SOCIAL, ZERO_FRONTEND_CODE } from "@utils";
-import { faBook } from "@fortawesome/free-solid-svg-icons";
+import { CONFIG } from "@config";
+import { DEFAULT_FRONTEND_CODE, DEPLOYMENT_ENV, shortenHash, SOCIAL, ZERO_FRONTEND_CODE } from "@utils";
+import { faBook, faRobot } from "@fortawesome/free-solid-svg-icons";
 import { faGithub, faTelegram, faXTwitter } from "@fortawesome/free-brands-svg-icons";
 import { SubmitIssue, FooterButton } from "./LoadingScreen";
 import { usePathname } from "next/navigation";
@@ -31,6 +32,8 @@ export default function Footer() {
 	const parsedFrontendCode =
 		frontendCode && frontendCode !== ZERO_FRONTEND_CODE && frontendCode !== DEFAULT_FRONTEND_CODE && shortenHash(frontendCode);
 	const code = marketingCode || parsedFrontendCode;
+	const chainKey = CONFIG.chain as keyof typeof SOCIAL.TelegramBot;
+	const telegramBotUrl = SOCIAL.TelegramBot[chainKey][DEPLOYMENT_ENV];
 
 	return (
 		<footer className="md:flex max-md:grid-rows-2 max-md:justify-items-center md:px-12 pb-12 pt-6 bg-transparent border-t border-borders-primary text-text-primary mt-auto">
@@ -45,16 +48,19 @@ export default function Footer() {
 
 			<ul className="flex justify-end gap-8 max-md:pt-12">
 				<li>
-					<FooterButton link={DynamicDocs()} icon={faBook} />
+					<FooterButton link={DynamicDocs()} label="Documentation" icon={faBook} />
 				</li>
 				<li>
-					<FooterButton link={SOCIAL.Github_organization} icon={faGithub} />
+					<FooterButton link={SOCIAL.Github_organization} label="GitHub" icon={faGithub} />
 				</li>
 				<li>
-					<FooterButton link={SOCIAL.Telegram} icon={faTelegram} />
+					<FooterButton link={SOCIAL.Telegram} label="Telegram community" icon={faTelegram} />
 				</li>
 				<li>
-					<FooterButton link={SOCIAL.Twitter} icon={faXTwitter} />
+					<FooterButton link={telegramBotUrl} label="Telegram alerts bot" icon={faRobot} />
+				</li>
+				<li>
+					<FooterButton link={SOCIAL.Twitter} label="X (Twitter)" icon={faXTwitter} />
 				</li>
 			</ul>
 		</footer>

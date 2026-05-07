@@ -50,12 +50,20 @@ export function SubmitIssue() {
 interface FooterButtonProps {
 	link: string;
 	text?: string;
+	label?: string;
 	icon: IconProp;
 }
 
-export const FooterButton = ({ link, text, icon }: FooterButtonProps) => {
+export const FooterButton = ({ link, text, label, icon }: FooterButtonProps) => {
 	return (
-		<Link href={link} target="_blank" rel="noreferrer" className="flex gap-2 hover:text-layout-secondary transition-colors">
+		<Link
+			href={link}
+			target="_blank"
+			rel="noreferrer noopener"
+			title={label}
+			aria-label={label}
+			className="flex gap-2 hover:text-layout-secondary transition-colors"
+		>
 			<FontAwesomeIcon icon={icon} className="w-6 h-6" />
 			{text && <div className="font-semibold">{text}</div>}
 		</Link>
