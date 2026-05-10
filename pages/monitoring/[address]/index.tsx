@@ -12,6 +12,7 @@ import {
 	TOKEN_SYMBOL,
 	toQueryString,
 	normalizeTokenSymbol,
+	BLACKLISTED_AUCTION_POSITIONS,
 } from "@utils";
 import { Address, formatUnits, zeroAddress } from "viem";
 import { useContractUrl, useExplorerChain } from "@hooks";
@@ -43,7 +44,10 @@ export default function PositionDetail() {
 	const challengesPositions = useSelector((state: RootState) => state.challenges.positions);
 
 	const position = positions.find((p) => p.position.toLowerCase() === address.toLowerCase());
-	const challengesActive = (challengesPositions?.map[address.toLowerCase() as Address] || []).filter((c) => c.status === "Active");
+	const isBlacklisted = BLACKLISTED_AUCTION_POSITIONS.some((p) => p.toLowerCase() === address.toLowerCase());
+	const challengesActive = isBlacklisted
+		? []
+		: (challengesPositions?.map[address.toLowerCase() as Address] || []).filter((c) => c.status === "Active");
 	const chain = useExplorerChain();
 	const explorerUrl = useContractUrl(String(address), chain);
 	const ownerLink = useContractUrl(position?.owner || zeroAddress, chain);
