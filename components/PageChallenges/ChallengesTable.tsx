@@ -21,6 +21,7 @@ import { useExpandableTable } from "@hooks";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 import Link from "next/link";
+import { BLACKLISTED_AUCTION_POSITIONS } from "@utils";
 
 export default function ChallengesTable() {
 	const { t } = useTranslation();
@@ -33,10 +34,12 @@ export default function ChallengesTable() {
 	const prices = useSelector((state: RootState) => state.prices.coingecko || {});
 	const auction = useSelector((state: RootState) => state.challenges.challengesPrices?.map || {});
 
+	const blacklist = new Set(BLACKLISTED_AUCTION_POSITIONS.map((p) => p.toLowerCase()));
 	const matchingChallenges = (challenges || []).filter((c) => {
 		// DEV: For displaying "Inactive" challenges
 		// const DIFFINMS: number = 1000 * 60 * 60 * 24 * 3; // show e.g. last 10days
 		// const matching: boolean = Date.now() - parseInt(c.start.toString()) * 1000 < DIFFINMS;
+		if (blacklist.has(c.position.toLowerCase())) return false;
 		return c.status == "Active";
 	});
 
