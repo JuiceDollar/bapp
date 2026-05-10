@@ -43,6 +43,8 @@ export const WHITELISTED_POSITIONS: `0x${string}`[] = [];
 
 export const INTERNAL_PROTOCOL_POSITIONS: `0x${string}`[] = [];
 
+export const BLACKLISTED_AUCTION_POSITIONS: `0x${string}`[] = ["0x77f184feFB9d66fd0c02AD77eFd26991Abe129f0"];
+
 export const NATIVE_WRAPPED_SYMBOLS = ["wcbtc"];
 export const NATIVE_GAS_BUFFER = 10_000_000_000_000n; // 0.00001 cBTC reserved for gas fees
 export const DUST_JUSD = BigInt(2e16);
