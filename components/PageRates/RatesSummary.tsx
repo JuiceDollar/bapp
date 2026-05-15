@@ -91,6 +91,12 @@ export default function RatesSummary() {
 							<DisplayLabel label={t("rates.estimated_interest_pa")} />
 							<DisplayAmount className="mt-1" amount={savingsInterestPA} currency={TOKEN_SYMBOL} hideLogo />
 						</AppBox>
+						{savingsRate === 0 && (
+							<div className="rounded-lg border-l-[3px] border-[#F57F00] bg-[#FDF2E2] px-4 py-3 text-sm text-[#272B38] flex flex-col gap-y-1.5">
+								<span className="font-extrabold">{t("savings.zero_rate_notice.title")}</span>
+								<span className="font-medium leading-snug">{t("savings.zero_rate_notice.body")}</span>
+							</div>
+						)}
 					</div>
 				</AppCard>
 			</div>

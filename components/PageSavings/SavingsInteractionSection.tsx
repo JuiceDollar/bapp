@@ -321,7 +321,11 @@ export default function SavingsInteractionSection() {
 			setButtonLabel(t("savings.enter_amount_to_add_savings"));
 		} else {
 			setError(null);
-			setButtonLabel(t("savings.start_earning_interest", { rate: rate !== undefined ? `${rate / 10_000}` : "-" }));
+			if (rate === 0) {
+				setButtonLabel(t("savings.deposit_to_savings"));
+			} else {
+				setButtonLabel(t("savings.start_earning_interest", { rate: rate !== undefined ? `${rate / 10_000}` : "-" }));
+			}
 		}
 	}, [amount, rate, isDeposit, userBalance, t]);
 
