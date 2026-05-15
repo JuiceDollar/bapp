@@ -321,11 +321,8 @@ export default function SavingsInteractionSection() {
 			setButtonLabel(t("savings.enter_amount_to_add_savings"));
 		} else {
 			setError(null);
-			if (rate === 0) {
-				setButtonLabel(t("savings.deposit_to_savings"));
-			} else {
-				setButtonLabel(t("savings.start_earning_interest", { rate: rate !== undefined ? `${rate / 10_000}` : "-" }));
-			}
+			// Savings effectively inactive — no active loan positions are paying interest.
+			setButtonLabel(t("savings.deposit_to_savings"));
 		}
 	}, [amount, rate, isDeposit, userBalance, t]);
 
@@ -378,15 +375,14 @@ export default function SavingsInteractionSection() {
 				<div className="text-text-title text-center text-lg sm:text-xl font-black ">{t("savings.earn_yield_on_your_d_euro")}</div>
 				<div className="py-1 px-3 rounded-lg bg-[#FDF2E2] text-[#272B38] flex flex-row items-center gap-x-2 text-sm leading-[0.875rem]">
 					<span className="font-[400]">{t("savings.savings_rate")} (APR)</span>
-					<span className="font-extrabold">{rate !== undefined ? `${rate / 10_000}%` : "-"}</span>
+					{/* Savings effectively inactive — display 0% regardless of on-chain rate until loan positions resume. */}
+					<span className="font-extrabold">0%</span>
 				</div>
 			</div>
-			{rate === 0 && (
-				<div className="w-full rounded-lg border-l-[3px] border-[#F57F00] bg-[#FDF2E2] px-4 py-3 text-sm text-[#272B38] flex flex-col gap-y-1.5">
-					<span className="font-extrabold">{t("savings.zero_rate_notice.title")}</span>
-					<span className="font-medium leading-snug">{t("savings.zero_rate_notice.body")}</span>
-				</div>
-			)}
+			<div className="w-full rounded-lg border-l-[3px] border-[#F57F00] bg-[#FDF2E2] px-4 py-3 text-sm text-[#272B38] flex flex-col gap-y-1.5">
+				<span className="font-extrabold">{t("savings.zero_rate_notice.title")}</span>
+				<span className="font-medium leading-snug">{t("savings.zero_rate_notice.body")}</span>
+			</div>
 			<div className="flex flex-col gap-y-3">
 				<div className="pb-1 flex flex-row justify-start items-center border-b border-b-borders-dividerLight">
 					<span className="text-text-disabled font-medium text-base leading-tight">{t("savings.current_invest")}</span>

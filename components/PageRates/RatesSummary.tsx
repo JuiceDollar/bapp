@@ -37,7 +37,8 @@ export default function RatesSummary() {
 	const totalMinted = exposures.reduce((sum, e) => sum + e.mint.totalMinted, 0);
 	const loanInterestPA = eco.exposureData?.general?.earningsPerAnnum ?? 0;
 
-	const savingsRate = savingsInfo ? savingsInfo.rate / 10_000 : 0;
+	// Savings effectively inactive — display 0% regardless of on-chain rate until loan positions resume.
+	const savingsRate = 0;
 	const totalSavingsNum = parseFloat(formatUnits(totalSavingsRaw, 18));
 	const savingsInterestPA = (totalSavingsNum * savingsRate) / 100;
 	const netInterest = loanInterestPA - savingsInterestPA;

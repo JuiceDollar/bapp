@@ -44,7 +44,6 @@ const getStartTimestampByTimeframe = (timeframe: Timeframe) => {
 
 export default function SavingsHistoryCard() {
 	const savingsInfo = useSelector((state: RootState) => state.savings.savingsInfo);
-	const rate = savingsInfo?.rate;
 	const totalInterest = savingsInfo?.totalInterest;
 	const [timeframe, setTimeframe] = useState<Timeframe>(Timeframe.ALL);
 	const { totalSavings } = useTotalSavingsQuery();
@@ -189,7 +188,8 @@ export default function SavingsHistoryCard() {
 			<div className="flex flex-col justify-start gap-3 py-6 px-5 border-t border-borders-dividerLight border-offset-1">
 				<div className="flex flex-row justify-between">
 					<div className="text-sm font-medium leading-relaxed">{t("savings.interest_rate_apr")}</div>
-					<div className="text-sm font-medium leading-tight ">{rate !== undefined ? `${rate / 10_000}%` : "-"}</div>
+					{/* Savings effectively inactive — display 0% regardless of on-chain rate until loan positions resume. */}
+					<div className="text-sm font-medium leading-tight ">0%</div>
 				</div>
 				<div className="flex flex-row justify-between">
 					<div className="text-sm font-medium leading-relaxed">{t("savings.total_savers")}</div>

@@ -21,7 +21,6 @@ const StatsBox = ({ title, value, isLast }: { title: string; value?: string | Re
 
 const SavingsOverview = () => {
 	const savingsInfo = useSelector((state: RootState) => state.savings.savingsInfo);
-	const rate = savingsInfo?.rate;
 	const totalInterest = savingsInfo?.totalInterest;
 	const chainId = useChainId();
 	const chain = useExplorerChain();
@@ -46,7 +45,8 @@ const SavingsOverview = () => {
 		<div className="w-full bg-white self-stretch rounded-xl justify-start items-center inline-flex shadow-card">
 			<div className="w-full flex md:flex-row flex-col divide-y divide-borders-dividerLight md:divide-y-0">
 				<div className="w-full flex-row justify-start items-start flex overflow-hidden">
-					<StatsBox title={t("dashboard.interest_rate_apr")} value={rate !== undefined ? `${rate / 10_000}%` : "-"} />
+					{/* Savings effectively inactive — display 0% regardless of on-chain rate until loan positions resume. */}
+					<StatsBox title={t("dashboard.interest_rate_apr")} value="0%" />
 					<StatsBox
 						title={t("dashboard.total_savings")}
 						value={formatCurrency(formatUnits(totalSavings, 18), 2, 2) || undefined}
