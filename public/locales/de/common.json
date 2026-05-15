@@ -765,6 +765,10 @@
 			"withdraw": "Auszahlen:",
 			"withdrawing": "Auszahlung von Ersparnissen wird durchgeführt...",
 			"successfully_withdrawn": "Erfolgreich ausgezahlt"
+		},
+		"zero_rate_notice": {
+			"title": "Warum ist die Rate aktuell 0%?",
+			"body": "Im Protokoll gibt es derzeit keine aktiven Kreditpositionen, daher fließen keine Zinsen an die Savings-Einleger. Das Protokoll ist vollständig dezentralisiert — jeder Teilnehmer kann eine Kreditposition eröffnen und einen Governance-Vorschlag einreichen, um die Savings-Rate wieder zu erhöhen."
 		}
 	},
 	"coverage": {
