@@ -765,6 +765,10 @@
 			"withdraw": "Retirer :",
 			"withdrawing": "Retrait de l'épargne en cours…",
 			"successfully_withdrawn": "Retrait effectué avec succès"
+		},
+		"zero_rate_notice": {
+			"title": "Pourquoi le taux est-il actuellement de 0 % ?",
+			"body": "Il n'y a actuellement aucune position de prêt active dans le protocole, donc aucun intérêt n'est versé aux déposants Savings. Le protocole est entièrement décentralisé — tout participant peut ouvrir une position de prêt et soumettre une proposition de gouvernance pour augmenter à nouveau le taux Savings."
 		}
 	},
 	"coverage": {

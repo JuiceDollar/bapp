@@ -772,6 +772,10 @@
 			"withdraw": "Preleva:",
 			"withdrawing": "Prelievo dai risparmi...",
 			"successfully_withdrawn": "Prelievo completato con successo"
+		},
+		"zero_rate_notice": {
+			"title": "Perché il tasso è attualmente dello 0%?",
+			"body": "Al momento non ci sono posizioni di prestito attive nel protocollo, quindi non viene erogato alcun interesse ai depositanti Savings. Il protocollo è completamente decentralizzato — qualsiasi partecipante può aprire una posizione di prestito e presentare una proposta di governance per aumentare nuovamente il tasso Savings."
 		}
 	},
 	"coverage": {

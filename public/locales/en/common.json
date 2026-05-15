@@ -770,6 +770,10 @@
 			"withdraw": "Withdraw:",
 			"withdrawing": "Withdrawing from savings...",
 			"successfully_withdrawn": "Successfully withdrawn"
+		},
+		"zero_rate_notice": {
+			"title": "Why is the rate currently 0%?",
+			"body": "There are no active loan positions in the protocol right now, so no interest is flowing to Savings depositors. The protocol is fully decentralized — any participant can open a loan position and submit a governance proposal to raise the savings rate again."
 		}
 	},
 	"coverage": {
