@@ -745,6 +745,7 @@
 		"current_invest": "Your Current Invest",
 		"enter_amount_to_add_savings": "Enter amount to add savings",
 		"start_earning_interest": "Start earning {{rate}}% on your JUSD",
+		"deposit_to_savings": "Deposit to Savings",
 		"enter_withdraw_amount": "Enter withdraw amount",
 		"withdraw_to_my_wallet": "Withdraw to my wallet",
 		"transaction_history": "Transaction history",

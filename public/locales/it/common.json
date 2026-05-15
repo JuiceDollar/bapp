@@ -749,6 +749,7 @@
 		"current_invest": "Il Tuo Investimento Attuale",
 		"enter_amount_to_add_savings": "Inserisci importo per aggiungere risparmi",
 		"start_earning_interest": "Inizia a guadagnare {{rate}}% sui tuoi JUSD",
+		"deposit_to_savings": "Deposita in Savings",
 		"enter_withdraw_amount": "Inserisci importo da prelevare",
 		"withdraw_to_my_wallet": "Preleva al mio portafoglio",
 		"transaction_history": "Storico transazioni",

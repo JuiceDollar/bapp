@@ -742,6 +742,7 @@
 		"current_invest": "Votre investissement actuel",
 		"enter_amount_to_add_savings": "Saisissez le montant à ajouter à l'épargne",
 		"start_earning_interest": "Commencer à gagner {{rate}}% sur votre JUSD",
+		"deposit_to_savings": "Déposer dans Savings",
 		"enter_withdraw_amount": "Saisissez le montant à retirer",
 		"withdraw_to_my_wallet": "Retirer vers mon portefeuille",
 		"transaction_history": "Historique des transactions",

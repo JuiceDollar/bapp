@@ -742,6 +742,7 @@
 		"current_invest": "Dein aktuelles Invest",
 		"enter_amount_to_add_savings": "Betrag zum Einzahlen eingeben",
 		"start_earning_interest": "Starte Zinsen mit {{rate}}% auf dein JUSD",
+		"deposit_to_savings": "In Savings einzahlen",
 		"enter_withdraw_amount": "Betrag zum Auszahlen eingeben",
 		"withdraw_to_my_wallet": "Auszahlen auf meine Wallet",
 		"transaction_history": "Transaktionsverlauf",
