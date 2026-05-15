@@ -4,6 +4,8 @@ import Button from "@components/Button";
 import { faCheck, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useTranslation } from "next-i18next";
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/redux.store";
 
 const ExplanationItem = ({ icon, title, description }: { icon: string; title: string; description: string }) => (
 	<div className="max-w-[28rem] justify-start items-start gap-3 flex">
@@ -19,6 +21,7 @@ const ExplanationItem = ({ icon, title, description }: { icon: string; title: st
 
 export const MyInvestmentSection = () => {
 	const { t } = useTranslation();
+	const rate = useSelector((state: RootState) => state.savings.savingsInfo?.rate);
 
 	return (
 		<div className="self-stretch p-4 sm:p-8 sm:gap-10 border-b border-borders-primary flex justify-between flex-col sm:flex-row">
@@ -41,6 +44,12 @@ export const MyInvestmentSection = () => {
 					title={t("dashboard.earn_interest")}
 					description={t("dashboard.earn_interest_description")}
 				/>
+				{rate === 0 && (
+					<div className="w-full rounded-lg border-l-[3px] border-[#F57F00] bg-[#FDF2E2] px-4 py-3 text-sm text-[#272B38] flex flex-col gap-y-1.5">
+						<span className="font-extrabold">{t("savings.zero_rate_notice.title")}</span>
+						<span className="font-medium leading-snug">{t("savings.zero_rate_notice.body")}</span>
+					</div>
+				)}
 				<ExplanationItem
 					icon="/icons/grow.svg"
 					title={t("dashboard.benefit_from_the_JUSD_protocol")}

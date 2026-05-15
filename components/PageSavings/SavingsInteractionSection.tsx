@@ -321,7 +321,11 @@ export default function SavingsInteractionSection() {
 			setButtonLabel(t("savings.enter_amount_to_add_savings"));
 		} else {
 			setError(null);
-			setButtonLabel(t("savings.start_earning_interest", { rate: rate !== undefined ? `${rate / 10_000}` : "-" }));
+			if (rate === 0) {
+				setButtonLabel(t("savings.deposit_to_savings"));
+			} else {
+				setButtonLabel(t("savings.start_earning_interest", { rate: rate !== undefined ? `${rate / 10_000}` : "-" }));
+			}
 		}
 	}, [amount, rate, isDeposit, userBalance, t]);
 
@@ -377,6 +381,12 @@ export default function SavingsInteractionSection() {
 					<span className="font-extrabold">{rate !== undefined ? `${rate / 10_000}%` : "-"}</span>
 				</div>
 			</div>
+			{rate === 0 && (
+				<div className="w-full rounded-lg border-l-[3px] border-[#F57F00] bg-[#FDF2E2] px-4 py-3 text-sm text-[#272B38] flex flex-col gap-y-1.5">
+					<span className="font-extrabold">{t("savings.zero_rate_notice.title")}</span>
+					<span className="font-medium leading-snug">{t("savings.zero_rate_notice.body")}</span>
+				</div>
+			)}
 			<div className="flex flex-col gap-y-3">
 				<div className="pb-1 flex flex-row justify-start items-center border-b border-b-borders-dividerLight">
 					<span className="text-text-disabled font-medium text-base leading-tight">{t("savings.current_invest")}</span>

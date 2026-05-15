@@ -749,6 +749,7 @@
 		"current_invest": "Il Tuo Investimento Attuale",
 		"enter_amount_to_add_savings": "Inserisci importo per aggiungere risparmi",
 		"start_earning_interest": "Inizia a guadagnare {{rate}}% sui tuoi JUSD",
+		"deposit_to_savings": "Deposita in Savings",
 		"enter_withdraw_amount": "Inserisci importo da prelevare",
 		"withdraw_to_my_wallet": "Preleva al mio portafoglio",
 		"transaction_history": "Storico transazioni",
@@ -772,6 +773,10 @@
 			"withdraw": "Preleva:",
 			"withdrawing": "Prelievo dai risparmi...",
 			"successfully_withdrawn": "Prelievo completato con successo"
+		},
+		"zero_rate_notice": {
+			"title": "Perché il tasso è attualmente dello 0%?",
+			"body": "Al momento non ci sono posizioni di prestito attive nel protocollo, quindi non viene erogato alcun interesse ai depositanti Savings. Il protocollo è completamente decentralizzato — qualsiasi partecipante può aprire una posizione di prestito e presentare una proposta di governance per aumentare nuovamente il tasso Savings."
 		}
 	},
 	"coverage": {
