@@ -11,7 +11,7 @@ import GovernanceVotersRow from "./GovernanceVotersRow";
 import { useAccount, useChainId } from "wagmi";
 import { readContract } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { ADDRESS, EquityABI } from "@juicedollar/jusd";
 import { useTranslation } from "next-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -60,14 +60,14 @@ export default function GovernanceVotersTable() {
 			try {
 				const [nativePS, votingPowerRatio] = await Promise.all([
 					readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: equityAddress,
 						abi: EquityABI,
 						functionName: "balanceOf",
 						args: [holder],
 					}),
 					readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: equityAddress,
 						abi: EquityABI,
 						functionName: "relativeVotes",

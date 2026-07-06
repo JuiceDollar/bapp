@@ -330,7 +330,8 @@ async function connectWalletIfNeeded(page: Page, metamask: MetaMask): Promise<vo
 	console.log("   ✓ Wallet connected successfully");
 }
 
-test.describe("Loan Creation", () => {
+// Quarantined: Citrea Testnet retired (chain 5115); revive against mainnet.
+test.describe.skip("Loan Creation", () => {
 	// Increase timeout for wallet transactions (5 minutes for full lifecycle with explorer screenshots)
 	test.setTimeout(300000);
 	let context: BrowserContext;

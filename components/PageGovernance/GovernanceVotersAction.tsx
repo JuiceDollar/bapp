@@ -11,7 +11,7 @@ import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { VoteData } from "./GovernanceVotersTable";
 import { ADDRESS, EquityABI } from "@juicedollar/jusd";
 import { useTranslation } from "next-i18next";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 interface Props {
 	voter: VoteData;
 	disabled?: boolean;
@@ -34,7 +34,7 @@ export default function GovernanceVotersAction({ voter, disabled, connectedWalle
 			setDelegating(true);
 
 			const writeHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].equity,
 				abi: EquityABI,
 				functionName: "delegateVoteTo",

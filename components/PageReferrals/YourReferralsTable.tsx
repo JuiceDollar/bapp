@@ -20,7 +20,7 @@ import { useChainId } from "wagmi";
 import { ADDRESS, SavingsGatewayV2ABI, SavingsV3ABI } from "@juicedollar/jusd";
 import { readContract } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../../app.config";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { useExpandableTable } from "@hooks";
 
 interface ReferralData {
@@ -104,7 +104,7 @@ export default function YourReferralsTable() {
 				const promises = referredAddresses.map(async (address) => {
 					try {
 						const v2Interest = await readContract(WAGMI_CONFIG, {
-							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							chainId: chainId as typeof mainnet.id,
 							address: ADDRESS[chainId].savingsGateway,
 							abi: SavingsGatewayV2ABI,
 							functionName: "accruedInterest",
@@ -114,7 +114,7 @@ export default function YourReferralsTable() {
 						if (ADDRESS[chainId].savings && ADDRESS[chainId].savings !== "0x0000000000000000000000000000000000000000") {
 							try {
 								v3Interest = await readContract(WAGMI_CONFIG, {
-									chainId: chainId as typeof mainnet.id | typeof testnet.id,
+									chainId: chainId as typeof mainnet.id,
 									address: ADDRESS[chainId].savings,
 									abi: SavingsV3ABI,
 									functionName: "accruedInterest",

@@ -12,7 +12,7 @@ import { zeroAddress } from "viem";
 import { ADDRESS } from "@juicedollar/jusd";
 import { readContract } from "wagmi/actions";
 import { WAGMI_CONFIG } from "../app.config";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { useAccount, useChainId } from "wagmi";
 
 interface FrontendCodeContextType {
@@ -38,7 +38,7 @@ export const FrontendCodeProvider: React.FC<{ children: React.ReactNode }> = ({ 
 				try {
 					const code = getFrontendCodeFromReferralName(marketingParam);
 					const [, owner] = await readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDRESS[chainId].frontendGateway,
 						abi: FrontendGatewayV2ABI,
 						functionName: "frontendCodes",
@@ -57,7 +57,7 @@ export const FrontendCodeProvider: React.FC<{ children: React.ReactNode }> = ({ 
 			} else if (address) {
 				try {
 					const lastUsedCode = await readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDRESS[chainId].frontendGateway,
 						abi: FrontendGatewayV2ABI,
 						functionName: "lastUsedFrontendCode",

@@ -17,10 +17,6 @@ export const SOCIAL = {
 			prd: "https://t.me/juicedollar_jdm_prd_bot",
 			dev: "https://t.me/juicedollar_jdm_dev_bot",
 		},
-		testnet: {
-			prd: "https://t.me/juicedollar_jdt_prd_bot",
-			dev: "https://t.me/juicedollar_jdt_dev_bot",
-		},
 	},
 	Twitter: "https://x.com/JuiceSwap_com",
 	Docs: "https://docs.juicedollar.com",

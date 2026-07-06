@@ -21,7 +21,7 @@ import { toastTxError, TxToast } from "@components/TxToast";
 import { toast } from "react-toastify";
 import { useTranslation } from "next-i18next";
 import { BigNumberInput } from "@components/Input/BigNumberInput";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 interface Props {}
 
@@ -58,7 +58,7 @@ export default function GovernanceLeadrateCurrent({}: Props) {
 			setHandling(true);
 
 			const writeHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].savings,
 				abi: SavingsV3ABI,
 				functionName: "proposeChange",

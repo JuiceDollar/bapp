@@ -14,7 +14,7 @@ import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import GuardToMinVotingPower from "@components/Guards/GuardToMinVotingPower";
 import { toast } from "react-toastify";
 import { toastTxError, TxToast } from "@components/TxToast";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 interface Props {
 	headers: string[];
@@ -48,7 +48,7 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 			setApplying(true);
 
 			const writeHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].savings,
 				abi: SavingsV3ABI,
 				functionName: "applyChange",
@@ -94,7 +94,7 @@ export default function GovernanceLeadrateRow({ headers, info, proposal, current
 			setDenying(true);
 
 			const writeHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].savings,
 				abi: SavingsV3ABI,
 				functionName: "proposeChange",

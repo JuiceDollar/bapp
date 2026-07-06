@@ -78,7 +78,8 @@ async function waitForCharts(page: Page): Promise<void> {
 	}
 }
 
-test.describe("Visual Regression", () => {
+// Quarantined: Citrea Testnet retired (chain 5115); revive against mainnet.
+test.describe.skip("Visual Regression", () => {
 	test("dashboard page", async ({ page }) => {
 		await page.goto("/dashboard");
 		await normalizeScrollbars(page);

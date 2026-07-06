@@ -20,7 +20,7 @@ import { useTranslation } from "next-i18next";
 import { useFrontendCode } from "../../hooks/useFrontendCode";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/redux.store";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 const DUST_THRESHOLD = parseUnits("0.01", 18);
 
@@ -82,7 +82,7 @@ export default function SavingsInteractionSection() {
 			setIsTxOnGoing(true);
 
 			const approveWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: juiceDollarAddress,
 				abi: erc20Abi,
 				functionName: "approve",
@@ -176,7 +176,7 @@ export default function SavingsInteractionSection() {
 			if (compound) {
 				// Route through vault (auto-compounds via share price)
 				saveHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: savingsVaultV3Address,
 					abi: SavingsVaultJUSDABI,
 					functionName: "deposit",
@@ -185,7 +185,7 @@ export default function SavingsInteractionSection() {
 			} else {
 				// Deposit directly to Savings (non-compounding)
 				saveHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: savingsV3Address,
 					abi: SavingsV3ABI,
 					functionName: "save",
@@ -217,7 +217,7 @@ export default function SavingsInteractionSection() {
 				const v2Amount = remaining > v2SavingsBalance ? v2SavingsBalance + v2Interest : remaining + v2Interest;
 				const v2Adjusted = remaining >= v2SavingsBalance ? 2n * v2Amount : v2Amount;
 				const v2Hash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: savingsGatewayAddress,
 					abi: SavingsGatewayV2ABI,
 					functionName: "withdraw",
@@ -231,7 +231,7 @@ export default function SavingsInteractionSection() {
 			if (v2VaultAssets >= DUST_THRESHOLD && remaining > 0n) {
 				if (remaining > v2VaultAssets) {
 					const v2Hash = await simulateAndWrite({
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: savingsVaultV2Address,
 						abi: SavingsVaultJUSDABI,
 						functionName: "redeem",
@@ -241,7 +241,7 @@ export default function SavingsInteractionSection() {
 					remaining = remaining - v2VaultAssets;
 				} else {
 					const v2Hash = await simulateAndWrite({
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: savingsVaultV2Address,
 						abi: SavingsVaultJUSDABI,
 						functionName: "withdraw",
@@ -257,7 +257,7 @@ export default function SavingsInteractionSection() {
 				const v3Drain = remaining > v3SavingsBalance ? v3SavingsBalance : remaining;
 				const v3Amount = remaining >= v3SavingsBalance ? 2n * v3SavingsBalance : remaining;
 				const v3Hash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: savingsV3Address,
 					abi: SavingsV3ABI,
 					functionName: "withdraw",
@@ -272,7 +272,7 @@ export default function SavingsInteractionSection() {
 				const isFullDrain = BigInt(amount) >= withdrawableBalance;
 				if (isFullDrain) {
 					const v3Hash = await simulateAndWrite({
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: savingsVaultV3Address,
 						abi: SavingsVaultJUSDABI,
 						functionName: "redeem",
@@ -281,7 +281,7 @@ export default function SavingsInteractionSection() {
 					await showToastForWithdraw({ hash: v3Hash, withdrawAmount: remaining });
 				} else {
 					const v3Hash = await simulateAndWrite({
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: savingsVaultV3Address,
 						abi: SavingsVaultJUSDABI,
 						functionName: "withdraw",

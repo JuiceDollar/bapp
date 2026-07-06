@@ -5,7 +5,6 @@ import { SOCIAL } from "../utils/constant";
 import packageJson from "../package.json";
 import { faCodeCommit } from "@fortawesome/free-solid-svg-icons";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
-import { useIsMainnet } from "@hooks";
 import Image from "next/image";
 
 export default function LoadingScreen() {
@@ -29,19 +28,13 @@ export default function LoadingScreen() {
 }
 
 export function SubmitIssue() {
-	const isMainnet = useIsMainnet();
-
 	return (
 		<ul className="flex justify-center sm:justify-start items-center gap-8 text-text-primary">
 			<li>
 				<FooterButton link={SOCIAL.Github_dapp_new_issue} text="Submit an Issue" icon={faGithub} />
 			</li>
 			<li>
-				<FooterButton
-					link={SOCIAL.Github_dapp}
-					text={`${packageJson.version} - ${isMainnet ? "Mainnet" : "Testnet"}`}
-					icon={faCodeCommit}
-				/>
+				<FooterButton link={SOCIAL.Github_dapp} text={`${packageJson.version} - Mainnet`} icon={faCodeCommit} />
 			</li>
 		</ul>
 	);

@@ -4,12 +4,12 @@ import { toast } from "react-toastify";
 import { WAGMI_CONFIG } from "../app.config";
 import { TxToast, TxToastRowType, toastTxError } from "../components/TxToast";
 import { simulateAndWrite } from "../utils/contractHelpers";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 interface ApproveParams {
 	tokenAddress: Address;
 	spender: Address;
-	chainId: typeof mainnet.id | typeof testnet.id;
+	chainId: typeof mainnet.id;
 	t: (key: string) => string;
 	onSuccess?: () => void;
 }
@@ -17,7 +17,7 @@ interface ApproveParams {
 export const approveToken = async ({ tokenAddress, spender, chainId, t, onSuccess }: ApproveParams): Promise<boolean> => {
 	try {
 		const hash = await simulateAndWrite({
-			chainId: chainId as typeof mainnet.id | typeof testnet.id,
+			chainId: chainId as typeof mainnet.id,
 			address: tokenAddress,
 			abi: erc20Abi,
 			functionName: "approve",
@@ -38,7 +38,7 @@ export const approveToken = async ({ tokenAddress, spender, chainId, t, onSucces
 };
 
 interface ExecuteTxParams {
-	chainId: typeof mainnet.id | typeof testnet.id;
+	chainId: typeof mainnet.id;
 	contractParams: any;
 	pendingTitle: string;
 	successTitle: string;

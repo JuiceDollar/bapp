@@ -14,7 +14,7 @@ import { simulateAndWrite } from "../utils/contractHelpers";
 import { WAGMI_CONFIG } from "../app.config";
 import { toastTxError, TxToast } from "@components/TxToast";
 import { gql, useQuery } from "@apollo/client";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 export const useSavingsInterest = () => {
 	const [isLoaded, setLoaded] = useState<boolean>(false);
@@ -93,7 +93,7 @@ export const useSavingsInterest = () => {
 			// V2 reads (independent — failure does not block V3)
 			try {
 				const [_saved, _ticks] = await readContract(WAGMI_CONFIG, {
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDR.savingsGateway,
 					abi: SavingsGatewayV2ABI,
 					functionName: "savings",
@@ -102,13 +102,13 @@ export const useSavingsInterest = () => {
 				_v2Savings = _saved;
 
 				const _current = await readContract(WAGMI_CONFIG, {
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDR.savingsGateway,
 					abi: SavingsGatewayV2ABI,
 					functionName: "currentTicks",
 				});
 				_v2Accrued = await readContract(WAGMI_CONFIG, {
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDR.savingsGateway,
 					abi: SavingsGatewayV2ABI,
 					functionName: "accruedInterest",
@@ -135,7 +135,7 @@ export const useSavingsInterest = () => {
 			if (v3Deployed) {
 				try {
 					const [_saved, _ticks] = await readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDR.savings,
 						abi: SavingsV3ABI,
 						functionName: "savings",
@@ -144,27 +144,27 @@ export const useSavingsInterest = () => {
 					_v3Savings = _saved;
 
 					const _current = await readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDR.savings,
 						abi: SavingsV3ABI,
 						functionName: "currentTicks",
 					});
 					_v3Accrued = await readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDR.savings,
 						abi: SavingsV3ABI,
 						functionName: "accruedInterest",
 						args: [account as `0x${string}`],
 					});
 					_v3NonCompounding = await readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDR.savings,
 						abi: SavingsV3ABI,
 						functionName: "nonCompounding",
 						args: [account as `0x${string}`],
 					});
 					_v3Claimable = await readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDR.savings,
 						abi: SavingsV3ABI,
 						functionName: "claimableInterest",
@@ -194,7 +194,7 @@ export const useSavingsInterest = () => {
 			if (v2VaultDeployed) {
 				try {
 					_v2VaultShares = await readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDR.savingsVaultV2,
 						abi: erc20Abi,
 						functionName: "balanceOf",
@@ -202,7 +202,7 @@ export const useSavingsInterest = () => {
 					});
 					if (_v2VaultShares > 0n) {
 						_v2VaultAssets = await readContract(WAGMI_CONFIG, {
-							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							chainId: chainId as typeof mainnet.id,
 							address: ADDR.savingsVaultV2,
 							abi: SavingsVaultJUSDABI,
 							functionName: "convertToAssets",
@@ -217,7 +217,7 @@ export const useSavingsInterest = () => {
 			if (v3VaultDeployed) {
 				try {
 					_v3VaultShares = await readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDR.savingsVaultV3,
 						abi: erc20Abi,
 						functionName: "balanceOf",
@@ -225,7 +225,7 @@ export const useSavingsInterest = () => {
 					});
 					if (_v3VaultShares > 0n) {
 						_v3VaultAssets = await readContract(WAGMI_CONFIG, {
-							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							chainId: chainId as typeof mainnet.id,
 							address: ADDR.savingsVaultV3,
 							abi: SavingsVaultJUSDABI,
 							functionName: "convertToAssets",
@@ -266,7 +266,7 @@ export const useSavingsInterest = () => {
 			// Claim V2 interest (if any V2 balance)
 			if (v2Interest > 0n && v2SavingsBalance > 0n) {
 				const v2Hash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDR.savingsGateway,
 					abi: SavingsGatewayV2ABI,
 					functionName: "adjust",
@@ -287,7 +287,7 @@ export const useSavingsInterest = () => {
 				const v3Amount = v3Interest + v3ClaimableInterest;
 				if (isNonCompounding) {
 					const v3Hash = await simulateAndWrite({
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDR.savings,
 						abi: SavingsV3ABI,
 						functionName: "claimInterest",
@@ -303,7 +303,7 @@ export const useSavingsInterest = () => {
 					});
 				} else {
 					const v3Hash = await simulateAndWrite({
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDR.savings,
 						abi: SavingsV3ABI,
 						functionName: "refreshBalance",
@@ -340,7 +340,7 @@ export const useSavingsInterest = () => {
 			// Reinvest V2 interest
 			if (v2Interest > 0n) {
 				const v2Hash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDR.savingsGateway,
 					abi: SavingsGatewayV2ABI,
 					functionName: "refreshBalance",
@@ -359,7 +359,7 @@ export const useSavingsInterest = () => {
 			// Reinvest V3 interest
 			if (v3Deployed && v3Interest > 0n) {
 				const v3Hash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDR.savings,
 					abi: SavingsV3ABI,
 					functionName: "refreshBalance",
@@ -387,7 +387,7 @@ export const useSavingsInterest = () => {
 		try {
 			setIsTogglingCompound(true);
 			const hash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDR.savings,
 				abi: SavingsV3ABI,
 				functionName: "save",

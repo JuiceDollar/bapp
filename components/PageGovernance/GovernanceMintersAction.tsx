@@ -11,7 +11,7 @@ import Button from "@components/Button";
 import { Address } from "viem";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { ADDRESS, JuiceDollarABI } from "@juicedollar/jusd";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 interface Props {
 	minter: MinterQuery;
@@ -36,7 +36,7 @@ export default function GovernanceMintersAction({ minter, disabled }: Props) {
 			setVetoing(true);
 
 			const writeHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].juiceDollar,
 				abi: JuiceDollarABI,
 				functionName: "denyMinter",

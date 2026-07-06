@@ -12,7 +12,7 @@ import { SecondaryButton } from "@components/Button";
 import Image from "next/image";
 import { toast } from "react-toastify";
 import { toastTxError, TxToast } from "@components/TxToast";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 export const ReferralsStats = () => {
 	const { myFrontendCode, totalVolume, totalReffered } = useMyReferrals();
@@ -26,7 +26,7 @@ export const ReferralsStats = () => {
 
 		try {
 			const [balance, owner] = await readContract(WAGMI_CONFIG, {
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].frontendGateway,
 				abi: FrontendGatewayV2ABI,
 				functionName: "frontendCodes",
@@ -51,7 +51,7 @@ export const ReferralsStats = () => {
 
 		try {
 			const tx = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].frontendGateway,
 				abi: FrontendGatewayV2ABI,
 				functionName: "withdrawRewards",

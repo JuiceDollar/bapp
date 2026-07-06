@@ -29,7 +29,7 @@ import {
 	minCollateralForPrice,
 	maxRequirementAtPrice,
 } from "../../utils/loanCalculations";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 enum StrategyKey {
 	ADD_COLLATERAL = "addCollateral",
@@ -197,7 +197,7 @@ export const AdjustLiqPrice = ({
 			const success = await approveToken({
 				tokenAddress: position.collateral as Address,
 				spender: position.position as Address,
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				t,
 				onSuccess: refetch,
 			});
@@ -209,7 +209,7 @@ export const AdjustLiqPrice = ({
 			const success = await approveToken({
 				tokenAddress: position.stablecoinAddress as Address,
 				spender: position.position as Address,
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				t,
 				onSuccess: refetch,
 			});
@@ -232,7 +232,7 @@ export const AdjustLiqPrice = ({
 					{ title: t("mint.new_price"), value: `${formatCurrency(formatUnits(newPrice, priceDecimals), 2, 2)} ${pairNotation}` },
 				];
 				const adjustHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: position.position as Address,
 					abi: PositionV2ABI,
 					functionName: "adjust",
@@ -258,7 +258,7 @@ export const AdjustLiqPrice = ({
 					},
 				});
 			} else if (activeStrategy === StrategyKey.REPAY_DEBT) {
-				const cid = chainId as typeof mainnet.id | typeof testnet.id;
+				const cid = chainId as typeof mainnet.id;
 				const toastRows = [
 					{
 						title: t("mint.pay_back_amount"),
@@ -304,14 +304,14 @@ export const AdjustLiqPrice = ({
 				];
 				const adjustHash = useReference
 					? await simulateAndWrite({
-							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							chainId: chainId as typeof mainnet.id,
 							address: position.position as Address,
 							abi: PositionV2ABI,
 							functionName: "adjustPriceWithReference",
 							args: [newPrice, reference.address!],
 					  })
 					: await simulateAndWrite({
-							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							chainId: chainId as typeof mainnet.id,
 							address: position.position as Address,
 							abi: PositionV2ABI,
 							functionName: "adjustPrice",
