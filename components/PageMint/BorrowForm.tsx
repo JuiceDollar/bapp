@@ -46,7 +46,7 @@ import {
 import { useFrontendCode } from "../../hooks/useFrontendCode";
 import { MaxButton } from "@components/Input/MaxButton";
 import Link from "next/link";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 type BorrowFormProps = {
 	clonePosition?: PositionQuery | null;
@@ -378,7 +378,7 @@ export default function PositionCreate({ clonePosition = null }: BorrowFormProps
 			}
 
 			const hash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: cloneTarget,
 				abi: selectedPosition.version === 3 ? MintingHubV3ABI : MintingHubGatewayV2ABI,
 				functionName: "clone",

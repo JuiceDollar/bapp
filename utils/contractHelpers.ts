@@ -1,7 +1,7 @@
 import { simulateContract, writeContract, getAccount } from "@wagmi/core";
 import { WAGMI_CONFIG } from "../app.config";
 import { Abi, Address } from "viem";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { traceTransaction } from "./traceTransaction";
 import { requestPreview } from "./txPreviewManager";
 import { extractRevertReason } from "./errorUtils";
@@ -28,7 +28,7 @@ export class SimulationError extends Error {
 }
 
 interface SimulateAndWriteParams {
-	chainId: typeof mainnet.id | typeof testnet.id;
+	chainId: typeof mainnet.id;
 	address: Address;
 	abi: Abi;
 	functionName: string;

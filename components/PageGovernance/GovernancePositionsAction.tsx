@@ -11,7 +11,7 @@ import { Address, zeroAddress } from "viem";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { PositionQuery } from "@juicedollar/api";
 import { PositionV2ABI } from "@juicedollar/jusd";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 interface Props {
 	position: PositionQuery;
@@ -35,7 +35,7 @@ export default function GovernancePositionsAction({ position, disabled }: Props)
 			setDenying(true);
 
 			const writeHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.position,
 				abi: PositionV2ABI,
 				functionName: "deny",

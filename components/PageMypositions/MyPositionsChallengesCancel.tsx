@@ -12,7 +12,7 @@ import { Address, zeroAddress } from "viem";
 import { useAccount, useChainId } from "wagmi";
 import Button from "@components/Button";
 import { ADDRESS, MintingHubGatewayV2ABI, MintingHubV3ABI } from "@juicedollar/jusd";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 interface Props {
 	challenge: ChallengesQueryItem;
@@ -46,7 +46,7 @@ export default function MyPositionsChallengesCancel({ challenge, hidden }: Props
 			const cancelAbi = p.version === 3 ? MintingHubV3ABI : MintingHubGatewayV2ABI;
 
 			const cancelWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: cancelTarget,
 				abi: cancelAbi,
 				functionName: "bid",

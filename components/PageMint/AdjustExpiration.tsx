@@ -29,7 +29,7 @@ import { RootState } from "../../redux/redux.store";
 import Button from "@components/Button";
 import { erc20Abi, formatUnits, maxUint256 } from "viem";
 import { PositionQuery } from "@juicedollar/api";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { ceilDivPPM, getNetDebt } from "../../utils/loanCalculations";
 import Select, { StylesConfig } from "react-select";
 
@@ -315,7 +315,7 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 
 			if (isNativeWrappedPosition) {
 				txHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: rollerAddress,
 					abi: rollerAbi,
 					functionName: "rollNative",
@@ -332,7 +332,7 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 				});
 			} else {
 				txHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: rollerAddress,
 					abi: rollerAbi,
 					functionName: "roll",
@@ -368,7 +368,7 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 			setIsTxOnGoing(true);
 
 			const approvingHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.collateral,
 				abi: erc20Abi,
 				functionName: "approve",
@@ -409,7 +409,7 @@ export const AdjustExpiration = ({ position, isInCooldown, cooldownRemainingForm
 			setIsTxOnGoing(true);
 
 			const approvingHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.stablecoinAddress,
 				abi: erc20Abi,
 				functionName: "approve",

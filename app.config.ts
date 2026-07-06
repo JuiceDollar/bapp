@@ -5,7 +5,7 @@ import { ApolloClient, InMemoryCache, createHttpLink, from } from "@apollo/clien
 import { onError } from "@apollo/client/link/error";
 import { cookieStorage, createConfig, createStorage, http } from "@wagmi/core";
 import { injected, coinbaseWallet, walletConnect } from "@wagmi/connectors";
-import { testnet, mainnet, CONFIG } from "@config";
+import { mainnet, CONFIG } from "@config";
 import { Address, Chain } from "viem";
 import { TOKEN_SYMBOL } from "./utils";
 
@@ -14,12 +14,12 @@ export { CONFIG } from "@config";
 
 // CONFIG CHAIN
 export const CONFIG_CHAIN = (): Chain => {
-	return CONFIG.chain === "testnet" ? testnet : mainnet;
+	return mainnet;
 };
 
 // CONFIG RPC
 export const CONFIG_RPC = (): string => {
-	return CONFIG.chain === "testnet" ? CONFIG.network.testnet : CONFIG.network.mainnet;
+	return CONFIG.network.mainnet;
 };
 
 const errorLink = onError(({ graphQLErrors, networkError }) => {
@@ -41,7 +41,7 @@ const ponderClientCache: Partial<Record<number, ApolloClient<NormalizedCacheObje
 
 export function getPonderClient(chainId: number): ApolloClient<NormalizedCacheObject> {
 	if (ponderClientCache[chainId]) return ponderClientCache[chainId]!;
-	const ponderUrl = chainId === 4114 ? CONFIG.ponder.mainnet : CONFIG.ponder.testnet;
+	const ponderUrl = CONFIG.ponder.mainnet;
 	const httpLink = createHttpLink({
 		uri: ponderUrl,
 		fetchOptions: { timeout: 10000 },
@@ -63,10 +63,9 @@ export const WAGMI_METADATA = {
 	icons: ["https://avatars.githubusercontent.com/u/37784886"],
 };
 export const WAGMI_CONFIG = createConfig({
-	chains: [mainnet, testnet] as const,
+	chains: [mainnet] as const,
 	transports: {
 		[mainnet.id]: http(CONFIG.network.mainnet),
-		[testnet.id]: http(CONFIG.network.testnet),
 	},
 	batch: {
 		multicall: {

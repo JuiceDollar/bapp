@@ -22,7 +22,7 @@ import { fetchPositionsList } from "../../redux/slices/positions.slice";
 import { approveToken } from "../../hooks/useApproveToken";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { useReferencePosition } from "../../hooks/useReferencePosition";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { debtReductionToWalletCost } from "../../utils/loanCalculations";
 
 enum StrategyKey {
@@ -211,7 +211,7 @@ export const AdjustCollateral = ({
 		const success = await approveToken({
 			tokenAddress: position.stablecoinAddress as Address,
 			spender: position.position as Address,
-			chainId: chainId as typeof mainnet.id | typeof testnet.id,
+			chainId: chainId as typeof mainnet.id,
 			t,
 			onSuccess: refetchAllowance,
 		});
@@ -237,7 +237,7 @@ export const AdjustCollateral = ({
 
 			if (isIncrease) {
 				const adjustHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: position.position as Address,
 					abi: PositionV2ABI,
 					functionName: "adjust",
@@ -282,7 +282,7 @@ export const AdjustCollateral = ({
 				// Case 3: call repay() first
 				if (needsSeparateRepay) {
 					const repayHash = await simulateAndWrite({
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: position.position as Address,
 						abi: PositionV2ABI,
 						functionName: "repay",
@@ -311,7 +311,7 @@ export const AdjustCollateral = ({
 				// All cases: call adjustWithReference() when price is being increased, adjust() otherwise
 				const useRef = activeStrategy === StrategyKey.HIGHER_PRICE && reference.address !== null;
 				const publicClient = getPublicClient(WAGMI_CONFIG, {
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 				});
 
 				if (useRef) {
@@ -320,7 +320,7 @@ export const AdjustCollateral = ({
 
 					// Tx 1: set price high enough so that TX2's collateral withdrawal passes _checkCollateral
 					const priceHash = await simulateAndWrite({
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: position.position as Address,
 						abi: PositionV2ABI,
 						functionName: "adjustPriceWithReference",
@@ -348,7 +348,7 @@ export const AdjustCollateral = ({
 					try {
 						// Tx 2: withdraw collateral. _checkCollateral uses the stored price from TX1 (with +0.01% buffer).
 						const withdrawHash = await simulateAndWrite({
-							chainId: chainId as typeof mainnet.id | typeof testnet.id,
+							chainId: chainId as typeof mainnet.id,
 							address: position.position as Address,
 							abi: PositionV2ABI,
 							functionName: "adjust",
@@ -382,7 +382,7 @@ export const AdjustCollateral = ({
 							.catch(() => 300_000n)) ?? 300_000n;
 
 					const withdrawHash = await simulateAndWrite({
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: position.position as Address,
 						abi: PositionV2ABI,
 						functionName: "adjust",

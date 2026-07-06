@@ -14,7 +14,7 @@ import { toast } from "react-toastify";
 import { TxToast } from "@components/TxToast";
 import { getFrontendCodeFromReferralName } from "@utils";
 import { useMyReferrals } from "@hooks";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 export const CopyLinkButton = ({ text, contentOnCopy }: { text: string; contentOnCopy: string }) => {
 	const [isCopied, setIsCopied] = useState(false);
@@ -98,7 +98,7 @@ export const ReferralCreationForm = () => {
 				try {
 					const frontendCode = getFrontendCodeFromReferralName(value);
 					const [, owner] = await readContract(WAGMI_CONFIG, {
-						chainId: chainId as typeof mainnet.id | typeof testnet.id,
+						chainId: chainId as typeof mainnet.id,
 						address: ADDRESS[chainId].frontendGateway,
 						abi: FrontendGatewayV2ABI,
 						functionName: "frontendCodes",
@@ -120,7 +120,7 @@ export const ReferralCreationForm = () => {
 
 			const frontendCode = getFrontendCodeFromReferralName(name);
 			const [, owner] = await readContract(WAGMI_CONFIG, {
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].frontendGateway,
 				abi: FrontendGatewayV2ABI,
 				functionName: "frontendCodes",
@@ -133,7 +133,7 @@ export const ReferralCreationForm = () => {
 			}
 
 			const registerWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].frontendGateway,
 				abi: FrontendGatewayV2ABI,
 				functionName: "registerFrontendCode",

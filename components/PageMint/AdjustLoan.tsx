@@ -16,7 +16,7 @@ import { PositionQuery } from "@juicedollar/api";
 import { useChainId, useAccount } from "wagmi";
 import { WAGMI_CHAIN } from "../../app.config";
 import { ADDRESS } from "@juicedollar/jusd";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { approveToken } from "../../hooks/useApproveToken";
 import { handleLoanExecute } from "../../hooks/useExecuteLoanAdjust";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
@@ -366,7 +366,7 @@ export const AdjustLoan = ({
 		await approveToken({
 			tokenAddress: position.collateral as Address,
 			spender: position.position as Address,
-			chainId: chainId as typeof mainnet.id | typeof testnet.id,
+			chainId: chainId as typeof mainnet.id,
 			t,
 			onSuccess: refetchAllowance,
 		});
@@ -380,7 +380,7 @@ export const AdjustLoan = ({
 		await approveToken({
 			tokenAddress: ADDRESS[chainId]?.juiceDollar as Address,
 			spender: position.position as Address,
-			chainId: chainId as typeof mainnet.id | typeof testnet.id,
+			chainId: chainId as typeof mainnet.id,
 			t,
 			onSuccess: refetchAllowance,
 		});
@@ -405,7 +405,7 @@ export const AdjustLoan = ({
 
 				// Tx1: Adjust price with reference (no cooldown)
 				const priceHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: position.position as Address,
 					abi: PositionV2ABI,
 					functionName: "adjustPriceWithReference",
@@ -427,7 +427,7 @@ export const AdjustLoan = ({
 
 				// Tx2: Mint the exact amount (price headroom from Tx1 absorbs interest accrual)
 				const mintHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: position.position as Address,
 					abi: PositionV2ABI,
 					functionName: "mint",

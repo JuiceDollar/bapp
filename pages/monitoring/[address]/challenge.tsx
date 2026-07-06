@@ -17,7 +17,7 @@ import { TxToast, toastTxError } from "@components/TxToast";
 import DisplayLabel from "@components/DisplayLabel";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../../app.config";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/redux.store";
 import Link from "next/link";
@@ -64,7 +64,7 @@ export default function PositionChallenge() {
 
 		const fetchAsync = async function () {
 			const _balanceColl = await readContract(WAGMI_CONFIG, {
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.collateral,
 				abi: erc20Abi,
 				functionName: "balanceOf",
@@ -73,7 +73,7 @@ export default function PositionChallenge() {
 			setUserErc20Balance(_balanceColl);
 
 			const _allowanceColl = await readContract(WAGMI_CONFIG, {
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.collateral,
 				abi: erc20Abi,
 				functionName: "allowance",
@@ -126,7 +126,7 @@ export default function PositionChallenge() {
 			setApproving(true);
 
 			const approveWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.collateral as Address,
 				abi: erc20Abi,
 				functionName: "approve",
@@ -178,7 +178,7 @@ export default function PositionChallenge() {
 			setChallenging(true);
 			const challengeValue = isNativeWrappedPosition ? amount : undefined;
 			const challengeWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: challengeTarget,
 				abi: challengeAbi,
 				functionName: "challenge",

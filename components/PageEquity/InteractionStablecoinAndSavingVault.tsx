@@ -19,7 +19,7 @@ import { InputTitle } from "@components/Input/InputTitle";
 import { MaxButton } from "@components/Input/MaxButton";
 import { TokenBalance } from "../../hooks/useWalletBalances";
 import { TokenInteractionSide } from "./EquityInteractionCard";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 interface Props {
 	openSelector: (tokenInteractionSide: TokenInteractionSide) => void;
 	selectedFromToken: TokenBalance | undefined;
@@ -67,7 +67,7 @@ export default function InteractionStablecoinAndSavingVault({
 			setApproving(true);
 
 			const approveWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
 				functionName: "approve",
@@ -110,7 +110,7 @@ export default function InteractionStablecoinAndSavingVault({
 	const handleDeposit = async () => {
 		try {
 			const depositWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].savingsVaultV3,
 				abi: SavingsVaultJUSDABI,
 				functionName: "deposit",
@@ -190,7 +190,7 @@ export default function InteractionStablecoinAndSavingVault({
 			if (v2VaultBalance > 0n && remaining > 0n) {
 				const v2Amount = remaining > v2VaultBalance ? v2VaultBalance : remaining;
 				const v2Hash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDRESS[chainId].savingsVaultV2,
 					abi: SavingsVaultJUSDABI,
 					functionName: "redeem",
@@ -219,7 +219,7 @@ export default function InteractionStablecoinAndSavingVault({
 			// Redeem remainder from V3 vault
 			if (remaining > 0n) {
 				const v3Hash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDRESS[chainId].savingsVaultV3,
 					abi: SavingsVaultJUSDABI,
 					functionName: "redeem",
