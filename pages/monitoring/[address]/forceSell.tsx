@@ -24,7 +24,7 @@ import { useRouter as useNavigation } from "next/navigation";
 import { ADDRESS, JuiceDollarABI, MintingHubGatewayV2ABI, MintingHubV3ABI } from "@juicedollar/jusd";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 export default function MonitoringForceSell() {
 	const [isInit, setInit] = useState(false);
@@ -58,7 +58,7 @@ export default function MonitoringForceSell() {
 		const fetchAsync = async function () {
 			if (acc !== undefined) {
 				const _balance = await readContract(WAGMI_CONFIG, {
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDR.juiceDollar,
 					abi: JuiceDollarABI,
 					functionName: "balanceOf",
@@ -68,7 +68,7 @@ export default function MonitoringForceSell() {
 			}
 
 			const _price = await readContract(WAGMI_CONFIG, {
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: hubAddress,
 				abi: hubAbi,
 				functionName: "expiredPurchasePrice",
@@ -128,7 +128,7 @@ export default function MonitoringForceSell() {
 			setBidding(true);
 
 			const bidWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: hubAddress,
 				abi: hubAbi,
 				functionName: "buyExpiredCollateral",
@@ -233,12 +233,7 @@ export default function MonitoringForceSell() {
 							</AppBox>
 							<AppBox>
 								<DisplayLabel label={t("common.owner")} />
-								<Link
-									className="text-link"
-									href={ContractUrl(position.owner, chainId === mainnet.id ? mainnet : testnet)}
-									target="_blank"
-									rel="noreferrer"
-								>
+								<Link className="text-link" href={ContractUrl(position.owner, mainnet)} target="_blank" rel="noreferrer">
 									<div className="">
 										{shortenAddress(position.owner)}
 										<FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-3 ml-2" />

@@ -5,7 +5,7 @@ import { formatPositionValue, normalizeTokenSymbol } from "@utils";
 import { toastTxError } from "../components/TxToast";
 import { fetchPositionsList } from "../redux/slices/positions.slice";
 import { store } from "../redux/redux.store";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { executeTx } from "./useApproveToken";
 import { SolverOutcome } from "../utils/positionSolver";
 import { readContract } from "wagmi/actions";
@@ -118,7 +118,7 @@ export const executeLoanAdjust = async ({
 		if (isFullClose && isOwner) {
 			// Owner full close: adjust() returns collateral in same tx
 			await executeTx({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				contractParams: {
 					address: posAddr,
 					abi: PositionV2ABI,
@@ -132,7 +132,7 @@ export const executeLoanAdjust = async ({
 		} else {
 			// Non-owner full close OR any partial repay: permissionless repayFull() or repay()
 			await executeTx({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				contractParams: {
 					address: posAddr,
 					abi: PositionV2ABI,
@@ -146,7 +146,7 @@ export const executeLoanAdjust = async ({
 		}
 	} else {
 		await executeTx({
-			chainId: chainId as typeof mainnet.id | typeof testnet.id,
+			chainId: chainId as typeof mainnet.id,
 			contractParams: {
 				address: posAddr,
 				abi: PositionV2ABI,

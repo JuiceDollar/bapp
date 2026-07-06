@@ -20,7 +20,7 @@ import { InputTitle } from "@components/Input/InputTitle";
 import { MaxButton } from "@components/Input/MaxButton";
 import { TokenBalance } from "../../hooks/useWalletBalances";
 import { TokenInteractionSide } from "./EquityInteractionCard";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 interface Props {
 	openSelector: (tokenInteractionSide: TokenInteractionSide) => void;
 	selectedFromToken: TokenBalance | undefined;
@@ -82,7 +82,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 			setApproving(true);
 
 			const approveWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
 				functionName: "approve",
@@ -125,7 +125,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 	const handleInvest = async () => {
 		try {
 			const investWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].frontendGateway,
 				abi: FrontendGatewayV2ABI,
 				functionName: "invest",
@@ -213,7 +213,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 			setApproving(true);
 
 			const approveWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].equity,
 				abi: EquityABI,
 				functionName: "approve",
@@ -259,7 +259,7 @@ export default function InteractionSavingsVaultAndPoolShares({
 		try {
 			setRedeeming(true);
 			const redeemWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].frontendGateway,
 				abi: FrontendGatewayV2ABI,
 				functionName: "redeem",

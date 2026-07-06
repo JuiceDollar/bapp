@@ -20,7 +20,7 @@ import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/redux.store";
 import { WAGMI_CONFIG } from "../../../app.config";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { useEffect, useState } from "react";
 import { useChainId } from "wagmi";
 import { readContract } from "wagmi/actions";
@@ -56,7 +56,7 @@ export default function PositionDetail() {
 
 		const fetchAsync = async function () {
 			const data = await readContract(WAGMI_CONFIG, {
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.stablecoinAddress,
 				abi: JuiceDollarABI,
 				functionName: "calculateAssignedReserve",

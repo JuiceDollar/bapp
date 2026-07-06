@@ -1,11 +1,9 @@
 import { Chain, Hash } from "viem";
-import { useChainId } from "wagmi";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { WAGMI_CHAIN } from "../app.config";
 
 export const useExplorerChain = () => {
-	const chainId = useChainId();
-	return chainId === mainnet.id ? mainnet : chainId === testnet.id ? testnet : WAGMI_CHAIN;
+	return mainnet;
 };
 
 export const useContractUrl = (address: string, chain: Chain = WAGMI_CHAIN) => {

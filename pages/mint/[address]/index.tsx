@@ -15,7 +15,7 @@ import { TxToast, toastTxError } from "@components/TxToast";
 import DateInput from "@components/Input/DateInput";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../../app.config";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/redux.store";
 import Link from "next/link";
@@ -75,7 +75,7 @@ export default function PositionBorrow({}) {
 
 		const fetchAsync = async function () {
 			const _balance = await readContract(WAGMI_CONFIG, {
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.collateral,
 				abi: erc20Abi,
 				functionName: "balanceOf",
@@ -84,7 +84,7 @@ export default function PositionBorrow({}) {
 			setUserBalance(_balance);
 
 			const _allowance = await readContract(WAGMI_CONFIG, {
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.collateral,
 				abi: erc20Abi,
 				functionName: "allowance",
@@ -188,7 +188,7 @@ export default function PositionBorrow({}) {
 			setApproving(true);
 
 			const approveWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.collateral as Address,
 				abi: erc20Abi,
 				functionName: "approve",
@@ -234,7 +234,7 @@ export default function PositionBorrow({}) {
 			let cloneWriteHash: Hash = zeroHash;
 
 			cloneWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: cloneTarget,
 				abi: cloneAbi,
 				functionName: "clone",

@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { shortenHash, transactionLink } from "@utils";
 import { Hash } from "viem";
-import { useChainId } from "wagmi";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { toast } from "react-toastify";
 import { SimulationError, UserCancelledError } from "../utils/contractHelpers";
 import { extractRevertReason } from "../utils/errorUtils";
@@ -67,8 +66,7 @@ export type TxToastRowType = { title: string; value?: string | JSX.Element; hash
 
 export const TxToast = (props: { title: string; rows: TxToastRowType[]; success?: boolean }) => {
 	const { title, rows, success = true } = props;
-	const chainId = useChainId();
-	const chain = chainId === 4114 ? mainnet : testnet;
+	const chain = mainnet;
 	let reasonLine: number;
 
 	return (

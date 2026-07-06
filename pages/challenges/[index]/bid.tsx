@@ -34,7 +34,7 @@ import { ADDRESS, JuiceDollarABI, MintingHubGatewayV2ABI, MintingHubV3ABI } from
 import { ChallengesId } from "@juicedollar/api";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 export default function ChallengePlaceBid() {
 	const [isInit, setInit] = useState(false);
@@ -75,7 +75,7 @@ export default function ChallengePlaceBid() {
 		const fetchAsync = async function () {
 			if (acc !== undefined) {
 				const _balance = await readContract(WAGMI_CONFIG, {
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDR.juiceDollar,
 					abi: JuiceDollarABI,
 					functionName: "balanceOf",
@@ -84,7 +84,7 @@ export default function ChallengePlaceBid() {
 				setUserBalance(_balance);
 
 				const _allowance = await readContract(WAGMI_CONFIG, {
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDR.juiceDollar,
 					abi: erc20Abi,
 					functionName: "allowance",
@@ -94,7 +94,7 @@ export default function ChallengePlaceBid() {
 			}
 
 			const _price = await readContract(WAGMI_CONFIG, {
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: hubAddress,
 				abi: hubAbi,
 				functionName: "price",
@@ -166,7 +166,7 @@ export default function ChallengePlaceBid() {
 			setIsApproving(true);
 
 			const approveWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: ADDRESS[chainId].juiceDollar,
 				abi: erc20Abi,
 				functionName: "approve",
@@ -209,7 +209,7 @@ export default function ChallengePlaceBid() {
 			setBidding(true);
 
 			const bidWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: hubAddress,
 				abi: hubAbi,
 				functionName: "bid",
@@ -323,7 +323,7 @@ export default function ChallengePlaceBid() {
 								<DisplayLabel label={t("challenges.challenger")} />
 								<Link
 									className="text-link"
-									href={ContractUrl(challenge?.challenger || zeroAddress, chainId === mainnet.id ? mainnet : testnet)}
+									href={ContractUrl(challenge?.challenger || zeroAddress, mainnet)}
 									target="_blank"
 									rel="noreferrer"
 								>

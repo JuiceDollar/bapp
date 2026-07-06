@@ -21,7 +21,7 @@ import { useContractUrl } from "../../hooks/useContractUrl";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { getLoanDetailsByCollateralAndLiqPrice } from "../../utils/loanCalculations";
 import { erc20Abi } from "viem";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 export const PriceManageSection = () => {
 	const router = useRouter();
@@ -169,7 +169,7 @@ export const PriceManageSection = () => {
 			setIsTxOnGoing(true);
 
 			const adjustPriceHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.position,
 				abi: PositionV2ABI,
 				functionName: "adjustPrice",

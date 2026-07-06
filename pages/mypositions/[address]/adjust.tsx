@@ -12,7 +12,7 @@ import { toast } from "react-toastify";
 import { TxToast, toastTxError } from "@components/TxToast";
 import GuardToAllowedChainBtn from "@components/Guards/GuardToAllowedChainBtn";
 import { WAGMI_CONFIG } from "../../../app.config";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/redux.store";
 import { PositionQuery } from "@juicedollar/api";
@@ -55,7 +55,7 @@ export default function PositionAdjust() {
 		const fetchAsync = async function () {
 			if (acc !== undefined) {
 				const _balanceFrank = await readContract(WAGMI_CONFIG, {
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: ADDRESS[chainId].juiceDollar,
 					abi: erc20Abi,
 					functionName: "balanceOf",
@@ -64,7 +64,7 @@ export default function PositionAdjust() {
 				setUserFrankBalance(_balanceFrank);
 
 				const _balanceColl = await readContract(WAGMI_CONFIG, {
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: position.collateral,
 					abi: erc20Abi,
 					functionName: "balanceOf",
@@ -73,7 +73,7 @@ export default function PositionAdjust() {
 				setUserCollBalance(_balanceColl);
 
 				const _allowanceColl = await readContract(WAGMI_CONFIG, {
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: position.collateral,
 					abi: erc20Abi,
 					functionName: "allowance",
@@ -83,7 +83,7 @@ export default function PositionAdjust() {
 			}
 
 			const _balanceChallenge = await readContract(WAGMI_CONFIG, {
-				chainId: chainId as 4114 | 5115,
+				chainId: chainId as 4114,
 				address: position.position,
 				abi: PositionV2ABI,
 				functionName: "challengedAmount",
@@ -186,7 +186,7 @@ export default function PositionAdjust() {
 			setApproving(true);
 
 			const approveWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.collateral as Address,
 				abi: erc20Abi,
 				functionName: "approve",
@@ -227,7 +227,7 @@ export default function PositionAdjust() {
 		try {
 			setAdjusting(true);
 			const adjustWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.position,
 				abi: PositionV2ABI,
 				functionName: "adjust",

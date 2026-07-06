@@ -28,7 +28,7 @@ import Link from "next/link";
 import { useContractUrl } from "../../hooks/useContractUrl";
 import { useNativeBalance } from "../../hooks/useNativeBalance";
 import { ErrorDisplay } from "@components/ErrorDisplay";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 export const CollateralManageSection = () => {
 	const router = useRouter();
@@ -181,7 +181,7 @@ export const CollateralManageSection = () => {
 			setIsTxOnGoing(true);
 
 			const approveWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.collateral as Address,
 				abi: erc20Abi,
 				functionName: "approve",
@@ -241,7 +241,7 @@ export const CollateralManageSection = () => {
 			const contractAmount = BigInt(amount) + balanceOf;
 
 			const addHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.position,
 				abi: PositionV2ABI,
 				functionName: "adjust",
@@ -286,7 +286,7 @@ export const CollateralManageSection = () => {
 
 			const contractAmount = balanceOf - BigInt(amount);
 			const addHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.position,
 				abi: PositionV2ABI,
 				functionName: "adjust",

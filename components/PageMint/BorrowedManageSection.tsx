@@ -30,7 +30,7 @@ import { useContractUrl } from "../../hooks/useContractUrl";
 import { useIsPositionOwner } from "../../hooks/useIsPositionOwner";
 import { calculateOptimalRepayAmount, calculateTimeBuffer } from "../../utils/dynamicRepayCalculations";
 import { ErrorDisplay } from "@components/ErrorDisplay";
-import { mainnet, testnet } from "@config";
+import { mainnet } from "@config";
 
 export const BorrowedManageSection = () => {
 	const [amount, setAmount] = useState("");
@@ -196,7 +196,7 @@ export const BorrowedManageSection = () => {
 			const { loanAmount } = getLoanDetailsByCollateralAndYouGetAmount(position, balanceOf, BigInt(amount));
 
 			const borrowMoreHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.position,
 				abi: PositionV2ABI,
 				functionName: "mint",
@@ -237,7 +237,7 @@ export const BorrowedManageSection = () => {
 			setIsTxOnGoing(true);
 
 			const approveWriteHash = await simulateAndWrite({
-				chainId: chainId as typeof mainnet.id | typeof testnet.id,
+				chainId: chainId as typeof mainnet.id,
 				address: position.stablecoinAddress as Address,
 				abi: erc20Abi,
 				functionName: "approve",
@@ -285,7 +285,7 @@ export const BorrowedManageSection = () => {
 
 			if (isPayingFullDebt) {
 				payBackHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: position.position,
 					abi: PositionV2ABI,
 					functionName: "repayFull",
@@ -304,7 +304,7 @@ export const BorrowedManageSection = () => {
 				});
 
 				payBackHash = await simulateAndWrite({
-					chainId: chainId as typeof mainnet.id | typeof testnet.id,
+					chainId: chainId as typeof mainnet.id,
 					address: position.position,
 					abi: PositionV2ABI,
 					functionName: "repay",
