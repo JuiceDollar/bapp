@@ -6,7 +6,7 @@ export default function MainPage() {
 	const router = useRouter();
 	const carryOnQueryParams = getCarryOnQueryParams(router);
 
-	router.push(`/dashboard${toQueryString(carryOnQueryParams)}`);
+	router.push(`/swap${toQueryString(carryOnQueryParams)}`);
 
 	return null;
 }
