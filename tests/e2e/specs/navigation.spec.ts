@@ -6,11 +6,11 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Navigation", () => {
-	test("should load home page and redirect to dashboard", async ({ page }) => {
+	test("should load home page and redirect to swap", async ({ page }) => {
 		await page.goto("/");
 
-		// Home page redirects to dashboard
-		await expect(page).toHaveURL(/dashboard/);
+		// Home page redirects to swap
+		await expect(page).toHaveURL(/swap/);
 	});
 
 	test("should navigate to mint page", async ({ page }) => {
