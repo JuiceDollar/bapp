@@ -17,19 +17,10 @@ export function NavItems() {
 				<NavButton to="/referrals" name={t("common.navbar.my_referrals")} />
 			</li>
 			<li>
-				<NavButton to="/dashboard" name={t("common.navbar.dashboard")} />
-			</li>
-			<li>
 				<NavButton to="/swap" name={t("common.navbar.swap")} />
 			</li>
 			<li>
-				<NavButton to="/mint" name={t("common.navbar.borrow")} />
-			</li>
-			<li>
 				<NavButton to="/savings" name={t("common.navbar.savings")} />
-			</li>
-			<li>
-				<NavButton to="/equity" name={t("common.navbar.equity")} />
 			</li>
 		</>
 	);

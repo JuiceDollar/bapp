@@ -1,8 +1,8 @@
 import Head from "next/head";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { erc20Abi, formatUnits, maxUint256 } from "viem";
 import Button from "@components/Button";
-import { useSwapStats } from "@hooks";
+import { BridgeTokenKey, useSwapStats } from "@hooks";
 import { waitForTransactionReceipt } from "wagmi/actions";
 import { simulateAndWrite } from "../utils/contractHelpers";
 import { toast } from "react-toastify";
@@ -27,6 +27,12 @@ enum TokenInteractionSide {
 	INPUT = "input",
 	OUTPUT = "output",
 }
+
+/**
+ * Default pair on page load: send JUSD, receive USDT.
+ * Referenced by config key, because the on-chain symbol of that bridge token differs per chain (e.g. USDT.e).
+ */
+const DEFAULT_RECEIVE_TOKEN_KEY: BridgeTokenKey = "USDT";
 
 const noTokenMeta = {
 	symbol: "",
@@ -53,10 +59,11 @@ const getAmountWithLeastPrecision = (amount: bigint, fromDecimals: bigint, toDec
 export default function Swap() {
 	const swapStats = useSwapStats();
 	const stablecoinSymbols = Object.keys(swapStats.bridgeTokens);
-	const [fromSymbol, setFromSymbol] = useState("");
-	const [fromOptions, setFromOptions] = useState<string[]>([]);
-	const [toSymbol, setToSymbol] = useState(TOKEN_SYMBOL);
-	const [toOptions, setToOptions] = useState([TOKEN_SYMBOL]);
+	const stablecoinSymbolsKey = stablecoinSymbols.join(",");
+	// JUSD is the send side of the default pair and exists on every chain, so it can be set right away.
+	// The receive symbol is only known once the bridge tokens have loaded.
+	const [fromSymbol, setFromSymbol] = useState(TOKEN_SYMBOL);
+	const [toSymbol, setToSymbol] = useState("");
 	const [amount, setAmount] = useState(0n);
 	const [error, setError] = useState("");
 	const [isTxOnGoing, setTxOnGoing] = useState(false);
@@ -65,14 +72,27 @@ export default function Swap() {
 	const { t } = useTranslation();
 	const chainId = useChainId();
 
-	// Sync fromSymbol/fromOptions when bridge tokens load from package
+	// On-chain symbol of the default receive token. Chains without that bridge keep the first
+	// configured stablecoin, so the page stays usable instead of rendering an empty selector.
+	const defaultReceiveSymbol = useMemo(() => {
+		const defaultToken = Object.values(swapStats.bridgeTokens).find((token) => token.tokenKey === DEFAULT_RECEIVE_TOKEN_KEY);
+		if (defaultToken) return defaultToken.symbol;
+		return stablecoinSymbols[0] ?? "";
+	}, [swapStats.bridgeTokens, stablecoinSymbolsKey]);
+
+	// Apply the default pair once bridge tokens have loaded, and whenever the selected pair
+	// is no longer available on the current chain (e.g. after a chain switch).
 	useEffect(() => {
 		if (stablecoinSymbols.length === 0) return;
-		setFromOptions(stablecoinSymbols);
-		if (!fromSymbol || (fromSymbol !== TOKEN_SYMBOL && !stablecoinSymbols.includes(fromSymbol))) {
-			setFromSymbol(stablecoinSymbols[0]);
-		}
-	}, [stablecoinSymbols.join(","), fromSymbol]);
+		const isAvailable = (symbol: string) => symbol === TOKEN_SYMBOL || stablecoinSymbols.includes(symbol);
+		if (isAvailable(fromSymbol) && isAvailable(toSymbol)) return;
+		setFromSymbol(TOKEN_SYMBOL);
+		setToSymbol(defaultReceiveSymbol);
+	}, [stablecoinSymbolsKey, fromSymbol, toSymbol, defaultReceiveSymbol]);
+
+	// Exactly one side is always JUSD: the bridge only mints JUSD from a stablecoin or burns it back.
+	const fromOptions = fromSymbol === TOKEN_SYMBOL ? [TOKEN_SYMBOL] : stablecoinSymbols;
+	const toOptions = toSymbol === TOKEN_SYMBOL ? [TOKEN_SYMBOL] : stablecoinSymbols;
 
 	const getSelectedStablecoinSymbol = useCallback(() => {
 		return fromSymbol === TOKEN_SYMBOL ? toSymbol : fromSymbol;
@@ -120,12 +140,6 @@ export default function Swap() {
 		const prevToSymbol = toSymbol;
 		setFromSymbol(prevToSymbol);
 		setToSymbol(prevFromSymbol);
-
-		// swap options
-		const prevFromOptions = fromOptions;
-		const prevToOptions = toOptions;
-		setFromOptions(prevToOptions);
-		setToOptions(prevFromOptions);
 
 		if (amount > 0n) {
 			const fromTokenData = getTokenMetaBySymbol(fromSymbol);
@@ -457,7 +471,7 @@ export default function Swap() {
 							/>
 							<div className="mx-auto mt-12 max-w-full flex-col">
 								<GuardToAllowedChainBtn>
-									{!fromSymbol ? (
+									{!fromSymbol || !toSymbol ? (
 										<Button disabled>{t("common.loading")}</Button>
 									) : amount > fromTokenMeta.userAllowance ? (
 										<Button isLoading={isTxOnGoing} onClick={() => handleApprove()}>

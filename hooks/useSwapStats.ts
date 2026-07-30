@@ -74,27 +74,30 @@ const parseStablecoinStats = (data: unknown[], fromIndex: number) => {
 	};
 };
 
+const POTENTIAL_BRIDGES = [
+	{ token: "startUSD", bridge: "bridgeStartUSD" },
+	{ token: "USDC", bridge: "bridgeUSDC" },
+	{ token: "USDT", bridge: "bridgeUSDT" },
+	{ token: "CTUSD", bridge: "bridgeCTUSD" },
+] as const;
+
+/** Config key of a bridge token in the @juicedollar/jusd ADDRESS map (stable across chains, unlike the on-chain symbol) */
+export type BridgeTokenKey = (typeof POTENTIAL_BRIDGES)[number]["token"];
+
 /** Bridge token entries derived from @juicedollar/jusd ADDRESS config for current chain */
-function getBridgeEntries(chainId: number): { tokenAddress: Address; bridgeAddress: Address }[] {
+function getBridgeEntries(chainId: number): { tokenKey: BridgeTokenKey; tokenAddress: Address; bridgeAddress: Address }[] {
 	const addr = ADDRESS[chainId];
 	if (!addr) return [];
 
-	const potentialBridges = [
-		{ token: "startUSD" as const, bridge: "bridgeStartUSD" as const },
-		{ token: "USDC" as const, bridge: "bridgeUSDC" as const },
-		{ token: "USDT" as const, bridge: "bridgeUSDT" as const },
-		{ token: "CTUSD" as const, bridge: "bridgeCTUSD" as const },
-	];
-
-	return potentialBridges
-		.filter(({ token, bridge }) => addr[token] && addr[bridge])
-		.map(({ token, bridge }) => ({
-			tokenAddress: addr[token] as Address,
-			bridgeAddress: addr[bridge] as Address,
-		}));
+	return POTENTIAL_BRIDGES.filter(({ token, bridge }) => addr[token] && addr[bridge]).map(({ token, bridge }) => ({
+		tokenKey: token,
+		tokenAddress: addr[token] as Address,
+		bridgeAddress: addr[bridge] as Address,
+	}));
 }
 
 export type BridgeTokenStats = ReturnType<typeof parseStablecoinStats> & {
+	tokenKey: BridgeTokenKey;
 	contractAddress: Address;
 	contractBridgeAddress: Address;
 };
@@ -150,13 +153,14 @@ export const useSwapStats = () => {
 	};
 
 	const bridgeTokens: Record<string, BridgeTokenStats> = {};
-	bridgeEntries.forEach(({ tokenAddress, bridgeAddress }, i) => {
+	bridgeEntries.forEach(({ tokenKey, tokenAddress, bridgeAddress }, i) => {
 		const fromIndex = bridgeTokensStartIndex + i * 7;
 		const stats = parseStablecoinStats(data ?? [], fromIndex);
 		// Key by chain symbol (e.g. SUSD, USDC.e, USDT.e, ctUSD)
 		if (stats.symbol) {
 			bridgeTokens[stats.symbol] = {
 				...stats,
+				tokenKey,
 				contractAddress: tokenAddress,
 				contractBridgeAddress: bridgeAddress,
 			};
